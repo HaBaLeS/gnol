@@ -24,6 +24,7 @@ type Metadata struct {
 	metaFile string
 	Type string
 	CoverImageBase64 string
+	NumPages int
 	arc archiver.Walker
 }
 
@@ -98,6 +99,7 @@ func (m *Metadata) Update() error{
 func (m *Metadata) extractCoverImage() error{
 	var names []string
 	aerr := m.arc.Walk(m.FilePath, func(f archiver.File) error {
+			isImageFile(f.Name())
 			names = append(names, strings.ToLower(f.Name()))
 			return nil
 	})
@@ -105,6 +107,7 @@ func (m *Metadata) extractCoverImage() error{
 		return aerr
 	}
 	sort.Strings(names)
+	m.NumPages = len(names)
 	for _,name := range names{
 		if strings.HasSuffix(name, "/") {
 			fmt.Printf("Dir in archive: %s\n" , name )

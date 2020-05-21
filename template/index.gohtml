@@ -37,12 +37,13 @@
                         </div>
                         <div class="card-content">
                             <div class="content">
-                                <p >{{ $idxx }} - {{ $v.Name }}</p>
+                                <p ><b>{{ $v.Name }}</b><br> {{$v.NumPages}} Pages</p>
                             </div>
                         </div>
                         <footer class="card-footer">
-                            <a href="#" class="card-footer-item">Read</a>
-                        </footer>
+                            <a href="read/{{$v.Id}}" class="card-footer-item">Read-1</a>
+
+                            <a href="read2/{{$v.Id}}" class="card-footer-item">Read-2</a>                        </footer>
                     </div>
                 </div>
             </div>

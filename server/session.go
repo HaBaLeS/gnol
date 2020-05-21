@@ -11,6 +11,7 @@ type Session struct {
 	config *util.ToolConfig
 	httpServer *http.Server
 	handler *AppHandler
+	dao *DAOHandler
 }
 
 func NewServer() *Session{
@@ -27,6 +28,9 @@ func (s *Session) Start(){
 		panic(err)
 	}
 	s.config = cfg
+
+	s.dao = NewDAO()
+	s.dao.Warmup()
 
 	//TODO move router in server
 	s.handler = NewHandler(s)

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Read: XXXXXXXXXXXXXXXxxxx</title>
+    <link rel="stylesheet" href="/css/my.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="/js/jqviewer.js" ></script>
+</head>
+<body>
+    <div id="view">
+        <div class="">
+            <img id="cv" />
+        </div>
+        <!--
+        <a href="/comics"> <- Back</a> <p id="info"></p>
+         <a href="https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_fullscreen" target="_new_" >FullScreen Example</a>
+        <button onclick="prev()"> << </button>
+        <button onclick="next()"> >> </button> -->
+
+
+
+        <!-- Trigger/Open The Modal -->
+        <button id="myBtn">Open Modal</button>
+
+        <!-- The Modal -->
+        <div id="myModal" class="modal ">
+
+            <!-- Modal content -->
+            <div class="modal-content">
+                <div class="modal-body">
+                   [Prev] [Next] | [fill Height] [fill Width] | [zoom in] [zoom out] | [rotate left] [rotate right] | [Manga Mode] | [fullscreen]
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        loadComic({{.Id}},{{.NumPages}});
+    </script>
+
+</body>
+</html>
