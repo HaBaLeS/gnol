@@ -10,61 +10,60 @@ import (
 	"strings"
 )
 
-var BASE_PATH = "/home/falko/comics/"
-
 type DAOHandler struct {
 	metaCache map[string]*Metadata
 	comicList *ComicList
+	session   Session
 }
 
 type ComicList struct {
 	Comics []Metadata
 }
 
-func NewDAO() *DAOHandler{
+func NewDAO(session Session) *DAOHandler {
 	return &DAOHandler{
 		metaCache: make(map[string]*Metadata),
 		comicList: &ComicList{},
+		session:   session,
 	}
 }
 
-func (dao *DAOHandler) getMetadata(id string) (*Metadata, error){
+func (dao *DAOHandler) getMetadata(id string) (*Metadata, error) {
 	m, ok := dao.metaCache[id]
 	if !ok {
 		return nil, fmt.Errorf("Could find Metadata for: %s", id)
 	}
-	return m,nil
+	return m, nil
 }
 
-
-func (dao *DAOHandler) GetComiList() *ComicList{
+func (dao *DAOHandler) GetComiList() *ComicList {
 	return dao.comicList
 }
 
 func (dao *DAOHandler) Warmup() {
-	err := filepath.Walk(BASE_PATH, dao.investigateStructure)
+	err := filepath.Walk(dao.session.config.DataDirectory, dao.investigateStructure)
 	if err != nil {
 		panic(err)
 	}
 }
 
 func (dao *DAOHandler) getPageImage(id string, imageNum string) ([]byte, error) {
-//	r := rand.Intn(len(dao.comicList.Comics)-1)
-//	return base64.StdEncoding.DecodeString(dao.comicList.Comics[r].CoverImageBase64)
+	//	r := rand.Intn(len(dao.comicList.Comics)-1)
+	//	return base64.StdEncoding.DecodeString(dao.comicList.Comics[r].CoverImageBase64)
 	m := dao.metaCache[id]
 	cnt := 0
 	var data []byte
 	wr := m.arc.Walk(m.FilePath, func(f archiver.File) error {
-		if !isImageFile(f.Name()){
+		if !isImageFile(f.Name()) {
 			return nil
 		}
-		num,  err :=strconv.Atoi(imageNum)
+		num, err := strconv.Atoi(imageNum)
 		if err != nil {
-			return  err
+			return err
 		}
-		
-		if cnt == num  {
-			data , err = ioutil.ReadAll(f.ReadCloser)
+
+		if cnt == num {
+			data, err = ioutil.ReadAll(f.ReadCloser)
 			if err != nil {
 				return err
 			}
@@ -76,11 +75,11 @@ func (dao *DAOHandler) getPageImage(id string, imageNum string) ([]byte, error) 
 	if wr != nil {
 		return nil, wr
 	}
-	return  data, nil
+	return data, nil
 }
 
-func (dao *DAOHandler) investigateStructure (path string, info os.FileInfo, err error) error{
-	if strings.HasPrefix(info.Name(),"."){
+func (dao *DAOHandler) investigateStructure(path string, info os.FileInfo, err error) error {
+	if strings.HasPrefix(info.Name(), ".") {
 		fmt.Printf("skipping: %s\n", info.Name())
 		return filepath.SkipDir
 	}
@@ -91,7 +90,7 @@ func (dao *DAOHandler) investigateStructure (path string, info os.FileInfo, err 
 	}
 
 	usp, me := NewMetadata(path)
-	if usp != nil{
+	if usp != nil {
 		//unsupported filetype
 		return nil
 	}
@@ -102,8 +101,8 @@ func (dao *DAOHandler) investigateStructure (path string, info os.FileInfo, err 
 	if lr != nil || force {
 		//fmt.Println(err)
 		err2 := me.Update()
-		if err2 != nil{
-			fmt.Printf("Unsupported File: %s\n %v\n", path, err2 )
+		if err2 != nil {
+			fmt.Printf("Unsupported File: %s\n %v\n", path, err2)
 		}
 		me.Save()
 	}

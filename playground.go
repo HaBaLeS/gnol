@@ -1,17 +1,19 @@
 package main
 
 import (
-	"fmt"
+	"flag"
 	"playground.dahoam/server"
 )
 
 var BASE_PATH = "/home/falko/comics/"
 
+//go:generate go run -tags=dev gen.go
 
-func main(){
+func main() {
 
-	fmt.Print("http://192.168.1.248:6969/comics\n")
-	s := server.NewServer()
+	cfgPath := flag.String("c", "default.cfg", "Config File to use")
+	flag.Parse()
+
+	s := server.NewServer(*cfgPath)
 	s.Start()
 }
-

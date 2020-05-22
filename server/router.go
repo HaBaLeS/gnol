@@ -4,40 +4,46 @@ import (
 	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"html/template"
 	"net/http"
 	"os"
 	"path/filepath"
+	"playground.dahoam/util"
 )
 
 type AppHandler struct {
-	router chi.Router
+	router  chi.Router
 	session *Session
 }
-func NewHandler(s *Session) (*AppHandler) {
+
+func NewHandler(s *Session) *AppHandler {
 	return &AppHandler{
 		session: s,
-		router: chi.NewRouter(),
+		router:  chi.NewRouter(),
 	}
 }
 
-func (r *AppHandler) SetupRoutes(){
+func (r *AppHandler) SetupRoutes() {
 
 	r.router.Use(middleware.DefaultLogger)
-	r.router.Get("/echo/*", func(w http.ResponseWriter, r *http.Request){
+	r.router.Get("/echo/*", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Echo: %s", r.URL.Path)
 	})
 
-	workDir, _ := os.Getwd()
-	filesDir := filepath.Join(workDir, "static/")
-	r.router.Get("/*", http.FileServer(http.Dir(filesDir)).ServeHTTP)
-
+	if r.session.config.LocalResources {
+		fmt.Print("Using Local resources instead of embedded\n")
+		workDir, _ := os.Getwd()
+		filesDir := filepath.Join(workDir, "static/")
+		r.router.Get("/*", http.FileServer(http.Dir(filesDir)).ServeHTTP)
+	} else {
+		r.router.Get("/*", http.FileServer(util.StaticAssets).ServeHTTP)
+	}
 
 	r.router.Get("/comics", func(w http.ResponseWriter, req *http.Request) {
 		cl := r.session.dao.GetComiList()
-		t := template.New("index.gohtml")
-		t.Funcs(template.FuncMap{"mod": mod})
-		tpl, err := t.ParseFiles("template/index.gohtml")
+
+		tpl, err := r.getTemplate("index.gohtml")
 		if err != nil {
 			panic(err)
 		}
@@ -57,12 +63,8 @@ func (r *AppHandler) SetupRoutes(){
 			return
 		}
 
-		t := template.New("view2.gohtml")
-		tpl, err := t.ParseFiles("template/view2.gohtml")
-		if err != nil {
-			renderError(err, w)
-			return
-		}
+		tpl, err := r.getTemplate("view2.gohtml")
+		err = tpl.Execute(w, meta)
 
 		err = tpl.Execute(w, meta)
 		if err != nil {
@@ -80,13 +82,7 @@ func (r *AppHandler) SetupRoutes(){
 			return
 		}
 
-		t := template.New("jqviewer.gohtml")
-		tpl, err := t.ParseFiles("template/jqviewer.gohtml")
-		if err != nil {
-			renderError(err, w)
-			return
-		}
-
+		tpl, err := r.getTemplate("jqviewer.gohtml")
 		err = tpl.Execute(w, meta)
 		if err != nil {
 			renderError(err, w)
@@ -94,13 +90,13 @@ func (r *AppHandler) SetupRoutes(){
 		}
 
 	})
-	
+
 	r.router.Get("/read/{comicId}/{imageId}", func(w http.ResponseWriter, req *http.Request) {
 		comicId := chi.URLParam(req, "comicId")
 		image := chi.URLParam(req, "imageId")
 		data, err := r.session.dao.getPageImage(comicId, image)
 		if err != nil {
-			renderError(err,w)
+			renderError(err, w)
 			return
 		}
 
@@ -112,12 +108,29 @@ func (r *AppHandler) SetupRoutes(){
 		image := chi.URLParam(req, "imageId")
 		data, err := r.session.dao.getPageImage(comicId, image)
 		if err != nil {
-			renderError(err,w)
+			renderError(err, w)
 			return
 		}
 
 		w.Write(data)
 	})
+}
+
+func (r *AppHandler) getTemplate(name string) (*template.Template, error) {
+	var tpl *template.Template
+	var err error
+	t := template.New(name)
+	t.Funcs(template.FuncMap{"mod": mod})
+	if r.session.config.LocalResources {
+		tpl, err = t.ParseFiles("data/template/" + name)
+	} else {
+		tpl, err = vfstemplate.ParseFiles(util.StaticAssets, t, "template/"+name)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return tpl, nil
 }
 
 func renderError(e error, w http.ResponseWriter) {
