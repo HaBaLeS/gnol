@@ -1,48 +1,52 @@
 
-var pages;
-var currentPage = 0;
-var  pageUrl;
+let pages;
+let currentPage = 0;
+let pageUrl;
+let preloadCursor =0;
+let preloadNum = 7; //number of images to preload
+let verticalFit = true; //default false
+
 function loadComic(comicId,numPages) {
-    //TODO rename to initi or something
+    //TODO rename to init or something
 
     pages = new Array(pages)
     console.log("Should load:" + comicId + " with " + numPages + " pages");
-    pageUrl = "http://192.168.1.248:6969/read2/" + comicId
-    loadAndCacheImage(pageUrl, 0)
+    pageUrl = "/read2/" + comicId
+    loadAndCacheImage(0)
 
     document.addEventListener('keydown', handleKeyboardInput);
+    document.addEventListener('cmxLoadComplete', handleLoadComplete);
+    window.addEventListener('resize', reportWindowSize);
 
-    initModal();
+    let fsb = document.getElementById("orientationStyleBtn")
+    fsb.onclick =function () {
+        verticalFit =!verticalFit;
+        replaceImage(currentPage);
+    }
+
+    let mcb = document.getElementById("closeHelp");
+    mcb.onclick =function () {
+        let mdh = document.getElementById("modalHelp")
+        mdh.classList.remove("is-active")
+    }
+
+
+    var hammertime = new Hammer(document);
+    hammertime.on('swipe', function(ev) {
+        console.log(ev);
+        alert(ev);
+    });
 }
 
-function initModal(){
-
-// Get the modal
-    var modal = document.getElementById("myModal");
-
-// Get the button that opens the modal
-    var btn = document.getElementById("myBtn");
-
-// Get the <span> element that closes the modal
-    var span = document.getElementsByClassName("close")[0];
-
-// When the user clicks the button, open the modal
-    btn.onclick = function() {
-        modal.style.display = "block";
-    }
-
-// When the user clicks on <span> (x), close the modal
-    span.onclick = function() {
-        modal.style.display = "none";
-    }
-
-// When the user clicks anywhere outside of the modal, close it
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = "none";
-        }
-    }
+function showHelp(){
+    let mdh = document.getElementById("modalHelp")
+    mdh.classList.add("is-active")
 }
+
+function reportWindowSize(e){
+    replaceImage(currentPage)
+}
+
 
 function handleKeyboardInput(e){
     if(e.code == "ArrowRight"){
@@ -56,15 +60,31 @@ function handleKeyboardInput(e){
     }
 }
 
+function handleLoadComplete(e){
+    checkPreload();
+}
+
+function checkPreload(){
+    if (preloadCursor <= currentPage + preloadNum) {
+        for(i=currentPage; i<currentPage + preloadNum; i++ ){
+            if(!pages[i]){
+                preloadImage(i);
+                return
+            }
+        }
+    }
+}
+
 function next(){
     currentPage++;
     if(pages[currentPage]){
         replaceImage(currentPage)
     } else {
-        loadAndCacheImage(pageUrl, currentPage)
+        loadAndCacheImage(currentPage)
     }
     document.body.scrollTop = 0; // For Safari
     document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+    checkPreload();
 }
 
 function prev(){
@@ -75,23 +95,24 @@ function prev(){
     if(pages[currentPage]){
         replaceImage(currentPage)
     } else {
-        loadAndCacheImage(pageUrl, currentPage)
+        loadAndCacheImage(currentPage)
     }
 }
 
-function loadAndCacheImage(pageUrl, pageNum){
-      pageUrl = pageUrl + "/" +pageNum
+function loadAndCacheImage(pageNum){
+      let pgu = pageUrl + "/" +pageNum
       jQuery.ajax({
-        url: pageUrl,
+        url: pgu,
         cache:false,
         xhr:function(){// Seems like the only way to get access to the xhr object
-            var xhr = new XMLHttpRequest();
+            let xhr = new XMLHttpRequest();
             xhr.responseType= 'blob'
             return xhr;
         },
         success: function(data){
-            var url = window.URL || window.webkitURL;
+            let url = window.URL || window.webkitURL;
             pages[pageNum] = url.createObjectURL(data);
+            document.dispatchEvent(new Event("cmxLoadComplete"));
             replaceImage(pageNum)
         },
         error:function(){
@@ -100,31 +121,53 @@ function loadAndCacheImage(pageUrl, pageNum){
     });
 }
 
-function replaceImage(pageNum){
-    var img = document.getElementById('cv');
-    img.src = pages[pageNum]
-    //img.height = window.innerHeight;
-
-    vfit = false;
-    if(vfit){
-        //fit height
-        img.height = window.visualViewport.height-8;
-    } else {
-        //fit width
-        img.width = window.innerWidth-16;
+function preloadImage(i){
+    let pgu = pageUrl + "/" +i
+    if(pages[i]){
+        return
     }
+    jQuery.ajax({
+        url: pgu,
+        cache:false,
+        xhr:function(){// Seems like the only way to get access to the xhr object
+            let xhr = new XMLHttpRequest();
+            xhr.responseType= 'blob'
+            return xhr;
+        },
+        success: function(data){
+            let url = window.URL || window.webkitURL;
+            pages[i] = url.createObjectURL(data);
+            document.dispatchEvent(new Event("cmxLoadComplete"));
+        },
+        error:function(){
+            alert("Error loading image")
+        }
+    });
+}
 
+function replaceImage(pageNum){
+    let oldImg = document.getElementById('cv');
+    let newImage = document.createElement("img");
+    oldImg.parentNode.replaceChild(newImage, oldImg)
+    newImage.src = pages[pageNum];
+    newImage.id = "cv"
+    newImage.classList.add("has-ratio")
 
+   //calc W,H and then the Resized Versions
 
-
-    //var info = document.getElementById("info")
-    //info.innerText="Hallo " + pageNum + " ->" + img.width + ":" + img.height;
+    if(verticalFit){
+        newImage.height = window.innerHeight-8;
+        document.getElementById("orientationIcon").className = "fa fa-arrows-alt-h my-float";
+    } else {
+        newImage.width = window.innerWidth-16;
+        document.getElementById("orientationIcon").className = "fa fa-arrows-alt-v my-float";
+    }
 }
 
 function enableFullScreen(){
     /* When the openFullscreen() function is executed, open the video in fullscreen.
     Note that we must include prefixes for different browsers, as they don't support the requestFullscreen method yet */
-    var elem = document.documentElement; //document.getElementById("view");
+    let elem = document.documentElement;
     if (elem.requestFullscreen) {
         elem.requestFullscreen();
     } else if (elem.mozRequestFullScreen) { /* Firefox */

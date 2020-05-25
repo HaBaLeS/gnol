@@ -2,44 +2,73 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Read: XXXXXXXXXXXXXXXxxxx</title>
-    <link rel="stylesheet" href="/static/css/my.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.2/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/my.css"/>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="/static/js/jqviewer.js" ></script>
+    <script src="/static/js/hammer.js"></script>
+    <script src="/static/js/jqviewer.js"></script>
 </head>
 <body>
-    <div id="view">
-        <div class="">
-            <img id="cv" />
-        </div>
-        <!--
-        <a href="/comics"> <- Back</a> <p id="info"></p>
-         <a href="https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_fullscreen" target="_new_" >FullScreen Example</a>
-        <button onclick="prev()"> << </button>
-        <button onclick="next()"> >> </button> -->
-
-
-
-        <!-- Trigger/Open The Modal -->
-        <button id="myBtn">Open Modal</button>
-
-        <!-- The Modal -->
-        <div id="myModal" class="modal ">
-
-            <!-- Modal content -->
-            <div class="modal-content">
-                <div class="modal-body">
-                   [Prev] [Next] | [fill Height] [fill Width] | [zoom in] [zoom out] | [rotate left] [rotate right] | [Manga Mode] | [fullscreen]
-                </div>
-            </div>
-
-        </div>
+<div id="view">
+    <div >
+        <img class="has-ratio" id="cv"/>
     </div>
+</div>
 
-    <script>
-        loadComic({{.Id}},{{.NumPages}});
-    </script>
+<a href="#" class="float" id="menu-share">
+    <i class="fa fa-cog my-float"></i>
+</a>
+<ul>
+    <li>
+        <a href="#" id="orientationStyleBtn">
+            <i class="fa fa-arrows-alt-h my-float" id="orientationIcon"></i>
+        </a>
+    </li>
+    <li>
+        <a href="#" >
+            <i class="fa fa-file-alt my-float"></i>
+        </a>
+    </li>
+    <li>
+        <a href="#" >
+            <i class="fa fa-book my-float"></i>
+        </a>
+    </li>
+    <li>
+        <a href="#" onclick="enableFullScreen()">
+            <i class="fa fa-expand my-float"></i>
+        </a>
+    </li>
+    <li>
+        <a href="#" onclick="showHelp()" >
+            <i class="fa fa-question-circle my-float"></i>
+        </a>
+    </li>
+</ul>
+
+<div class="modal" id="modalHelp">
+    <div class="modal-background"></div>
+    <div class="modal-content">
+
+        <article class="message">
+            <div class="message-header">
+                <p>Hello World</p>
+                <button class="delete" id="closeHelp" aria-label="delete"></button>
+            </div>
+            <div class="message-body">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. <strong>Pellentesque risus mi</strong>, tempus quis placerat ut, porta nec nulla. Vestibulum rhoncus ac ex sit amet fringilla. Nullam gravida purus diam, et dictum <a>felis venenatis</a> efficitur. Aenean ac <em>eleifend lacus</em>, in mollis lectus. Donec sodales, arcu et sollicitudin porttitor, tortor urna tempor ligula, id porttitor mi magna a neque. Donec dui urna, vehicula et sem eget, facilisis sodales sem.
+            </div>
+        </article>
+    </div>
+</div>
+
+
+<script>
+    loadComic({{.Id}},{{.NumPages}});
+</script>
 
 </body>
 </html>

@@ -34,7 +34,7 @@ func (r *AppHandler) SetupRoutes() {
 	if r.session.config.LocalResources {
 		fmt.Print("Using Local resources instead of embedded\n")
 		workDir, _ := os.Getwd()
-		filesDir := filepath.Join(workDir, "static/")
+		filesDir := filepath.Join(workDir, "data/")
 		r.router.Get("/*", http.FileServer(http.Dir(filesDir)).ServeHTTP)
 	} else {
 		r.router.Get("/*", http.FileServer(util.StaticAssets).ServeHTTP)
