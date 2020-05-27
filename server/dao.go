@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 )
 
 type DAOHandler struct {
@@ -41,6 +40,7 @@ func (dao *DAOHandler) GetComiList() *ComicList {
 }
 
 func (dao *DAOHandler) Warmup() {
+	dao.session.logger.Info("Reading Data Directory, warmup results")
 	err := filepath.Walk(dao.session.config.DataDirectory, dao.investigateStructure)
 	if err != nil {
 		panic(err)
@@ -79,10 +79,9 @@ func (dao *DAOHandler) getPageImage(id string, imageNum string) ([]byte, error) 
 }
 
 func (dao *DAOHandler) investigateStructure(path string, info os.FileInfo, err error) error {
-	if strings.HasPrefix(info.Name(), ".") {
-		fmt.Printf("skipping: %s\n", info.Name())
+	/*if strings.HasPrefix(info.Name(), ".") && !info.IsDir() {
 		return filepath.SkipDir
-	}
+	}*/
 
 	if info.IsDir() {
 		//fmt.Printf("Path: %s\n", path)

@@ -34,7 +34,6 @@ func NewMetadata(path string) (error, *Metadata){
 		metaFile: path + ".meta",
 	}
 
-
 	ext := filepath.Ext(path)
 	if ext == ".cbz" || ext == ".zip" {
 		m.arc = archiver.NewZip()
@@ -42,7 +41,7 @@ func NewMetadata(path string) (error, *Metadata){
 		m.arc = archiver.NewRar()
 	}
 	if m.arc == nil {
-		return fmt.Errorf("Unformated File: %s", path ), nil
+		return fmt.Errorf("Unsupported File: %s", path ), nil
 	}
 
 	fi, err := os.Stat(path)

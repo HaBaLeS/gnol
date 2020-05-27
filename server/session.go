@@ -32,7 +32,7 @@ func NewServer(cfgPath string) *Session {
 		logger: log,
 	}
 
-	log.InfoF("Using: http://%s:%d\n", s.config.ListenAddress, s.config.ListenPort)
+	log.InfoF("Using: http://%s:%d/comics", s.config.ListenAddress, s.config.ListenPort)
 	return s
 }
 
