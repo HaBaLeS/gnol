@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"playground.dahoam/util"
+	"github.com/HaBaLeS/gnol/util"
 	"time"
+	"github.com/HaBaLeS/go-logger"
 )
 
 type Session struct {
@@ -13,20 +14,25 @@ type Session struct {
 	httpServer *http.Server
 	handler    *AppHandler
 	dao        *DAOHandler
+	logger 	   *logger.Logger
 }
 
 func NewServer(cfgPath string) *Session {
+	log, err := logger.NewLogger()
+	if err != nil {
+		panic("Could not create Logger!")
+	}
 	cfg, err := util.ReadConfig(cfgPath)
 	if err != nil {
-		panic(err) //FIXME don't panic exit graceful
+		log.WarningF("%s not found using defaults", cfgPath)
 	}
 
 	s := &Session{
 		config: cfg,
+		logger: log,
 	}
 
-	fmt.Printf("Using: http://%s:%d\n", s.config.ListenAddress, s.config.ListenPort)
-
+	log.InfoF("Using: http://%s:%d\n", s.config.ListenAddress, s.config.ListenPort)
 	return s
 }
 

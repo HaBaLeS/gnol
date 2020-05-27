@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"playground.dahoam/util"
+	"github.com/HaBaLeS/gnol/util"
 )
 
 type AppHandler struct {

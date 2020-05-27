@@ -15,6 +15,17 @@
 - Search/Tag Comics/Novels
 
 # Technology
+
+## Running
+
+
+## Building from Source
+checkout project, run 
+
+    make 
+    
+
+## Configuration
 - Go Backend
 - Vanilla JavaScript
 - Bulma CSS

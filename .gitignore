@@ -1,4 +1,6 @@
 .idea
 playground.dahoam
 utils/static_assets.go
+util/static_assets.go
 playground.upx
+gnol
