@@ -24,12 +24,13 @@ function loadComic(comicId,numPages) {
         replaceImage(currentPage);
     }
 
+    /*
     let mcb = document.getElementById("closeHelp");
     mcb.onclick =function () {
         let mdh = document.getElementById("modalHelp")
         mdh.classList.remove("is-active")
     }
-
+    */
 
     var hammertime = new Hammer(document);
     hammertime.on('swipe', function(ev) {
@@ -151,8 +152,6 @@ function replaceImage(pageNum){
     oldImg.parentNode.replaceChild(newImage, oldImg)
     newImage.src = pages[pageNum];
     newImage.id = "cv"
-    newImage.classList.add("has-ratio")
-
    //calc W,H and then the Resized Versions
 
     if(verticalFit){

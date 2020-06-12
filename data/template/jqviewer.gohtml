@@ -4,7 +4,6 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Read: XXXXXXXXXXXXXXXxxxx</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.2/css/bulma.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/my.css"/>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -12,11 +11,28 @@
     <script src="/static/js/jqviewer.js"></script>
 </head>
 <body>
-<div id="view">
-    <div >
-        <img class="has-ratio" id="cv"/>
+
+<div id="dualPage"  >
+    <div class="page1" style="text-align: right">
+        <img class="pageimage"  src="/static/img/1.png" style="padding-right: 1px;" id="cv"/>
+    </div>
+    <div class="page2" style="text-align: left">
+        <img class="pageimage" src="/static/img/3.png" style="padding-right: 1px" id="cv"/>
     </div>
 </div>
+
+<div id="singleFullPage"style="display: none" >
+    <div style="text-align: center; width: 100%; height: 100vh;">
+        <img class="pageimage"  src="/static/img/1.png" style="" id="cv"/>
+    </div>
+</div>
+
+<div id="singleMaximized" style="display: none">
+    <div style="width: 100vw - 8px;">
+        <img class="maximized"  src="/static/img/3.png" style="" id="cv"/>
+    </div>
+</div>
+
 
 <a href="#" class="float" id="menu-share">
     <i class="fa fa-cog my-float"></i>
@@ -49,6 +65,7 @@
     </li>
 </ul>
 
+<!--
 <div class="modal" id="modalHelp">
     <div class="modal-background"></div>
     <div class="modal-content">
@@ -63,11 +80,11 @@
             </div>
         </article>
     </div>
-</div>
+</div> -->
 
 
 <script>
-    loadComic({{.Id}},{{.NumPages}});
+   // loadComic({{.Id}},{{.NumPages}});
 </script>
 
 </body>

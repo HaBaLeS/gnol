@@ -1,4 +1,41 @@
-*{padding:0;margin:0;}
+* {
+    box-sizing: border-box;
+    padding:0;
+    margin:0;
+}
+
+.page1 {
+    width: 50%;
+    float: left;
+    height: 100vh;
+}
+
+.page2 {
+    width: 50%;
+    float: left;
+    height: 100vh;
+}
+
+.pageimage {
+    /*max-width:100%;
+    max-height:100%;
+    height: auto;
+    width:auto;
+    object-fit: contain;
+    width:100%; */
+    height:auto;
+    max-height:100%;
+}
+.maximized {
+    width: 100%;
+}
+
+@media only screen and (max-width: 768px) {
+    /* For mobile phones: */
+    [class*="page"] {
+        width: 100%;
+    }
+}
 
 body{
     font-family:Verdana, Geneva, sans-serif;

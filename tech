@@ -11,3 +11,39 @@ https://archive.org/details/comics
 
 //miltiverse ... python based thing ... reade and management
 https://github.com/chrisguidry/multiverse
+
+
+-- Webapp -- PACKER
+Comparision
+https://tech.townsourced.com/post/embedding-static-files-in-go/
+
+Used Library
+https://github.com/shurcooL/vfsgen
+
+//TODO ... do not exposte templeate in static download ... see https://github.com/shurcooL/httpfs
+
+
+//building a distributable App
+https://blog.filippo.io/shrink-your-go-binaries-with-this-one-weird-trick/
+
+
+//Swipe animation overkill
+https://css-tricks.com/simple-swipe-with-vanilla-javascript/
+
+
+
+Release 1.0:
+
+- README
+    + Usage
+    + Tech
+
+- Mobile Support
+    + Swipe
+
+- Features
+    + Fill Horizontal
+    + Fill Vertical
+    + Fullscreen
+
+-
