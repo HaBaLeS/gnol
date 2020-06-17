@@ -4,28 +4,38 @@
     margin:0;
 }
 
-.page1 {
+.page_l {
     width: 50%;
     float: left;
     height: 100vh;
+    text-align: right;
 }
 
-.page2 {
+.page_r {
     width: 50%;
     float: left;
     height: 100vh;
+    text-align: left;
 }
 
-.pageimage {
-    /*max-width:100%;
+
+.dpimg_l {
     max-height:100%;
-    height: auto;
-    width:auto;
-    object-fit: contain;
-    width:100%; */
-    height:auto;
-    max-height:100%;
+    max-width:100%;
+    padding-right: 1px;
 }
+
+.dpimg_r {
+    max-height:100%;
+    max-width:100%;
+    padding-left: 1px;
+}
+
+#fpi {
+    max-height:100%;
+    max-width: 100%;
+}
+
 .maximized {
     width: 100%;
 }

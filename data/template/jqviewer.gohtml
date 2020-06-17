@@ -12,24 +12,24 @@
 </head>
 <body>
 
-<div id="dualPage"  >
-    <div class="page1" style="text-align: right">
-        <img class="pageimage"  src="/static/img/1.png" style="padding-right: 1px;" id="cv"/>
+<div id="dualPage">
+    <div class="page_l">
+        <img class="dpimg_l"  id="dpl"/>
     </div>
-    <div class="page2" style="text-align: left">
-        <img class="pageimage" src="/static/img/3.png" style="padding-right: 1px" id="cv"/>
+    <div class="page_r">
+        <img class="dpimg_r" id="dpr"/>
     </div>
 </div>
 
-<div id="singleFullPage"style="display: none" >
+<div id="singleFullPage">
     <div style="text-align: center; width: 100%; height: 100vh;">
-        <img class="pageimage"  src="/static/img/1.png" style="" id="cv"/>
+        <img id="fpi"/>
     </div>
 </div>
 
-<div id="singleMaximized" style="display: none">
+<div id="singleMaximized" >
     <div style="width: 100vw - 8px;">
-        <img class="maximized"  src="/static/img/3.png" style="" id="cv"/>
+        <img class="maximized" id="smi"  />
     </div>
 </div>
 
@@ -38,18 +38,18 @@
     <i class="fa fa-cog my-float"></i>
 </a>
 <ul>
-    <li>
+    <li id="toggleOrientation">
         <a href="#" id="orientationStyleBtn">
             <i class="fa fa-arrows-alt-h my-float" id="orientationIcon"></i>
         </a>
     </li>
-    <li>
-        <a href="#" >
+    <li id="toggleToSingle">
+        <a href="#" onclick="enableSinglePage()">
             <i class="fa fa-file-alt my-float"></i>
         </a>
     </li>
-    <li>
-        <a href="#" >
+    <li id="toggleToDual">
+        <a href="#" onclick="enableDualPage()">
             <i class="fa fa-book my-float"></i>
         </a>
     </li>
@@ -58,11 +58,11 @@
             <i class="fa fa-expand my-float"></i>
         </a>
     </li>
-    <li>
+    <!--<li>
         <a href="#" onclick="showHelp()" >
             <i class="fa fa-question-circle my-float"></i>
         </a>
-    </li>
+    </li> -->
 </ul>
 
 <!--
@@ -84,7 +84,7 @@
 
 
 <script>
-   // loadComic({{.Id}},{{.NumPages}});
+   loadComic({{.Id}},{{.NumPages}},false);
 </script>
 
 </body>
