@@ -37,6 +37,9 @@ func ReadConfig(filename string) (*ToolConfig, error) {
 	if e != nil {
 		return ret, e
 	}
+
+	//FIXME check if the TempFir exists
+
 	scanner := bufio.NewScanner(file)
 
 	lineNum := 0

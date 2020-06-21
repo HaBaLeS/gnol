@@ -32,12 +32,6 @@ function loadComic(comicId, numPages, di) {
     }
     */
 
-    var hammertime = new Hammer(document);
-    hammertime.on('swipe', function(ev) {
-        console.log(ev);
-        alert(ev);
-    });
-
     enableSinglePage();
 }
 
@@ -93,6 +87,11 @@ function handleKeyboardInput(e){
     if(e.code == "KeyF"){
         enableFullScreen();
     }
+    /*if(e.code == "Space"){
+        y =window.scrollY
+        x = window.scrollX
+        document.head
+    }*/
 }
 
 function handleLoadComplete(e){

@@ -10,7 +10,7 @@ import (
 )
 
 type DAOHandler struct {
-	metaCache map[string]*Metadata
+	metaDB    map[string]*Metadata
 	comicList *ComicList
 	session   Session
 }
@@ -21,14 +21,14 @@ type ComicList struct {
 
 func NewDAO(session Session) *DAOHandler {
 	return &DAOHandler{
-		metaCache: make(map[string]*Metadata),
+		metaDB:    make(map[string]*Metadata),
 		comicList: &ComicList{},
 		session:   session,
 	}
 }
 
 func (dao *DAOHandler) getMetadata(id string) (*Metadata, error) {
-	m, ok := dao.metaCache[id]
+	m, ok := dao.metaDB[id]
 	if !ok {
 		return nil, fmt.Errorf("Could find Metadata for: %s", id)
 	}
@@ -50,7 +50,7 @@ func (dao *DAOHandler) Warmup() {
 func (dao *DAOHandler) getPageImage(id string, imageNum string) ([]byte, error) {
 	//	r := rand.Intn(len(dao.comicList.Comics)-1)
 	//	return base64.StdEncoding.DecodeString(dao.comicList.Comics[r].CoverImageBase64)
-	m := dao.metaCache[id]
+	m := dao.metaDB[id]
 	cnt := 0
 	var data []byte
 	wr := m.arc.Walk(m.FilePath, func(f archiver.File) error {
@@ -107,7 +107,7 @@ func (dao *DAOHandler) investigateStructure(path string, info os.FileInfo, err e
 	}
 
 	dao.comicList.Comics = append(dao.comicList.Comics, *me)
-	dao.metaCache[me.Id] = me
+	dao.metaDB[me.Id] = me
 
 	return nil
 }

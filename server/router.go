@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/HaBaLeS/gnol/util"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
@@ -9,7 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"github.com/HaBaLeS/gnol/util"
+	"strconv"
 )
 
 type AppHandler struct {
@@ -106,8 +107,14 @@ func (r *AppHandler) SetupRoutes() {
 	r.router.Get("/read2/{comicId}/{imageId}", func(w http.ResponseWriter, req *http.Request) {
 		comicId := chi.URLParam(req, "comicId")
 		image := chi.URLParam(req, "imageId")
-		data, err := r.session.dao.getPageImage(comicId, image)
-		if err != nil {
+		num, ce := strconv.Atoi(image)
+		if ce != nil {
+			renderError(ce, w)
+			return
+		}
+		loader, err := r.session.cache.GetImage(comicId, num)
+		data, err2 := loader()
+		if err2 != nil {
 			renderError(err, w)
 			return
 		}
@@ -134,6 +141,7 @@ func (r *AppHandler) getTemplate(name string) (*template.Template, error) {
 }
 
 func renderError(e error, w http.ResponseWriter) {
+	w.WriteHeader(500)
 	fmt.Fprintf(w, "Error: %v", e)
 }
 
