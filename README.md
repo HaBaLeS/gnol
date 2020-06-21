@@ -5,10 +5,10 @@
 - Support wellknown formats cbz, cbr
 - On-Demand loading of pages
 - Only 1 executable, simple configuration
+- Server-Side Image preprocessing to minimize traffic
 
 ## Planned Features
 - PDF Support
-- Server-Side Image preprocessing to minimize traffic
 - Multi-User Support
 - Parental Control
 - Save/Restore reading progress
