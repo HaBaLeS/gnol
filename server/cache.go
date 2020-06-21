@@ -66,7 +66,7 @@ func (i *ImageCache) GetImage(comicID string, pageNum int) (ImageLoader, error) 
 	//TODO add a config parameter to enforce jpeg instead of preserving the original
 
 	cnt := 0
-	me.arc.Walk(me.FilePath, func(f archiver.File) error {
+	extractError := me.arc.Walk(me.FilePath, func(f archiver.File) error {
 		if !isImageFile(f.Name()) {
 			return nil
 		}
@@ -96,6 +96,10 @@ func (i *ImageCache) GetImage(comicID string, pageNum int) (ImageLoader, error) 
 
 		return nil
 	})
+
+	if extractError != nil {
+		return nil, extractError
+	}
 
 	//If cache does not know the Image
 	//Create a lock for comicID ... if there is a lock already return a loader func which is locked waiting for the lock to open

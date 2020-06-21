@@ -8,6 +8,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
+	"strings"
 )
 
 func CreateThumbnail(data []byte, ext string) ([]byte, error) {
@@ -23,9 +24,9 @@ func CreateThumbnail(data []byte, ext string) ([]byte, error) {
 func LimitSize(reader io.Reader, ext string, maxWidth uint, maxHeight uint) (io.Reader, error) {
 	var img image.Image
 	var err error
-	if ext == ".jpg" {
+	if strings.ToLower(ext) == ".jpg" {
 		img, err = jpeg.Decode(reader)
-	} else if ext == ".png" {
+	} else if strings.ToLower(ext) == ".png" {
 		img, err = png.Decode(reader)
 	} else {
 		return nil, fmt.Errorf("Cannot Create Thumbnail form: %s", ext)
