@@ -9,7 +9,6 @@ import (
 )
 
 func main() {
-
 	// Assets contains project assets.
 	var StaticAssets http.FileSystem = http.Dir("data/")
 	var err = vfsgen.Generate(StaticAssets, vfsgen.Options{
@@ -18,7 +17,6 @@ func main() {
 		BuildTags:    "!dev",
 		VariableName: "StaticAssets",
 	})
-
 	if err != nil {
 		log.Fatalln(err)
 	}

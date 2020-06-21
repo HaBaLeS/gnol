@@ -4,36 +4,51 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Read: XXXXXXXXXXXXXXXxxxx</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.2/css/bulma.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/my.css"/>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="/static/js/hammer.js"></script>
     <script src="/static/js/jqviewer.js"></script>
 </head>
 <body>
-<div id="view">
-    <div >
-        <img class="has-ratio" id="cv"/>
+
+<div id="dualPage">
+    <div class="page_l">
+        <img class="dpimg_l"  id="dpl"/>
+    </div>
+    <div class="page_r">
+        <img class="dpimg_r" id="dpr"/>
     </div>
 </div>
+
+<div id="singleFullPage">
+    <div style="text-align: center; width: 100%; height: 100vh;">
+        <img id="fpi"/>
+    </div>
+</div>
+
+<div id="singleMaximized" >
+    <div style="width: 100vw - 8px;">
+        <img class="maximized" id="smi"  />
+    </div>
+</div>
+
 
 <a href="#" class="float" id="menu-share">
     <i class="fa fa-cog my-float"></i>
 </a>
 <ul>
-    <li>
+    <li id="toggleOrientation">
         <a href="#" id="orientationStyleBtn">
             <i class="fa fa-arrows-alt-h my-float" id="orientationIcon"></i>
         </a>
     </li>
-    <li>
-        <a href="#" >
+    <li id="toggleToSingle">
+        <a href="#" onclick="enableSinglePage()">
             <i class="fa fa-file-alt my-float"></i>
         </a>
     </li>
-    <li>
-        <a href="#" >
+    <li id="toggleToDual">
+        <a href="#" onclick="enableDualPage()">
             <i class="fa fa-book my-float"></i>
         </a>
     </li>
@@ -42,13 +57,14 @@
             <i class="fa fa-expand my-float"></i>
         </a>
     </li>
-    <li>
+    <!--<li>
         <a href="#" onclick="showHelp()" >
             <i class="fa fa-question-circle my-float"></i>
         </a>
-    </li>
+    </li> -->
 </ul>
 
+<!--
 <div class="modal" id="modalHelp">
     <div class="modal-background"></div>
     <div class="modal-content">
@@ -63,11 +79,11 @@
             </div>
         </article>
     </div>
-</div>
+</div> -->
 
 
 <script>
-    loadComic({{.Id}},{{.NumPages}});
+   loadComic({{.Id}},{{.NumPages}},false);
 </script>
 
 </body>

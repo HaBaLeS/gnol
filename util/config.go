@@ -37,6 +37,9 @@ func ReadConfig(filename string) (*ToolConfig, error) {
 	if e != nil {
 		return ret, e
 	}
+
+	//FIXME check if the TempFir exists
+
 	scanner := bufio.NewScanner(file)
 
 	lineNum := 0
@@ -53,7 +56,6 @@ func ReadConfig(filename string) (*ToolConfig, error) {
 			split := strings.SplitN(line, "=", 2)
 			val := of.FieldByName(split[0])
 			stringVal := split[1]
-
 			if val.IsValid() {
 				if val.CanAddr() {
 					switch val.Interface().(type) {
@@ -71,9 +73,7 @@ func ReadConfig(filename string) (*ToolConfig, error) {
 						} else {
 							val.SetBool(false)
 						}
-
 					}
-
 				} else {
 					fmt.Printf("Cannot Set!! %v \n", split[0])
 				}

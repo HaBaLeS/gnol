@@ -1,4 +1,51 @@
-*{padding:0;margin:0;}
+* {
+    box-sizing: border-box;
+    padding:0;
+    margin:0;
+}
+
+.page_l {
+    width: 50%;
+    float: left;
+    height: 100vh;
+    text-align: right;
+}
+
+.page_r {
+    width: 50%;
+    float: left;
+    height: 100vh;
+    text-align: left;
+}
+
+
+.dpimg_l {
+    max-height:100%;
+    max-width:100%;
+    padding-right: 1px;
+}
+
+.dpimg_r {
+    max-height:100%;
+    max-width:100%;
+    padding-left: 1px;
+}
+
+#fpi {
+    max-height:100%;
+    max-width: 100%;
+}
+
+.maximized {
+    width: 100%;
+}
+
+@media only screen and (max-width: 768px) {
+    /* For mobile phones: */
+    [class*="page"] {
+        width: 100%;
+    }
+}
 
 body{
     font-family:Verdana, Geneva, sans-serif;

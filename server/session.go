@@ -3,10 +3,10 @@ package server
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"github.com/HaBaLeS/gnol/util"
-	"time"
 	"github.com/HaBaLeS/go-logger"
+	"net/http"
+	"time"
 )
 
 type Session struct {
@@ -14,7 +14,8 @@ type Session struct {
 	httpServer *http.Server
 	handler    *AppHandler
 	dao        *DAOHandler
-	logger 	   *logger.Logger
+	logger     *logger.Logger
+	cache      *ImageCache
 }
 
 func NewServer(cfgPath string) *Session {
@@ -40,6 +41,8 @@ func (s *Session) Start() {
 
 	s.dao = NewDAO(*s)
 	s.dao.Warmup()
+
+	s.cache = NewImageCache(s)
 
 	//TODO move router in server
 	s.handler = NewHandler(s)
