@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+//ToolConfig defines the central configuration in gnol. It uses a init style config files
+//you the struct ToolConfig describes all possible values
 type ToolConfig struct {
 	ListenAddress  string
 	ListenPort     int
@@ -22,8 +24,12 @@ type ToolConfig struct {
 
 }
 
+//ReadConfig reads a configuration from a file. Configuration is ini stlye KEY=Value
+//Comments start with #
+//There is no support for mandatory fields
+//Errors reported via fmt.Print
 func ReadConfig(filename string) (*ToolConfig, error) {
-	//FIXME all printf shoudl be logs
+	//FIXME all printf should be logs
 	ret := &ToolConfig{
 		ListenAddress:  "localhost",
 		ListenPort:     8666,

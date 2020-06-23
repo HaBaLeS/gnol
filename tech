@@ -12,7 +12,6 @@ https://archive.org/details/comics
 //miltiverse ... python based thing ... reade and management
 https://github.com/chrisguidry/multiverse
 
-
 -- Webapp -- PACKER
 Comparision
 https://tech.townsourced.com/post/embedding-static-files-in-go/
@@ -46,4 +45,18 @@ Release 1.0:
     + Fill Vertical
     + Fullscreen
 
--
+
+
+------------------- NEXT -------------
+
+- unpack archive
+    - downsize images
+- build Caching logic/timeouts
+
+- create statisitcs/logging etc
+    - cookie?
+    - how to show the logs?
+
+
+-----------  Extract PDF Images ------
+https://github.com/gen2brain/go-fitz

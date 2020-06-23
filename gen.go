@@ -13,7 +13,7 @@ func main() {
 	var StaticAssets http.FileSystem = http.Dir("data/")
 	var err = vfsgen.Generate(StaticAssets, vfsgen.Options{
 		PackageName:  "util",
-		Filename:     "util/static_assets.go",
+		Filename:     "server/util/static_assets.go",
 		BuildTags:    "!dev",
 		VariableName: "StaticAssets",
 	})

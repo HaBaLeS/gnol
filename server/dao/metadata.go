@@ -1,15 +1,15 @@
-package server
+package dao
 
 import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/mholt/archiver/v3"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"github.com/HaBaLeS/gnol/util"
 	"regexp"
 	"sort"
 	"strings"
@@ -17,18 +17,18 @@ import (
 )
 
 type Metadata struct {
-	Id string
-	LastUpdate time.Time
-	FilePath string
-	Name string
-	metaFile string
-	Type string
+	Id               string
+	LastUpdate       time.Time
+	FilePath         string
+	Name             string
+	metaFile         string
+	Type             string
 	CoverImageBase64 string
-	NumPages int
-	arc archiver.Walker
+	NumPages         int
+	arc              archiver.Walker
 }
 
-func NewMetadata(path string) (error, *Metadata){
+func NewMetadata(path string) (error, *Metadata) {
 	m := &Metadata{
 		FilePath: path,
 		metaFile: path + ".meta",
@@ -41,14 +41,14 @@ func NewMetadata(path string) (error, *Metadata){
 		m.arc = archiver.NewRar()
 	}
 	if m.arc == nil {
-		return fmt.Errorf("Unsupported File: %s", path ), nil
+		return fmt.Errorf("Unsupported File: %s", path), nil
 	}
 
 	fi, err := os.Stat(path)
-	if err != nil{
+	if err != nil {
 		return err, nil
 	}
-	ids := []byte(fmt.Sprintf("%s:%d",fi.Name(),fi.Size()))
+	ids := []byte(fmt.Sprintf("%s:%d", fi.Name(), fi.Size()))
 	m.Id = fmt.Sprintf("CMX-%x", sha1.Sum(ids))
 
 	return nil, m
@@ -60,13 +60,13 @@ func (m *Metadata) Save() error {
 		return err
 	}
 	enc := json.NewEncoder(mf)
-	enc.SetIndent("","\t")
+	enc.SetIndent("", "\t")
 	enc.Encode(m)
 	mf.Close()
 	return nil
 }
 
-func (m *Metadata) Load() error{
+func (m *Metadata) Load() error {
 	mf, err := os.Open(m.metaFile)
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func (m *Metadata) Load() error{
 	return nil
 }
 
-func (m *Metadata) Update() error{
+func (m *Metadata) Update() error {
 	fmt.Printf("[i] Create Metadata for: %s\n", m.FilePath)
 	m.LastUpdate = time.Now()
 	fi, err := os.Stat(m.FilePath)
@@ -95,24 +95,24 @@ func (m *Metadata) Update() error{
 	return nil
 }
 
-func (m *Metadata) extractCoverImage() error{
+func (m *Metadata) extractCoverImage() error {
 	var names []string
 	aerr := m.arc.Walk(m.FilePath, func(f archiver.File) error {
-			isImageFile(f.Name())
-			names = append(names, strings.ToLower(f.Name()))
-			return nil
+		isImageFile(f.Name())
+		names = append(names, strings.ToLower(f.Name()))
+		return nil
 	})
-	if aerr != nil{
+	if aerr != nil {
 		return aerr
 	}
 	sort.Strings(names)
 	m.NumPages = len(names)
-	for _,name := range names{
+	for _, name := range names {
 		if strings.HasSuffix(name, "/") {
-			fmt.Printf("Dir in archive: %s\n" , name )
+			fmt.Printf("Dir in archive: %s\n", name)
 		} else if isCoverImage(name) {
 			aerr := m.arc.Walk(m.FilePath, func(f archiver.File) error {
-				if strings.HasSuffix(strings.ToLower(f.Name()),name) {
+				if strings.HasSuffix(strings.ToLower(f.Name()), name) {
 					input, err := ioutil.ReadAll(f.ReadCloser)
 					if err != nil {
 						panic(err)
@@ -137,33 +137,33 @@ func (m *Metadata) extractCoverImage() error{
 	return nil
 }
 
-func isCoverImage(f string) bool{
+func isCoverImage(f string) bool {
 	if !isImageFile(f) {
 		return false
 	}
-	if strings.Contains(strings.ToLower(f),"banner"){
-		return  false
+	if strings.Contains(strings.ToLower(f), "banner") {
+		return false
 	}
 	return true
 }
 
-func isImageFile(f string) bool{
+func isImageFile(f string) bool {
 	ext := strings.ToLower(filepath.Ext(f))
 	return ext == ".jpg" || ext == ".jpeg" || ext == ".png"
 }
 
-func findName(filename string) string{
+func findName(filename string) string {
 	out := filename
 	//Remove things between ( )
 	re := regexp.MustCompile("\\(.*\\)")
 
-	for _, r := range re.FindAll([]byte(filename), -1){
-		out = strings.ReplaceAll(out,string(r), "")
+	for _, r := range re.FindAll([]byte(filename), -1) {
+		out = strings.ReplaceAll(out, string(r), "")
 	}
 
 	//clean separators
-	out = strings.ReplaceAll(out,"_", " ")
-	out = strings.ReplaceAll(out,"-", " ")
-	out = strings.ReplaceAll(out,filepath.Ext(filename),"")
+	out = strings.ReplaceAll(out, "_", " ")
+	out = strings.ReplaceAll(out, "-", " ")
+	out = strings.ReplaceAll(out, filepath.Ext(filename), "")
 	return out
 }
