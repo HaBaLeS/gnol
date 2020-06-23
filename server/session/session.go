@@ -46,9 +46,10 @@ func (s *Session) Start() {
 	s.Dao.Warmup()
 
 	s.Cache = cache.NewImageCache(s.Config)
+	go s.Cache.RecoverCacheDir()
 
 	//TODO move router in server
-	s.Handler = router.NewHandler(s.Config, s.Dao)
+	s.Handler = router.NewHandler(s.Config, s.Dao, s.Cache)
 	s.Handler.SetupRoutes()
 
 	s.HttpServer = &http.Server{

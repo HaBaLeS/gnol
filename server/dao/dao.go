@@ -5,10 +5,10 @@ import (
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/HaBaLeS/go-logger"
 	"github.com/mholt/archiver/v3"
-	"io/ioutil"
+	"io"
 	"os"
+	"path"
 	"path/filepath"
-	"strconv"
 )
 
 type DAOHandler struct {
@@ -51,35 +51,51 @@ func (dao *DAOHandler) Warmup() {
 	}
 }
 
-func (dao *DAOHandler) GetPageImage(id string, imageNum string) ([]byte, error) {
-	//	r := rand.Intn(len(dao.comicList.Comics)-1)
-	//	return base64.StdEncoding.DecodeString(dao.comicList.Comics[r].CoverImageBase64)
-	m := dao.metaDB[id]
+func (dao *DAOHandler) GetPageImage(comicID string, pageNum int) (string, error) {
+
+	me, notfound := dao.GetMetadata(comicID)
+	if notfound != nil {
+		return "", fmt.Errorf("Unknown ComicID: %s", comicID)
+	}
+
+	comicDir := path.Join(dao.config.TempDirectory, comicID)
+	fileID := fmt.Sprintf("%s-%d", comicID, pageNum)
+	filename := path.Join(comicDir, fileID+".gnol")
+
+	//TODO add a config parameter to enforce jpeg instead of preserving the original
 	cnt := 0
-	var data []byte
-	wr := m.arc.Walk(m.FilePath, func(f archiver.File) error {
+	extractError := me.arc.Walk(me.FilePath, func(f archiver.File) error {
 		if !isImageFile(f.Name()) {
 			return nil
 		}
-		num, err := strconv.Atoi(imageNum)
-		if err != nil {
-			return err
-		}
+		if cnt == pageNum {
 
-		if cnt == num {
-			data, err = ioutil.ReadAll(f.ReadCloser)
-			if err != nil {
-				return err
+			//Create dir if not exists
+			if _, err := os.Stat(comicDir); os.IsNotExist(err) {
+				os.Mkdir(comicDir, os.ModePerm)
 			}
+			out, cerr := os.Create(filename)
+			if cerr != nil {
+				panic(cerr)
+			}
+
+			ext := path.Ext(f.Name())
+			newImg, convErr := util.LimitSize(f.ReadCloser, ext, 2560, 1440)
+			if convErr != nil {
+				return convErr
+			}
+			io.Copy(out, newImg)
 		}
 		cnt++
 		return nil
 	})
 
-	if wr != nil {
-		return nil, wr
+	if extractError != nil {
+		return "", extractError
 	}
-	return data, nil
+
+	return filename, nil
+
 }
 
 func (dao *DAOHandler) investigateStructure(path string, info os.FileInfo, err error) error {

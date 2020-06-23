@@ -2,28 +2,33 @@ package router
 
 import (
 	"fmt"
+	"github.com/HaBaLeS/gnol/server/cache"
 	"github.com/HaBaLeS/gnol/server/dao"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"html/template"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 type AppHandler struct {
 	Router chi.Router
 	config *util.ToolConfig
 	dao    *dao.DAOHandler
+	cache  *cache.ImageCache
 }
 
-func NewHandler(config *util.ToolConfig, dao *dao.DAOHandler) *AppHandler {
+func NewHandler(config *util.ToolConfig, dao *dao.DAOHandler, cache *cache.ImageCache) *AppHandler {
 	return &AppHandler{
 		Router: chi.NewRouter(),
 		config: config,
 		dao:    dao,
+		cache:  cache,
 	}
 }
 
@@ -94,20 +99,21 @@ func (r *AppHandler) SetupRoutes() {
 
 	})
 
-	r.Router.Get("/read/{comicId}/{imageId}", func(w http.ResponseWriter, req *http.Request) {
-		comicId := chi.URLParam(req, "comicId")
-		image := chi.URLParam(req, "imageId")
-		data, err := r.dao.GetPageImage(comicId, image)
-		if err != nil {
-			renderError(err, w)
-			return
-		}
+	/*
+		r.Router.Get("/read/{comicId}/{imageId}", func(w http.ResponseWriter, req *http.Request) {
+			comicId := chi.URLParam(req, "comicId")
+			image := chi.URLParam(req, "imageId")
+			data, err := r.dao.GetPageImage(comicId, image)
+			if err != nil {
+				renderError(err, w)
+				return
+			}
 
-		w.Write(data)
-	})
+			w.Write(data)
+		})*/
 
 	r.Router.Get("/read2/{comicId}/{imageId}", func(w http.ResponseWriter, req *http.Request) {
-		/*comicId := chi.URLParam(req, "comicId")
+		comicID := chi.URLParam(req, "comicId")
 		image := chi.URLParam(req, "imageId")
 		num, ce := strconv.Atoi(image)
 		if ce != nil {
@@ -115,16 +121,32 @@ func (r *AppHandler) SetupRoutes() {
 			return
 		}
 
+		//get file from cache
+		var err error
+		file, hit := r.cache.GetFileFromCache(comicID, num)
+		if !hit {
+			fmt.Println("Miss")
+			file, err = r.dao.GetPageImage(comicID, num)
+			if err != nil {
+				renderError(err, w)
+				return
+			}
+			r.cache.AddFileToCache(file)
+		}
+
 		//as a image-provider module not the cache directly
-		r.session.cache.AddFileToCache("")
-		loader, err := //GetImage(comicId, num)
-		data, err2 := loader()
-		if err2 != nil {
-			renderError(err, w)
+		img, oerr := os.Open(file)
+		if oerr != nil {
+			renderError(oerr, w)
 			return
 		}
 
-		w.Write(data)*/
+		data, rerr := ioutil.ReadAll(img)
+		if rerr != nil {
+			renderError(rerr, w)
+			return
+		}
+		w.Write(data)
 	})
 }
 
