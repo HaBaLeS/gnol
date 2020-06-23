@@ -1,6 +1,8 @@
 .idea
 playground.dahoam
-utils/static_assets.go
-util/static_assets.go
+server/utils/static_assets.go
+server/util/static_assets.go
+c.out
+coverage.html
 playground.upx
 gnol

@@ -1,7 +1,9 @@
-package server
+package dao
 
 import (
 	"fmt"
+	"github.com/HaBaLeS/gnol/server/util"
+	"github.com/HaBaLeS/go-logger"
 	"github.com/mholt/archiver/v3"
 	"io/ioutil"
 	"os"
@@ -12,22 +14,24 @@ import (
 type DAOHandler struct {
 	metaDB    map[string]*Metadata
 	comicList *ComicList
-	session   Session
+	logger    *logger.Logger
+	config    *util.ToolConfig
 }
 
 type ComicList struct {
 	Comics []Metadata
 }
 
-func NewDAO(session Session) *DAOHandler {
+func NewDAO(logger *logger.Logger, config *util.ToolConfig) *DAOHandler {
 	return &DAOHandler{
 		metaDB:    make(map[string]*Metadata),
 		comicList: &ComicList{},
-		session:   session,
+		logger:    logger,
+		config:    config,
 	}
 }
 
-func (dao *DAOHandler) getMetadata(id string) (*Metadata, error) {
+func (dao *DAOHandler) GetMetadata(id string) (*Metadata, error) {
 	m, ok := dao.metaDB[id]
 	if !ok {
 		return nil, fmt.Errorf("Could find Metadata for: %s", id)
@@ -40,14 +44,14 @@ func (dao *DAOHandler) GetComiList() *ComicList {
 }
 
 func (dao *DAOHandler) Warmup() {
-	dao.session.logger.Info("Reading Data Directory, warmup results")
-	err := filepath.Walk(dao.session.config.DataDirectory, dao.investigateStructure)
+	dao.logger.Info("Reading Data Directory, warmup results")
+	err := filepath.Walk(dao.config.DataDirectory, dao.investigateStructure)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (dao *DAOHandler) getPageImage(id string, imageNum string) ([]byte, error) {
+func (dao *DAOHandler) GetPageImage(id string, imageNum string) ([]byte, error) {
 	//	r := rand.Intn(len(dao.comicList.Comics)-1)
 	//	return base64.StdEncoding.DecodeString(dao.comicList.Comics[r].CoverImageBase64)
 	m := dao.metaDB[id]

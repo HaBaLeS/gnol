@@ -1,8 +1,9 @@
-package server
+package router
 
 import (
 	"fmt"
-	"github.com/HaBaLeS/gnol/util"
+	"github.com/HaBaLeS/gnol/server/dao"
+	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
@@ -10,39 +11,40 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 )
 
 type AppHandler struct {
-	router  chi.Router
-	session *Session
+	Router chi.Router
+	config *util.ToolConfig
+	dao    *dao.DAOHandler
 }
 
-func NewHandler(s *Session) *AppHandler {
+func NewHandler(config *util.ToolConfig, dao *dao.DAOHandler) *AppHandler {
 	return &AppHandler{
-		session: s,
-		router:  chi.NewRouter(),
+		Router: chi.NewRouter(),
+		config: config,
+		dao:    dao,
 	}
 }
 
 func (r *AppHandler) SetupRoutes() {
 
-	r.router.Use(middleware.DefaultLogger)
-	r.router.Get("/echo/*", func(w http.ResponseWriter, r *http.Request) {
+	r.Router.Use(middleware.DefaultLogger)
+	r.Router.Get("/echo/*", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Echo: %s", r.URL.Path)
 	})
 
-	if r.session.config.LocalResources {
+	if r.config.LocalResources {
 		fmt.Print("Using Local resources instead of embedded\n")
 		workDir, _ := os.Getwd()
 		filesDir := filepath.Join(workDir, "data/")
-		r.router.Get("/*", http.FileServer(http.Dir(filesDir)).ServeHTTP)
+		r.Router.Get("/*", http.FileServer(http.Dir(filesDir)).ServeHTTP)
 	} else {
-		r.router.Get("/*", http.FileServer(util.StaticAssets).ServeHTTP)
+		r.Router.Get("/*", http.FileServer(util.StaticAssets).ServeHTTP)
 	}
 
-	r.router.Get("/comics", func(w http.ResponseWriter, req *http.Request) {
-		cl := r.session.dao.GetComiList()
+	r.Router.Get("/comics", func(w http.ResponseWriter, req *http.Request) {
+		cl := r.dao.GetComiList()
 
 		tpl, err := r.getTemplate("index.gohtml")
 		if err != nil {
@@ -55,9 +57,9 @@ func (r *AppHandler) SetupRoutes() {
 		}
 	})
 
-	r.router.Get("/read/{comicId}", func(w http.ResponseWriter, req *http.Request) {
+	r.Router.Get("/read/{comicId}", func(w http.ResponseWriter, req *http.Request) {
 		comicId := chi.URLParam(req, "comicId")
-		meta, nfe := r.session.dao.getMetadata(comicId)
+		meta, nfe := r.dao.GetMetadata(comicId)
 
 		if nfe != nil {
 			renderError(nfe, w)
@@ -74,9 +76,9 @@ func (r *AppHandler) SetupRoutes() {
 		}
 	})
 
-	r.router.Get("/read2/{comicId}", func(w http.ResponseWriter, req *http.Request) {
+	r.Router.Get("/read2/{comicId}", func(w http.ResponseWriter, req *http.Request) {
 		comicId := chi.URLParam(req, "comicId")
-		meta, nfe := r.session.dao.getMetadata(comicId)
+		meta, nfe := r.dao.GetMetadata(comicId)
 
 		if nfe != nil {
 			renderError(nfe, w)
@@ -92,10 +94,10 @@ func (r *AppHandler) SetupRoutes() {
 
 	})
 
-	r.router.Get("/read/{comicId}/{imageId}", func(w http.ResponseWriter, req *http.Request) {
+	r.Router.Get("/read/{comicId}/{imageId}", func(w http.ResponseWriter, req *http.Request) {
 		comicId := chi.URLParam(req, "comicId")
 		image := chi.URLParam(req, "imageId")
-		data, err := r.session.dao.getPageImage(comicId, image)
+		data, err := r.dao.GetPageImage(comicId, image)
 		if err != nil {
 			renderError(err, w)
 			return
@@ -104,22 +106,25 @@ func (r *AppHandler) SetupRoutes() {
 		w.Write(data)
 	})
 
-	r.router.Get("/read2/{comicId}/{imageId}", func(w http.ResponseWriter, req *http.Request) {
-		comicId := chi.URLParam(req, "comicId")
+	r.Router.Get("/read2/{comicId}/{imageId}", func(w http.ResponseWriter, req *http.Request) {
+		/*comicId := chi.URLParam(req, "comicId")
 		image := chi.URLParam(req, "imageId")
 		num, ce := strconv.Atoi(image)
 		if ce != nil {
 			renderError(ce, w)
 			return
 		}
-		loader, err := r.session.cache.GetImage(comicId, num)
+
+		//as a image-provider module not the cache directly
+		r.session.cache.AddFileToCache("")
+		loader, err := //GetImage(comicId, num)
 		data, err2 := loader()
 		if err2 != nil {
 			renderError(err, w)
 			return
 		}
 
-		w.Write(data)
+		w.Write(data)*/
 	})
 }
 
@@ -128,7 +133,7 @@ func (r *AppHandler) getTemplate(name string) (*template.Template, error) {
 	var err error
 	t := template.New(name)
 	t.Funcs(template.FuncMap{"mod": mod})
-	if r.session.config.LocalResources {
+	if r.config.LocalResources {
 		tpl, err = t.ParseFiles("data/template/" + name)
 	} else {
 		tpl, err = vfstemplate.ParseFiles(util.StaticAssets, t, "template/"+name)
