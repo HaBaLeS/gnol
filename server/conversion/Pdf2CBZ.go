@@ -1,4 +1,4 @@
-package main
+package conversion
 
 import (
 	"fmt"
@@ -9,9 +9,21 @@ import (
 	"path/filepath"
 )
 
-func mainno() {
+func (j *JobRunner) CreatePFCConversionJob(pdfFile string){
+	bgjob := &BGJob{
+		JobType: PdfToCbz,
+		InputFile: pdfFile,
+		DisplayName: "Create CBZ from PDF",
+		JobStatus: NotStarted,
+	}
+	bgjob.save()
 
-	doc, err := fitz.New("/home/falko/comics/PickmansModelArchive.pdf")
+}
+
+func convertToPDF(job *BGJob) {
+	fmt.Printf("Running conversion\n")
+	job.JobStatus = Error //If we do not set  finished its an error
+	doc, err := fitz.New(job.InputFile)
 	if err != nil {
 		panic(err)
 	}
@@ -44,5 +56,11 @@ func mainno() {
 
 		f.Close()
 	}
+
+	//TODO create ZIP
+
+	//todo cleanup unpacked, and tmp
+
+	job.JobStatus =Done
 
 }

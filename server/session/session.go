@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/cache"
+	"github.com/HaBaLeS/gnol/server/conversion"
 	"github.com/HaBaLeS/gnol/server/dao"
 	"github.com/HaBaLeS/gnol/server/router"
 	"github.com/HaBaLeS/gnol/server/util"
@@ -19,6 +20,7 @@ type Session struct {
 	Dao        *dao.DAOHandler
 	Logger     *logger.Logger
 	Cache      *cache.ImageCache
+	BGJobs 	   *conversion.JobRunner
 }
 
 func NewServer(cfgPath string) *Session {
@@ -42,15 +44,21 @@ func NewServer(cfgPath string) *Session {
 
 func (s *Session) Start() {
 
+
+
 	s.Dao = dao.NewDAO(s.Logger, s.Config)
 	s.Dao.Warmup()
 
 	s.Cache = cache.NewImageCache(s.Config)
 	go s.Cache.RecoverCacheDir()
 
+	s.BGJobs = conversion.NewJobRunner(s.Config.JobDirectory, s.Dao)
+	s.BGJobs.StartMonitor()
+
 	//TODO move router in server
-	s.Handler = router.NewHandler(s.Config, s.Dao, s.Cache)
+	s.Handler = router.NewHandler(s.Config, s.Dao, s.Cache,s.BGJobs)
 	s.Handler.SetupRoutes()
+	s.Handler.SetupUploads()
 
 	s.HttpServer = &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", s.Config.ListenAddress, s.Config.ListenPort),
@@ -63,6 +71,7 @@ func (s *Session) Start() {
 }
 
 func (s *Session) Shutdown() {
+	s.BGJobs.StopMonitor()
 	if s.HttpServer != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()

@@ -131,3 +131,8 @@ func (dao *DAOHandler) investigateStructure(path string, info os.FileInfo, err e
 
 	return nil
 }
+
+func (dao *DAOHandler) AddComicToList(me *Metadata) {
+	dao.comicList.Comics = append(dao.comicList.Comics, *me)
+	dao.metaDB[me.Id] = me
+}

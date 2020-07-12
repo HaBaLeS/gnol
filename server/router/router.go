@@ -3,6 +3,7 @@ package router
 import (
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/cache"
+	"github.com/HaBaLeS/gnol/server/conversion"
 	"github.com/HaBaLeS/gnol/server/dao"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/go-chi/chi"
@@ -21,14 +22,16 @@ type AppHandler struct {
 	config *util.ToolConfig
 	dao    *dao.DAOHandler
 	cache  *cache.ImageCache
+	bgJobs *conversion.JobRunner
 }
 
-func NewHandler(config *util.ToolConfig, dao *dao.DAOHandler, cache *cache.ImageCache) *AppHandler {
+func NewHandler(config *util.ToolConfig, dao *dao.DAOHandler, cache *cache.ImageCache, bgj *conversion.JobRunner) *AppHandler {
 	return &AppHandler{
 		Router: chi.NewRouter(),
 		config: config,
 		dao:    dao,
 		cache:  cache,
+		bgJobs: bgj,
 	}
 }
 
