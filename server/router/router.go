@@ -15,24 +15,29 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 type AppHandler struct {
-	Router chi.Router
-	config *util.ToolConfig
-	dao    *dao.DAOHandler
-	cache  *cache.ImageCache
-	bgJobs *conversion.JobRunner
+	Router    chi.Router
+	config    *util.ToolConfig
+	dao       *dao.DAOHandler
+	cache     *cache.ImageCache
+	bgJobs    *conversion.JobRunner
+	templates *template.Template
 }
 
 func NewHandler(config *util.ToolConfig, dao *dao.DAOHandler, cache *cache.ImageCache, bgj *conversion.JobRunner) *AppHandler {
-	return &AppHandler{
+	ah := &AppHandler{
 		Router: chi.NewRouter(),
 		config: config,
 		dao:    dao,
 		cache:  cache,
 		bgJobs: bgj,
 	}
+
+	ah.initTemplates()
+	return ah
 }
 
 func (r *AppHandler) SetupRoutes() {
@@ -128,7 +133,6 @@ func (r *AppHandler) SetupRoutes() {
 		var err error
 		file, hit := r.cache.GetFileFromCache(comicID, num)
 		if !hit {
-			fmt.Println("Miss")
 			file, err = r.dao.GetPageImage(comicID, num)
 			if err != nil {
 				renderError(err, w)
@@ -153,26 +157,38 @@ func (r *AppHandler) SetupRoutes() {
 	})
 }
 
-func (r *AppHandler) getTemplate(name string) (*template.Template, error) {
-	var tpl *template.Template
+func (r *AppHandler) initTemplates() {
+	var allFiles []string
 	var err error
-	t := template.New(name)
-	t.Funcs(template.FuncMap{"mod": mod})
+	r.templates = template.New("root")
+	r.templates = r.templates.Funcs(template.FuncMap{"mod": mod})
 	if r.config.LocalResources {
-		tpl, err = t.ParseFiles("data/template/" + name)
+		fi, _ := ioutil.ReadDir("data/template/")
+		for _, file := range fi {
+			filename := file.Name()
+			if strings.HasSuffix(filename, ".gohtml") {
+				allFiles = append(allFiles, "data/template/"+filename)
+			}
+		}
+		r.templates, err = r.templates.ParseFiles(allFiles...)
+		if err != nil {
+			panic(err)
+		}
 	} else {
-		tpl, err = vfstemplate.ParseFiles(util.StaticAssets, t, "template/"+name)
+		r.templates, err = vfstemplate.ParseGlob(util.StaticAssets, r.templates, "template/*.gohtml")
 	}
 
-	if err != nil {
-		return nil, err
-	}
+}
+
+func (r *AppHandler) getTemplate(name string) (*template.Template, error) {
+	tpl := r.templates.Lookup(name)
 	return tpl, nil
 }
 
 func renderError(e error, w http.ResponseWriter) {
 	w.WriteHeader(500)
 	fmt.Fprintf(w, "Error: %v", e)
+	fmt.Printf("%v\n", e)
 }
 
 func mod(i, j int) bool {

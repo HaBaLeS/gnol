@@ -1,3 +1,6 @@
+# Smal Todos and Fixmes
+- 
+
 # Feature TODO for Gnol 
 
 ## Comic overview 
@@ -31,3 +34,9 @@
 ## Multi User
 
 ## Parental control
+
+# DONE
+- ~~Simple Upload CBR/CBZ~~
+- ~~Simple Job System~~
+~~- Log to file instead of stdout~~
+~~- Template Caching~~
