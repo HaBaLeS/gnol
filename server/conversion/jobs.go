@@ -1,21 +1,23 @@
 package conversion
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/HaBaLeS/gnol/server/dao"
 	"github.com/HaBaLeS/go-logger"
-	"github.com/rs/xid"
-	"io/ioutil"
+	"github.com/boltdb/bolt"
 	"os"
-	"path"
-	"path/filepath"
 	"time"
 )
+
+var JOB_OPEN_BUCKET = []byte("jobs_open")
+var JOB_DONE_BUCKET = []byte("jobs_done")
+var JOB_ERROR_BUCKET = []byte("jobs_error")
 
 const (
 	PdfToCbz = iota
 	ScanMeta
-	CleanCache
 )
 
 const (
@@ -24,15 +26,15 @@ const (
 	Done
 )
 
-var jobDir string
-
 type BGJob struct {
+	dao.BaseEntity
 	JobType     int    //Convert to CBR, Scan for Metadata, Scrape Meta, SortFolder, Clean Cache etc....
 	JobStatus   int    //What's the status done, not started, error
 	DisplayName string //Name the Job
 	Duration    string //how long did it take
-	MetaFile    string //reference to myself
 	InputFile   string
+	ExtraData   map[string]string
+	env         *JobRunner //give access to the jobrunner and Daos
 }
 
 //JOBS are defined by creating a name.job json in a special folder. jobs are processed one after the other by reading the directory where the jobs are and
@@ -46,10 +48,8 @@ type JobRunner struct {
 }
 
 //NewJobRunner Constructor
-func NewJobRunner(jbDir string, dao *dao.DAOHandler) *JobRunner { //fixme give config instead of job path
-	jobDir = jbDir
-	jgf := path.Join(jobDir, "jobs.log")
-	out, _ := os.Create(jgf)
+func NewJobRunner(dao *dao.DAOHandler) *JobRunner { //fixme give config instead of job path
+	out, _ := os.Create("jobs.log")
 	logger, _ := logger.NewLogger("GnolJob", 0, logger.InfoLevel, out)
 	return &JobRunner{
 		running:   false,
@@ -86,30 +86,10 @@ func (j *JobRunner) StartMonitor() {
 
 //checkForJobs scans folder for job metadata if there is at least one it is created and returned to be executed
 func (j *JobRunner) CheckForJobs() *BGJob {
-	files, err := ioutil.ReadDir(jobDir)
-	if err != nil {
-		//fixme handle better!!
-		panic(err)
-	}
-	for _, f := range files {
-		if f.IsDir() || filepath.Ext(f.Name()) != ".job" {
-			j.log.Debugf("skip: %s -> %s\n", f.Name(), filepath.Ext(f.Name()))
-			continue //skip unknown files
-		}
-		dscf, oe := os.Open(path.Join(jobDir, f.Name()))
-		if oe != nil {
-			j.log.Errorf("Cannot Open: %s", path.Join(jobDir, f.Name()))
-		}
-		dec := json.NewDecoder(dscf)
-		job := &BGJob{}
-		de := dec.Decode(job)
-		if de != nil {
-			j.log.Errorf("Could not Decode Job: '%s'. Error %v", f.Name(), de)
-			continue
-		}
-		if job.JobStatus == NotStarted {
-			return job
-		}
+	job := j.FirstOpenJob()
+	if job != nil {
+		job.env = j
+		return job
 	}
 	return nil
 }
@@ -121,42 +101,87 @@ func (j *JobRunner) StopMonitor() {
 }
 
 func (j *JobRunner) processJob(job *BGJob) {
+	newstatus := job.JobStatus
 	switch job.JobType {
 	case PdfToCbz:
 		{
-			convertToPDF(job)
+			newstatus = convertToPDF(job)
 		}
 	case ScanMeta:
 		{
 			//FIXME begin time
-			scanMetaData(job, j.dao)
+			newstatus = scanMetaData(job)
 			//FIXME endTime
 		}
 
 	default:
 		j.log.Errorf("Unsupported Job Type: %v", job.JobType)
+
 	}
 
-	//FIXME learn to recover properly
-	job.save()
+	j.UpdateJobStatus(job, newstatus)
+
 	j.jobLocked = false
 }
 
-func (j *BGJob) save() {
-	outfile := j.MetaFile
-	if outfile == "" {
-		outfile = filepath.Join(jobDir, xid.New().String()+".job")
-		j.MetaFile = outfile
-	}
-
-	f, err := os.Create(outfile)
+func (j *JobRunner) save(job *BGJob) {
+	err := j.dao.Write(JOB_OPEN_BUCKET, job)
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
-	jenc := json.NewEncoder(f)
-	ence := jenc.Encode(j)
-	if ence != nil {
-		panic(ence)
+}
+
+func (j *JobRunner) FirstOpenJob() *BGJob {
+	r := new(BGJob)
+	err := j.dao.Db.View(func(tx *bolt.Tx) error {
+		t := tx.Bucket([]byte("jobs_open"))
+		_, v := t.Cursor().First()
+		if v == nil {
+			return fmt.Errorf("No Jobs available")
+		}
+
+		dec := json.NewDecoder(bytes.NewReader(v))
+		return dec.Decode(r)
+	})
+	if err != nil {
+		//legal reason is not errors found
+		return nil
+	}
+	return r
+}
+
+func (j *JobRunner) UpdateJobStatus(job *BGJob, newstatus int) {
+	oldBucket := JOB_OPEN_BUCKET
+	newBucket := JOB_OPEN_BUCKET
+	switch job.JobStatus {
+	case NotStarted:
+		oldBucket = JOB_OPEN_BUCKET
+	case Done:
+		oldBucket = JOB_DONE_BUCKET
+	case Error:
+		oldBucket = JOB_ERROR_BUCKET
+	default:
+		panic(fmt.Errorf("Unknown Job Status %d", job.JobStatus))
+	}
+	job.JobStatus = newstatus
+	switch job.JobStatus {
+	case NotStarted:
+		newBucket = JOB_OPEN_BUCKET
+	case Done:
+		newBucket = JOB_DONE_BUCKET
+	case Error:
+		newBucket = JOB_ERROR_BUCKET
+	default:
+		panic(fmt.Errorf("Unknown Job Status %d", job.JobStatus))
+	}
+	err := j.dao.Db.Update(func(tx *bolt.Tx) error {
+		return tx.Bucket(oldBucket).Delete(job.IdBytes())
+	})
+	if err != nil {
+		panic(err)
+	}
+	err2 := j.dao.Write(newBucket, job)
+	if err2 != nil {
+		panic(err)
 	}
 }

@@ -1,4 +1,4 @@
-# Smal Todos and Fixmes
+# Smal Todos and Fixme's
 - 
 
 # Feature TODO for Gnol 
@@ -13,7 +13,7 @@
 
 ## Add processing of PDF files
 - Extract pdf and create a cbz/cbr with some metadata
-- Make a beackgrund job do this
+- Make a background job do this
 
 ## Import folders with images
 - Workflow ?!?

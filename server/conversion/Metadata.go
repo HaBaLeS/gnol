@@ -2,34 +2,39 @@ package conversion
 
 import "github.com/HaBaLeS/gnol/server/dao"
 
-func (j *JobRunner) CreateNewArchiveJob(archive string) {
+func (j *JobRunner) CreateNewArchiveJob(archive string, user string, public string) {
 	bgjob := &BGJob{
 		JobType:     ScanMeta,
 		InputFile:   archive,
 		DisplayName: "Scan Metadata",
 		JobStatus:   NotStarted,
+		ExtraData:   make(map[string]string, 10),
+		BaseEntity:  dao.CreateBaseEntity(),
 	}
-	bgjob.save()
+	bgjob.ExtraData["public"] = public
+	bgjob.ExtraData["uploadUser"] = user
+
+	j.save(bgjob)
 }
 
-func scanMetaData(job *BGJob, daoHandler *dao.DAOHandler){
+func scanMetaData(job *BGJob) int {
 	err, meta := dao.NewMetadata(job.InputFile)
-	if err != nil {
-		job.JobStatus = Error
-		return
+	meta.UploadUser = job.ExtraData["uploadUser"]
+	if job.ExtraData["public"] == "public" {
+		meta.Public = true
 	}
-	err = meta.Update()
 	if err != nil {
-		job.JobStatus = Error
-		return
+		return Error
 	}
-	err = meta.Save()
+	err = meta.UpdateMeta()
 	if err != nil {
-		job.JobStatus = Error
-		return
+		return Error
 	}
-	//FIXME Update DB
-	daoHandler.AddComicToList(meta)
+	err = job.env.dao.SaveComicMeta(meta)
 
-	job.JobStatus=Done
+	if err != nil {
+		return Error
+	}
+	job.env.dao.AddComicToList(meta)
+	return Done
 }

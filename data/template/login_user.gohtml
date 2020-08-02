@@ -9,16 +9,20 @@
 </head>
 <body>
 {{ template "banner"}}
-{{ template "navbar" .}}
+{{ template "navbar"}}
 
 <section class="section">
     <div class="container">
-        <h1>Upload CBZ/CBR</h1>
-        <form action="/uploadArc" enctype="multipart/form-data" method="post">
-            <input type="checkbox" name="public" value="public">
-            Available to Guests (No Copiright issues)<br>
-            <input type="file" name="arc"><br>
-            <button class="button is-link">Submit</button>
+        <h1>Upload PDF</h1>
+        {{if .D}}
+            <div class="notification is-warning">
+                <strong>{{.D}}</strong>
+            </div>
+        {{end}}
+        <form action="/users/login" enctype=multipart/form-data method="post">
+            Name: <input type="text" name="username"><br>
+            Password:<input type="password" name="pass"><br>
+            <input type="submit" >  </form>
         </form>
     </div>
 </section>

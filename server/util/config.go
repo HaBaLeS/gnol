@@ -19,10 +19,9 @@ type ToolConfig struct {
 	//LogLevel
 	DataDirectory string
 	TempDirectory string
-	JobDirectory string
+	Database      string
 	ForceRescan   bool
 	//CacheSize
-
 
 }
 
@@ -39,7 +38,7 @@ func ReadConfig(filename string) (*ToolConfig, error) {
 		DataDirectory:  ".",
 		TempDirectory:  "/tmp/",
 		ForceRescan:    false,
-		JobDirectory: "/tmp/",
+		Database:       "gnol.db",
 	}
 	of := reflect.ValueOf(ret).Elem()
 	file, e := os.Open(filename)

@@ -1,7 +1,6 @@
 package conversion
 
 import (
-	"path/filepath"
 	"testing"
 )
 
@@ -27,8 +26,7 @@ func TestJobRunner_CheckForJobs(t *testing.T) {
 
 }
 
-func TestMain(m *testing.M){
-	absPath, _ := filepath.Abs("testdata/")
-	jr = NewJobRunner(absPath)
+func TestMain(m *testing.M) {
+	jr = NewJobRunner(nil)
 	m.Run()
 }

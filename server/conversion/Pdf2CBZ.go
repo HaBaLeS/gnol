@@ -2,6 +2,7 @@ package conversion
 
 import (
 	"fmt"
+	"github.com/HaBaLeS/gnol/server/dao"
 	"github.com/gen2brain/go-fitz"
 	"image/jpeg"
 	"io/ioutil"
@@ -9,20 +10,21 @@ import (
 	"path/filepath"
 )
 
-func (j *JobRunner) CreatePFCConversionJob(pdfFile string){
+func (j *JobRunner) CreatePFCConversionJob(pdfFile string) {
 	bgjob := &BGJob{
-		JobType: PdfToCbz,
-		InputFile: pdfFile,
+		JobType:     PdfToCbz,
+		InputFile:   pdfFile,
 		DisplayName: "Create CBZ from PDF",
-		JobStatus: NotStarted,
+		JobStatus:   NotStarted,
+		BaseEntity:  dao.CreateBaseEntity(),
 	}
-	bgjob.save()
+	j.save(bgjob)
 
 }
 
-func convertToPDF(job *BGJob) {
+func convertToPDF(job *BGJob) int {
 	fmt.Printf("Running conversion\n")
-	job.JobStatus = Error //If we do not set  finished its an error
+
 	doc, err := fitz.New(job.InputFile)
 	if err != nil {
 		panic(err)
@@ -61,6 +63,5 @@ func convertToPDF(job *BGJob) {
 
 	//todo cleanup unpacked, and tmp
 
-	job.JobStatus =Done
-
+	return Done
 }

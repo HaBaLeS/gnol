@@ -3,7 +3,6 @@ package dao
 import (
 	"crypto/sha1"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/mholt/archiver/v3"
@@ -16,22 +15,26 @@ import (
 	"time"
 )
 
+var META_BUCKET = []byte("meta")
+
 type Metadata struct {
-	Id               string
+	BaseEntity
 	LastUpdate       time.Time
 	FilePath         string
 	Name             string
-	metaFile         string
 	Type             string
 	CoverImageBase64 string
 	NumPages         int
+	UploadUser       string
+	Public           bool
 	arc              archiver.Walker
 }
 
 func NewMetadata(path string) (error, *Metadata) {
 	m := &Metadata{
-		FilePath: path,
-		metaFile: path + ".meta",
+		FilePath:   path,
+		UploadUser: "Anon",
+		Public:     false,
 	}
 
 	ext := filepath.Ext(path)
@@ -54,32 +57,7 @@ func NewMetadata(path string) (error, *Metadata) {
 	return nil, m
 }
 
-func (m *Metadata) Save() error {
-	mf, err := os.Create(m.metaFile)
-	if err != nil {
-		return err
-	}
-	enc := json.NewEncoder(mf)
-	enc.SetIndent("", "\t")
-	enc.Encode(m)
-	mf.Close()
-	return nil
-}
-
-func (m *Metadata) Load() error {
-	mf, err := os.Open(m.metaFile)
-	if err != nil {
-		return err
-	}
-	jd := json.NewDecoder(mf)
-	err = jd.Decode(m)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (m *Metadata) Update() error {
+func (m *Metadata) UpdateMeta() error {
 	fmt.Printf("[i] Create Metadata for: %s\n", m.FilePath)
 	m.LastUpdate = time.Now()
 	fi, err := os.Stat(m.FilePath)

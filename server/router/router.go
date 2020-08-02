@@ -1,21 +1,25 @@
 package router
 
 import (
+	"context"
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/cache"
 	"github.com/HaBaLeS/gnol/server/conversion"
 	"github.com/HaBaLeS/gnol/server/dao"
+	"github.com/HaBaLeS/gnol/server/session"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type AppHandler struct {
@@ -43,9 +47,7 @@ func NewHandler(config *util.ToolConfig, dao *dao.DAOHandler, cache *cache.Image
 func (r *AppHandler) SetupRoutes() {
 
 	r.Router.Use(middleware.DefaultLogger)
-	r.Router.Get("/echo/*", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Echo: %s", r.URL.Path)
-	})
+	r.Router.Use(userSession)
 
 	if r.config.LocalResources {
 		fmt.Print("Using Local resources instead of embedded\n")
@@ -64,28 +66,9 @@ func (r *AppHandler) SetupRoutes() {
 			panic(err)
 		}
 
-		err = tpl.Execute(w, cl)
+		err = renderTemplate(tpl, w, req, cl) //TODO move template selection out!
 		if err != nil {
 			panic(err)
-		}
-	})
-
-	r.Router.Get("/read/{comicId}", func(w http.ResponseWriter, req *http.Request) {
-		comicId := chi.URLParam(req, "comicId")
-		meta, nfe := r.dao.GetMetadata(comicId)
-
-		if nfe != nil {
-			renderError(nfe, w)
-			return
-		}
-
-		tpl, err := r.getTemplate("view2.gohtml")
-		err = tpl.Execute(w, meta)
-
-		err = tpl.Execute(w, meta)
-		if err != nil {
-			renderError(err, w)
-			return
 		}
 	})
 
@@ -99,26 +82,13 @@ func (r *AppHandler) SetupRoutes() {
 		}
 
 		tpl, err := r.getTemplate("jqviewer.gohtml")
-		err = tpl.Execute(w, meta)
+		err = renderTemplate(tpl, w, req, meta)
 		if err != nil {
 			renderError(err, w)
 			return
 		}
 
 	})
-
-	/*
-		r.Router.Get("/read/{comicId}/{imageId}", func(w http.ResponseWriter, req *http.Request) {
-			comicId := chi.URLParam(req, "comicId")
-			image := chi.URLParam(req, "imageId")
-			data, err := r.dao.GetPageImage(comicId, image)
-			if err != nil {
-				renderError(err, w)
-				return
-			}
-
-			w.Write(data)
-		})*/
 
 	r.Router.Get("/read2/{comicId}/{imageId}", func(w http.ResponseWriter, req *http.Request) {
 		comicID := chi.URLParam(req, "comicId")
@@ -157,6 +127,35 @@ func (r *AppHandler) SetupRoutes() {
 	})
 }
 
+func userSession(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, _ := r.Cookie("gnol")
+		fmt.Printf("Session: %s\n", c)
+		var us *session.UserSession
+		if c != nil {
+			us = session.UserSessionByID(c.Value)
+		}
+		if us == nil {
+			fmt.Println("newSession")
+			us = session.NewUserSession()
+			http.SetCookie(w, &http.Cookie{Name: "gnol", Path: "/", Value: us.SessionID, Expires: time.Now().Add(time.Hour * 24)})
+		}
+		ctx := context.WithValue(r.Context(), "user-session", us)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func getUserSession(ctx context.Context) *session.UserSession {
+	us := ctx.Value("user-session").(*session.UserSession)
+	return us
+}
+
+func renderTemplate(t *template.Template, w io.Writer, r *http.Request, pageData interface{}) error {
+	us := getUserSession(r.Context())
+	us.D = pageData
+	return t.Execute(w, us)
+}
+
 func (r *AppHandler) initTemplates() {
 	var allFiles []string
 	var err error
@@ -181,6 +180,7 @@ func (r *AppHandler) initTemplates() {
 }
 
 func (r *AppHandler) getTemplate(name string) (*template.Template, error) {
+	r.initTemplates() //FIXME this is a DEBUG only option!!
 	tpl := r.templates.Lookup(name)
 	return tpl, nil
 }
