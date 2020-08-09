@@ -13,13 +13,11 @@ import (
 	"io"
 	"os"
 	"path"
-	"path/filepath"
 	"time"
 )
 
 type DAOHandler struct {
 	metaDB    map[string]*Metadata
-	comicList *ComicList
 	logger    *logger.Logger
 	config    *util.ToolConfig
 	Db        *bolt.DB
@@ -47,7 +45,6 @@ func NewDAO(logger *logger.Logger, config *util.ToolConfig) *DAOHandler {
 
 	return &DAOHandler{
 		metaDB:    make(map[string]*Metadata),
-		comicList: &ComicList{},
 		logger:    logger,
 		config:    config,
 		Db:        db,
@@ -62,17 +59,10 @@ func (dao *DAOHandler) GetMetadata(id string) (*Metadata, error) {
 	return m, nil
 }
 
-func (dao *DAOHandler) GetComiList() *ComicList {
-	return dao.comicList
-}
 
-func (dao *DAOHandler) Warmup() {
-	//needs to be replaced with load from DB + checkking if file still exists
-	dao.logger.Info("Reading Data Directory, warmup results")
-	err := filepath.Walk(dao.config.DataDirectory, dao.investigateStructure)
-	if err != nil {
-		panic(err)
-	}
+
+func (dao *DAOHandler) GetComiList(user User) *ComicList {
+	panic("Implement me")
 }
 
 func (dao *DAOHandler) GetPageImage(comicID string, pageNum int) (string, error) {
@@ -122,42 +112,6 @@ func (dao *DAOHandler) GetPageImage(comicID string, pageNum int) (string, error)
 
 }
 
-func (dao *DAOHandler) investigateStructure(path string, info os.FileInfo, err error) error {
-
-	if info.IsDir() {
-		//fmt.Printf("Path: %s\n", path)
-		return nil
-	}
-
-	usp, me := NewMetadata(path)
-	if usp != nil {
-		//unsupported filetype
-		return nil
-	}
-
-	mer := dao.ComicMetadata(me)
-
-	force := false
-	if mer != nil || force {
-		//fmt.Println(err)
-		err2 := me.UpdateMeta()
-		if err2 != nil {
-			fmt.Printf("Unsupported File: %s\n %v\n", path, err2)
-		}
-		dao.SaveComicMeta(me)
-	}
-	dao.AddComicToList(me)
-
-	return nil
-}
-
-func (dao *DAOHandler) AddComicToList(me *Metadata) {
-	if me.Public {
-		dao.comicList.Comics = append(dao.comicList.Comics, *me)
-		dao.metaDB[me.Id] = me
-	}
-}
-
 func (dao *DAOHandler) Write(bucket []byte, data Entity) error {
 	return dao.Db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
@@ -196,6 +150,7 @@ func (dao *DAOHandler) CreateUser(name string, pass string) *User {
 	hash, salt := hashPassword(pass)
 	u := &User{
 		BaseEntity: CreateBaseEntity(),
+		Comics: make([]*UserComic,0),
 		Name:       name,
 		PwdHash:    hash,
 		Salt:       salt,

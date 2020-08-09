@@ -7,6 +7,8 @@ import (
 	"net/http"
 )
 
+//SetupUserRouting defines all routes for /user and below.
+//this path cares about UserManagement
 func (ah *AppHandler) SetupUserRouting() {
 	ah.Router.Route("/users", func(r chi.Router) {
 		r.Get("/", ah.listUsers())
@@ -19,19 +21,13 @@ func (ah *AppHandler) SetupUserRouting() {
 		r.Get("/create", ah.serveTemplate("create_user.gohtml", nil))
 		r.Get("/login", ah.serveTemplate("login_user.gohtml", nil))
 		r.Post("/login", ah.loginUser())
+		r.Get("/logout", ah.logoutUser())
 	})
 }
 
 func (ah *AppHandler) serveTemplate(t string, data interface{}) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tpl, err := ah.getTemplate(t)
-		if err != nil {
-			panic(err)
-		}
-		err2 := renderTemplate(tpl, w, r, data)
-		if err2 != nil {
-			panic(err2)
-		}
+		ah.renderTemplate(t, w, r, data)
 	})
 }
 
@@ -40,6 +36,14 @@ func (ah *AppHandler) listUsers() http.HandlerFunc {
 		fmt.Println("Access listUsers")
 	})
 }
+
+func (ah *AppHandler) logoutUser() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		getUserSession(r.Context()).Invalidate()
+		http.Redirect(w,r,"/comics",303)
+	})
+}
+
 
 func (ah *AppHandler) deleteUser() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -75,14 +79,7 @@ func (ah *AppHandler) createUser() http.HandlerFunc {
 			est += "Passwörter nicht gleich! "
 		}
 		if est != "" {
-			tpl, err := ah.getTemplate("create_user.gohtml")
-			if err != nil {
-				panic(err)
-			}
-			err2 := renderTemplate(tpl, w, r, est)
-			if err2 != nil {
-				panic(err2)
-			}
+			ah.renderTemplate("create_user.gohtml", w, r, est)
 		}
 
 		//TODO check for username
@@ -91,6 +88,7 @@ func (ah *AppHandler) createUser() http.HandlerFunc {
 		us := getUserSession(r.Context())
 		us.UserName = user.Name
 
+		http.Redirect(w,r,"/comics",303)
 	})
 }
 
@@ -100,20 +98,15 @@ func (ah *AppHandler) loginUser() http.HandlerFunc {
 		pass := r.FormValue("pass")
 		user, loginerr := ah.dao.AuthUser(name, pass)
 		if loginerr != nil {
-			//FIXME extract render templete method
-			tpl, err := ah.getTemplate("login_user.gohtml")
-			if err != nil {
-				panic(err)
-			}
-			err2 := renderTemplate(tpl, w, r, loginerr)
-			if err2 != nil {
-				panic(err2)
-			}
-			//FIXME to here
+			ah.renderTemplate("login_user.gohtml", w, r, loginerr)
 			return
 		}
 		us := getUserSession(r.Context())
+		us.AuthSession()
 		us.UserName = user.Name
+		us.UserID = user.Id
+
+		http.Redirect(w,r,"/comics",303)
 	})
 }
 

@@ -1,3 +1,4 @@
+//Package router holds all controllers implementing basic Business logic for the routes
 package router
 
 import (
@@ -12,7 +13,6 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"html/template"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -22,6 +22,7 @@ import (
 	"time"
 )
 
+//AppHandler combines Router with other submodules Implementations, like DOA, Config, Cache
 type AppHandler struct {
 	Router    chi.Router
 	config    *util.ToolConfig
@@ -31,6 +32,7 @@ type AppHandler struct {
 	templates *template.Template
 }
 
+//NewHandler Create a new AppHandler for the Server
 func NewHandler(config *util.ToolConfig, dao *dao.DAOHandler, cache *cache.ImageCache, bgj *conversion.JobRunner) *AppHandler {
 	ah := &AppHandler{
 		Router: chi.NewRouter(),
@@ -44,53 +46,42 @@ func NewHandler(config *util.ToolConfig, dao *dao.DAOHandler, cache *cache.Image
 	return ah
 }
 
-func (r *AppHandler) SetupRoutes() {
+//SetupRoutes set up routing for main page and comic viewer
+func (ah *AppHandler) SetupRoutes() {
 
-	r.Router.Use(middleware.DefaultLogger)
-	r.Router.Use(userSession)
+	ah.Router.Use(middleware.DefaultLogger)
+	ah.Router.Use(userSession)
 
-	if r.config.LocalResources {
+	if ah.config.LocalResources {
 		fmt.Print("Using Local resources instead of embedded\n")
 		workDir, _ := os.Getwd()
 		filesDir := filepath.Join(workDir, "data/")
-		r.Router.Get("/*", http.FileServer(http.Dir(filesDir)).ServeHTTP)
+		ah.Router.Get("/*", http.FileServer(http.Dir(filesDir)).ServeHTTP)
 	} else {
-		r.Router.Get("/*", http.FileServer(util.StaticAssets).ServeHTTP)
+		ah.Router.Get("/*", http.FileServer(util.StaticAssets).ServeHTTP)
 	}
 
-	r.Router.Get("/comics", func(w http.ResponseWriter, req *http.Request) {
-		cl := r.dao.GetComiList()
-
-		tpl, err := r.getTemplate("index.gohtml")
-		if err != nil {
-			panic(err)
+	ah.Router.Get("/comics", func(w http.ResponseWriter, req *http.Request) {
+		us := getUserSession(req.Context())
+		if us.ComicList == nil {
+			us.ComicList = ah.dao.GetComiList(us.UserID)
 		}
-
-		err = renderTemplate(tpl, w, req, cl) //TODO move template selection out!
-		if err != nil {
-			panic(err)
-		}
+		ah.renderTemplate("index.gohtml", w, req, nil) //TODO move template selection out!
 	})
 
-	r.Router.Get("/read2/{comicId}", func(w http.ResponseWriter, req *http.Request) {
-		comicId := chi.URLParam(req, "comicId")
-		meta, nfe := r.dao.GetMetadata(comicId)
+	ah.Router.Get("/read2/{comicId}", func(w http.ResponseWriter, req *http.Request) {
+		comicID := chi.URLParam(req, "comicId")
+		meta, nfe := ah.dao.GetMetadata(comicID)
 
 		if nfe != nil {
 			renderError(nfe, w)
 			return
 		}
 
-		tpl, err := r.getTemplate("jqviewer.gohtml")
-		err = renderTemplate(tpl, w, req, meta)
-		if err != nil {
-			renderError(err, w)
-			return
-		}
-
+		ah.renderTemplate("jqviewer.gohtml", w, req, meta)
 	})
 
-	r.Router.Get("/read2/{comicId}/{imageId}", func(w http.ResponseWriter, req *http.Request) {
+	ah.Router.Get("/read2/{comicId}/{imageId}", func(w http.ResponseWriter, req *http.Request) {
 		comicID := chi.URLParam(req, "comicId")
 		image := chi.URLParam(req, "imageId")
 		num, ce := strconv.Atoi(image)
@@ -101,14 +92,14 @@ func (r *AppHandler) SetupRoutes() {
 
 		//get file from cache
 		var err error
-		file, hit := r.cache.GetFileFromCache(comicID, num)
+		file, hit := ah.cache.GetFileFromCache(comicID, num)
 		if !hit {
-			file, err = r.dao.GetPageImage(comicID, num)
+			file, err = ah.dao.GetPageImage(comicID, num)
 			if err != nil {
 				renderError(err, w)
 				return
 			}
-			r.cache.AddFileToCache(file)
+			ah.cache.AddFileToCache(file)
 		}
 
 		//as a image-provider module not the cache directly
@@ -123,7 +114,10 @@ func (r *AppHandler) SetupRoutes() {
 			renderError(rerr, w)
 			return
 		}
-		w.Write(data)
+		_, re := w.Write(data)
+		if re != nil {
+			panic(re)
+		}
 	})
 }
 
@@ -150,18 +144,14 @@ func getUserSession(ctx context.Context) *session.UserSession {
 	return us
 }
 
-func renderTemplate(t *template.Template, w io.Writer, r *http.Request, pageData interface{}) error {
-	us := getUserSession(r.Context())
-	us.D = pageData
-	return t.Execute(w, us)
-}
 
-func (r *AppHandler) initTemplates() {
+
+func (ah *AppHandler) initTemplates() {
 	var allFiles []string
 	var err error
-	r.templates = template.New("root")
-	r.templates = r.templates.Funcs(template.FuncMap{"mod": mod})
-	if r.config.LocalResources {
+	ah.templates = template.New("root")
+	ah.templates = ah.templates.Funcs(template.FuncMap{"mod": mod})
+	if ah.config.LocalResources {
 		fi, _ := ioutil.ReadDir("data/template/")
 		for _, file := range fi {
 			filename := file.Name()
@@ -169,26 +159,45 @@ func (r *AppHandler) initTemplates() {
 				allFiles = append(allFiles, "data/template/"+filename)
 			}
 		}
-		r.templates, err = r.templates.ParseFiles(allFiles...)
+		ah.templates, err = ah.templates.ParseFiles(allFiles...)
 		if err != nil {
 			panic(err)
 		}
 	} else {
-		r.templates, err = vfstemplate.ParseGlob(util.StaticAssets, r.templates, "template/*.gohtml")
+		ah.templates, err = vfstemplate.ParseGlob(util.StaticAssets, ah.templates, "template/*.gohtml")
 	}
 
 }
 
-func (r *AppHandler) getTemplate(name string) (*template.Template, error) {
-	r.initTemplates() //FIXME this is a DEBUG only option!!
-	tpl := r.templates.Lookup(name)
+func (ah *AppHandler) getTemplate(name string) (*template.Template, error) {
+	if ah.config.LocalResources {
+		//Reload templates
+		ah.initTemplates()
+	}
+	tpl := ah.templates.Lookup(name)
 	return tpl, nil
 }
 
-func renderError(e error, w http.ResponseWriter) {
+func (ah *AppHandler) renderTemplate(templateName string, w http.ResponseWriter, r *http.Request, pageData interface{}) {
+	tpl, tlerr := ah.getTemplate(templateName)
+	if tlerr != nil {
+		renderError(tlerr, w)
+	}
+	us := getUserSession(r.Context())
+	us.D = pageData
+	re := tpl.Execute(w, us)
+	if re != nil {
+		panic(re)
+	}
+}
+
+func renderError(e error, w http.ResponseWriter){
 	w.WriteHeader(500)
-	fmt.Fprintf(w, "Error: %v", e)
+	_, re := fmt.Fprintf(w, "Error: %v", e)
 	fmt.Printf("%v\n", e)
+	if re != nil {
+		panic(re)
+	}
 }
 
 func mod(i, j int) bool {

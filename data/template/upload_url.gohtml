@@ -14,19 +14,10 @@
 <section class="section">
     <div class="container">
         <h1>Upload PDF</h1>
-        {{if .D}}
-            <div class="notification is-warning">
-                <strong>{{.D}}</strong>
-            </div>
-        {{end}}
-        <form action="/users/login" enctype=multipart/form-data method="post">
-            Name: <input type="text" name="username"><br>
-            Password:<input type="password" name="pass"><br>
-            <input type="submit" >  </form>
+        <form action="/uploadUrl"  method="post">
+            <input type="text" name="comicurl">
+            <input type="submit" >Send</form>
         </form>
-    </div>
-    <div class="container">
-        <a href="/users/create">Create user</a>
     </div>
 </section>
 

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 )
 
+//CreatePFCConversionJob creates a new job for processing PDF files and crate a CBZ out of it
 func (j *JobRunner) CreatePFCConversionJob(pdfFile string) {
 	bgjob := &BGJob{
 		JobType:     PdfToCbz,

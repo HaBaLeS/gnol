@@ -1,3 +1,4 @@
+
 package router
 
 import (
@@ -7,56 +8,36 @@ import (
 	"path"
 )
 
-func (r *AppHandler) SetupUploads() {
-	r.Router.Post("/uploadArc", func(w http.ResponseWriter, request *http.Request) {
+//SetupUploads define routes for File upload like PDF and Comic Archives
+func (ah *AppHandler) SetupUploads() {
+	ah.Router.Post("/uploadArc", func(w http.ResponseWriter, request *http.Request) {
 		err := request.ParseMultipartForm(10 * 1024)
 		if err != nil {
 			panic(err)
 		}
 		fh := request.MultipartForm.File["arc"][0]
 
-		outName := path.Join(r.config.DataDirectory, fh.Filename)
+		outName := path.Join(ah.config.DataDirectory, fh.Filename)
 		out, _ := os.Create(outName)
 		in, _ := fh.Open()
-		io.Copy(out, in)
+		_, cpe := io.Copy(out, in)
+		if cpe != nil {
+			panic(cpe)
+		}
 
 		s2 := request.FormValue("public")
 		us := getUserSession(request.Context())
-		r.bgJobs.CreateNewArchiveJob(outName, us.UserName, s2)
+		ah.bgJobs.CreateNewArchiveJob(outName, us.UserName, s2)
 
-		tpl, err := r.getTemplate("upload.gohtml")
-		if err != nil {
-			panic(err)
-		}
-
-		err = tpl.Execute(w, nil)
-		if err != nil {
-			panic(err)
-		}
+		ah.renderTemplate("upload.gohtml",w,request,nil)
 	})
 
-	r.Router.Get("/uploadArchive", func(w http.ResponseWriter, req *http.Request) {
-		tpl, err := r.getTemplate("upload_archive.gohtml")
-		if err != nil {
-			panic(err)
-		}
-
-		err = renderTemplate(tpl, w, req, nil)
-		if err != nil {
-			panic(err)
-		}
+	ah.Router.Get("/uploadArchive", func(w http.ResponseWriter, req *http.Request) {
+		ah.renderTemplate("upload_archive.gohtml", w, req, nil)
 	})
 
-	r.Router.Get("/uploadPdf", func(w http.ResponseWriter, req *http.Request) {
-		tpl, err := r.getTemplate("upload_pdf.gohtml")
-		if err != nil {
-			panic(err)
-		}
-
-		err = renderTemplate(tpl, w, req, nil)
-		if err != nil {
-			panic(err)
-		}
+	ah.Router.Get("/uploadPdf", func(w http.ResponseWriter, req *http.Request) {
+		ah.renderTemplate("upload_pdf.gohtml", w, req, nil)
 	})
 
 }

@@ -11,9 +11,10 @@ import (
 	"time"
 )
 
-var JOB_OPEN_BUCKET = []byte("jobs_open")
-var JOB_DONE_BUCKET = []byte("jobs_done")
-var JOB_ERROR_BUCKET = []byte("jobs_error")
+
+var bucketJobOpen = []byte("jobs_open")
+var bucketJobDone = []byte("jobs_done")
+var bucketJobError = []byte("jobs_error")
 
 const (
 	PdfToCbz = iota
@@ -34,11 +35,11 @@ type BGJob struct {
 	Duration    string //how long did it take
 	InputFile   string
 	ExtraData   map[string]string
-	env         *JobRunner //give access to the jobrunner and Daos
+	env         *JobRunner //give access to the JobRunner and DAOs
 }
 
 //JOBS are defined by creating a name.job json in a special folder. jobs are processed one after the other by reading the directory where the jobs are and
-//Takeing one job, reading the description and processing it. MEta is updated while processing ... only 1 job at a time
+//taking one job, reading the description and processing it. MEta is updated while processing ... only 1 job at a time
 
 type JobRunner struct {
 	running   bool
@@ -50,11 +51,11 @@ type JobRunner struct {
 //NewJobRunner Constructor
 func NewJobRunner(dao *dao.DAOHandler) *JobRunner { //fixme give config instead of job path
 	out, _ := os.Create("jobs.log")
-	logger, _ := logger.NewLogger("GnolJob", 0, logger.InfoLevel, out)
+	lg, _ := logger.NewLogger("GnolJob", 0, logger.InfoLevel, out)
 	return &JobRunner{
 		running:   false,
 		jobLocked: false,
-		log:       logger,
+		log:       lg,
 		dao:       dao,
 	}
 }
@@ -101,16 +102,16 @@ func (j *JobRunner) StopMonitor() {
 }
 
 func (j *JobRunner) processJob(job *BGJob) {
-	newstatus := job.JobStatus
+	newStatus := job.JobStatus
 	switch job.JobType {
 	case PdfToCbz:
 		{
-			newstatus = convertToPDF(job)
+			newStatus = convertToPDF(job)
 		}
 	case ScanMeta:
 		{
 			//FIXME begin time
-			newstatus = scanMetaData(job)
+			newStatus = scanMetaData(job)
 			//FIXME endTime
 		}
 
@@ -119,13 +120,13 @@ func (j *JobRunner) processJob(job *BGJob) {
 
 	}
 
-	j.UpdateJobStatus(job, newstatus)
+	j.UpdateJobStatus(job, newStatus)
 
 	j.jobLocked = false
 }
 
 func (j *JobRunner) save(job *BGJob) {
-	err := j.dao.Write(JOB_OPEN_BUCKET, job)
+	err := j.dao.Write(bucketJobOpen, job)
 	if err != nil {
 		panic(err)
 	}
@@ -137,7 +138,7 @@ func (j *JobRunner) FirstOpenJob() *BGJob {
 		t := tx.Bucket([]byte("jobs_open"))
 		_, v := t.Cursor().First()
 		if v == nil {
-			return fmt.Errorf("No Jobs available")
+			return fmt.Errorf("no jobs available")
 		}
 
 		dec := json.NewDecoder(bytes.NewReader(v))
@@ -150,29 +151,29 @@ func (j *JobRunner) FirstOpenJob() *BGJob {
 	return r
 }
 
-func (j *JobRunner) UpdateJobStatus(job *BGJob, newstatus int) {
-	oldBucket := JOB_OPEN_BUCKET
-	newBucket := JOB_OPEN_BUCKET
+func (j *JobRunner) UpdateJobStatus(job *BGJob, newStatus int) {
+	oldBucket := bucketJobOpen
+	newBucket := bucketJobOpen
 	switch job.JobStatus {
 	case NotStarted:
-		oldBucket = JOB_OPEN_BUCKET
+		oldBucket = bucketJobOpen
 	case Done:
-		oldBucket = JOB_DONE_BUCKET
+		oldBucket = bucketJobDone
 	case Error:
-		oldBucket = JOB_ERROR_BUCKET
+		oldBucket = bucketJobError
 	default:
-		panic(fmt.Errorf("Unknown Job Status %d", job.JobStatus))
+		panic(fmt.Errorf("unknown job status %d", job.JobStatus))
 	}
-	job.JobStatus = newstatus
+	job.JobStatus = newStatus
 	switch job.JobStatus {
 	case NotStarted:
-		newBucket = JOB_OPEN_BUCKET
+		newBucket = bucketJobOpen
 	case Done:
-		newBucket = JOB_DONE_BUCKET
+		newBucket = bucketJobDone
 	case Error:
-		newBucket = JOB_ERROR_BUCKET
+		newBucket = bucketJobError
 	default:
-		panic(fmt.Errorf("Unknown Job Status %d", job.JobStatus))
+		panic(fmt.Errorf("unknown job status %d", job.JobStatus))
 	}
 	err := j.dao.Db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket(oldBucket).Delete(job.IdBytes())

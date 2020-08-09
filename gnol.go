@@ -24,9 +24,11 @@ func main() {
 	gnol.Start()
 }
 
+//Application is the central struct connecting all submodules into one Application
+//this struct supports the access between the modules.
 type Application struct {
 	Config     *util.ToolConfig
-	HttpServer *http.Server
+	HTTPServer *http.Server
 	Handler    *router.AppHandler
 	Dao        *dao.DAOHandler
 	Logger     *logger.Logger
@@ -34,6 +36,7 @@ type Application struct {
 	BGJobs     *conversion.JobRunner
 }
 
+//NewServer creates a new gnol Application
 func NewServer(cfgPath string) *Application {
 	log, err := logger.NewLogger()
 	if err != nil {
@@ -53,10 +56,10 @@ func NewServer(cfgPath string) *Application {
 	return a
 }
 
+//Start gnol, serve HTTP
 func (a *Application) Start() {
 
 	a.Dao = dao.NewDAO(a.Logger, a.Config)
-	a.Dao.Warmup()
 
 	a.Cache = cache.NewImageCache(a.Config)
 	go a.Cache.RecoverCacheDir()
@@ -70,27 +73,28 @@ func (a *Application) Start() {
 	a.Handler.SetupUploads()
 	a.Handler.SetupUserRouting()
 
-	a.HttpServer = &http.Server{
+	a.HTTPServer = &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", a.Config.ListenAddress, a.Config.ListenPort),
 		Handler: a.Handler.Router,
 	}
-	err := a.HttpServer.ListenAndServe()
+	err := a.HTTPServer.ListenAndServe()
 	if err != http.ErrServerClosed {
 		panic(err)
 	}
 }
 
+//Shutdown try's to end all modules gracefully where needed
 func (a *Application) Shutdown() {
 	a.Dao.Close()
 	a.BGJobs.StopMonitor()
-	if a.HttpServer != nil {
+	if a.HTTPServer != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		err := a.HttpServer.Shutdown(ctx)
+		err := a.HTTPServer.Shutdown(ctx)
 		if err != nil {
 			panic(err)
 		} else {
-			a.HttpServer = nil
+			a.HTTPServer = nil
 		}
 	}
 }
