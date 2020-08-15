@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/cache"
-	"github.com/HaBaLeS/gnol/server/conversion"
-	"github.com/HaBaLeS/gnol/server/dao"
+	"github.com/HaBaLeS/gnol/server/jobs"
+	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/session"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/go-chi/chi"
@@ -17,7 +17,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -26,18 +25,18 @@ import (
 type AppHandler struct {
 	Router    chi.Router
 	config    *util.ToolConfig
-	dao       *dao.DAOHandler
+	bs       *storage.BoltStorage
 	cache     *cache.ImageCache
-	bgJobs    *conversion.JobRunner
+	bgJobs    *jobs.JobRunner
 	templates *template.Template
 }
 
 //NewHandler Create a new AppHandler for the Server
-func NewHandler(config *util.ToolConfig, dao *dao.DAOHandler, cache *cache.ImageCache, bgj *conversion.JobRunner) *AppHandler {
+func NewHandler(config *util.ToolConfig, bs *storage.BoltStorage, cache *cache.ImageCache, bgj *jobs.JobRunner) *AppHandler {
 	ah := &AppHandler{
 		Router: chi.NewRouter(),
 		config: config,
-		dao:    dao,
+		bs:    bs,
 		cache:  cache,
 		bgJobs: bgj,
 	}
@@ -46,12 +45,15 @@ func NewHandler(config *util.ToolConfig, dao *dao.DAOHandler, cache *cache.Image
 	return ah
 }
 
-//SetupRoutes set up routing for main page and comic viewer
-func (ah *AppHandler) SetupRoutes() {
+//Routes defines all routes for /user and below.
+//this path cares about UserManagement
+func (ah *AppHandler) Routes() {
 
+	//Define global middleware
 	ah.Router.Use(middleware.DefaultLogger)
 	ah.Router.Use(userSession)
 
+	//Handle static Resources
 	if ah.config.LocalResources {
 		fmt.Print("Using Local resources instead of embedded\n")
 		workDir, _ := os.Getwd()
@@ -61,65 +63,36 @@ func (ah *AppHandler) SetupRoutes() {
 		ah.Router.Get("/*", http.FileServer(util.StaticAssets).ServeHTTP)
 	}
 
-	ah.Router.Get("/comics", func(w http.ResponseWriter, req *http.Request) {
-		us := getUserSession(req.Context())
-		if us.ComicList == nil {
-			us.ComicList = ah.dao.GetComiList(us.UserID)
-		}
-		ah.renderTemplate("index.gohtml", w, req, nil) //TODO move template selection out!
+	//Define users
+	ah.Router.Route("/users", func(r chi.Router) { //FIXME remove s in users
+		r.Get("/", ah.listUsers())
+		r.Post("/", ah.createUser())
+		r.Route("/{userID}", func(r chi.Router) {
+			r.Get("/", ah.getUser())
+			r.Put("/", ah.updateUser())
+			r.Delete("/", ah.deleteUser())
+		})
+		r.Get("/create", ah.serveTemplate("create_user.gohtml", nil))
+		r.Get("/login", ah.serveTemplate("login_user.gohtml", nil))
+		r.Post("/login", ah.loginUser())
+		r.Get("/logout", ah.logoutUser())
 	})
 
-	ah.Router.Get("/read2/{comicId}", func(w http.ResponseWriter, req *http.Request) {
-		comicID := chi.URLParam(req, "comicId")
-		meta, nfe := ah.dao.GetMetadata(comicID)
-
-		if nfe != nil {
-			renderError(nfe, w)
-			return
-		}
-
-		ah.renderTemplate("jqviewer.gohtml", w, req, meta)
+	//Define Uploads
+	ah.Router.Route("/upload", func(r chi.Router) {
+		r.Get("/archive", ah.serveTemplate("upload_archive.gohtml",nil))
+		r.Get("/pdf", ah.serveTemplate("upload_pdf.gohtml",nil))
+		r.Post("/archive", ah.uploadArchive())
 	})
 
-	ah.Router.Get("/read2/{comicId}/{imageId}", func(w http.ResponseWriter, req *http.Request) {
-		comicID := chi.URLParam(req, "comicId")
-		image := chi.URLParam(req, "imageId")
-		num, ce := strconv.Atoi(image)
-		if ce != nil {
-			renderError(ce, w)
-			return
-		}
-
-		//get file from cache
-		var err error
-		file, hit := ah.cache.GetFileFromCache(comicID, num)
-		if !hit {
-			file, err = ah.dao.GetPageImage(comicID, num)
-			if err != nil {
-				renderError(err, w)
-				return
-			}
-			ah.cache.AddFileToCache(file)
-		}
-
-		//as a image-provider module not the cache directly
-		img, oerr := os.Open(file)
-		if oerr != nil {
-			renderError(oerr, w)
-			return
-		}
-
-		data, rerr := ioutil.ReadAll(img)
-		if rerr != nil {
-			renderError(rerr, w)
-			return
-		}
-		_, re := w.Write(data)
-		if re != nil {
-			panic(re)
-		}
+	//Define Comic
+	ah.Router.Route("/comics", func(r chi.Router) {
+		r.Get("/", ah.comicsList())
+		r.Get("/{comicId}", ah.comicsLoad())
+		r.Get("/{comicId}/{imageId}", ah.comicsPageImage())
 	})
 }
+
 
 func userSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

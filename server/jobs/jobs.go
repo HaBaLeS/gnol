@@ -1,10 +1,10 @@
-package conversion
+package jobs
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/HaBaLeS/gnol/server/dao"
+	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/go-logger"
 	"github.com/boltdb/bolt"
 	"os"
@@ -28,14 +28,13 @@ const (
 )
 
 type BGJob struct {
-	dao.BaseEntity
+	*storage.BaseEntity
 	JobType     int    //Convert to CBR, Scan for Metadata, Scrape Meta, SortFolder, Clean Cache etc....
 	JobStatus   int    //What's the status done, not started, error
 	DisplayName string //Name the Job
 	Duration    string //how long did it take
 	InputFile   string
 	ExtraData   map[string]string
-	env         *JobRunner //give access to the JobRunner and DAOs
 }
 
 //JOBS are defined by creating a name.job json in a special folder. jobs are processed one after the other by reading the directory where the jobs are and
@@ -45,18 +44,18 @@ type JobRunner struct {
 	running   bool
 	jobLocked bool
 	log       *logger.Logger
-	dao       *dao.DAOHandler
+	bs		  *storage.BoltStorage
 }
 
 //NewJobRunner Constructor
-func NewJobRunner(dao *dao.DAOHandler) *JobRunner { //fixme give config instead of job path
+func NewJobRunner(boltStorage *storage.BoltStorage) *JobRunner { //fixme give config instead of job path
 	out, _ := os.Create("jobs.log")
 	lg, _ := logger.NewLogger("GnolJob", 0, logger.InfoLevel, out)
 	return &JobRunner{
 		running:   false,
 		jobLocked: false,
 		log:       lg,
-		dao:       dao,
+		bs:       boltStorage,
 	}
 }
 
@@ -89,7 +88,6 @@ func (j *JobRunner) StartMonitor() {
 func (j *JobRunner) CheckForJobs() *BGJob {
 	job := j.FirstOpenJob()
 	if job != nil {
-		job.env = j
 		return job
 	}
 	return nil
@@ -106,12 +104,12 @@ func (j *JobRunner) processJob(job *BGJob) {
 	switch job.JobType {
 	case PdfToCbz:
 		{
-			newStatus = convertToPDF(job)
+			newStatus = j.convertToPDF(job)
 		}
 	case ScanMeta:
 		{
 			//FIXME begin time
-			newStatus = scanMetaData(job)
+			newStatus = j.scanMetaData(job)
 			//FIXME endTime
 		}
 
@@ -126,7 +124,7 @@ func (j *JobRunner) processJob(job *BGJob) {
 }
 
 func (j *JobRunner) save(job *BGJob) {
-	err := j.dao.Write(bucketJobOpen, job)
+	err := j.bs.Write(job)
 	if err != nil {
 		panic(err)
 	}
@@ -134,7 +132,7 @@ func (j *JobRunner) save(job *BGJob) {
 
 func (j *JobRunner) FirstOpenJob() *BGJob {
 	r := new(BGJob)
-	err := j.dao.Db.View(func(tx *bolt.Tx) error {
+	err := j.bs.ReadRaw(func(tx *bolt.Tx) error {
 		t := tx.Bucket([]byte("jobs_open"))
 		_, v := t.Cursor().First()
 		if v == nil {
@@ -152,7 +150,7 @@ func (j *JobRunner) FirstOpenJob() *BGJob {
 }
 
 func (j *JobRunner) UpdateJobStatus(job *BGJob, newStatus int) {
-	oldBucket := bucketJobOpen
+	/*oldBucket := bucketJobOpen
 	newBucket := bucketJobOpen
 	switch job.JobStatus {
 	case NotStarted:
@@ -175,14 +173,13 @@ func (j *JobRunner) UpdateJobStatus(job *BGJob, newStatus int) {
 	default:
 		panic(fmt.Errorf("unknown job status %d", job.JobStatus))
 	}
-	err := j.dao.Db.Update(func(tx *bolt.Tx) error {
-		return tx.Bucket(oldBucket).Delete(job.IdBytes())
-	})
+	err := j.bs.Delete(job.IdBytes())
 	if err != nil {
 		panic(err)
 	}
-	err2 := j.dao.Write(newBucket, job)
+	err2 := j.bs.Write(job)
 	if err2 != nil {
 		panic(err)
-	}
+	} */
+	panic("Reimplement me!!")
 }

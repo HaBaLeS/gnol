@@ -5,8 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/cache"
-	"github.com/HaBaLeS/gnol/server/conversion"
-	"github.com/HaBaLeS/gnol/server/dao"
+	"github.com/HaBaLeS/gnol/server/jobs"
+	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/router"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/HaBaLeS/go-logger"
@@ -30,10 +30,10 @@ type Application struct {
 	Config     *util.ToolConfig
 	HTTPServer *http.Server
 	Handler    *router.AppHandler
-	Dao        *dao.DAOHandler
+	bs        *storage.BoltStorage
 	Logger     *logger.Logger
 	Cache      *cache.ImageCache
-	BGJobs     *conversion.JobRunner
+	BGJobs     *jobs.JobRunner
 }
 
 //NewServer creates a new gnol Application
@@ -59,19 +59,17 @@ func NewServer(cfgPath string) *Application {
 //Start gnol, serve HTTP
 func (a *Application) Start() {
 
-	a.Dao = dao.NewDAO(a.Logger, a.Config)
+	a.bs = storage.NewBoltStorage(a.Config)
 
 	a.Cache = cache.NewImageCache(a.Config)
 	go a.Cache.RecoverCacheDir()
 
-	a.BGJobs = conversion.NewJobRunner(a.Dao)
+	a.BGJobs = jobs.NewJobRunner(a.bs)
 	a.BGJobs.StartMonitor()
 
 	//TODO move router in server
-	a.Handler = router.NewHandler(a.Config, a.Dao, a.Cache, a.BGJobs)
-	a.Handler.SetupRoutes()
-	a.Handler.SetupUploads()
-	a.Handler.SetupUserRouting()
+	a.Handler = router.NewHandler(a.Config, a.bs, a.Cache, a.BGJobs)
+	a.Handler.Routes()
 
 	a.HTTPServer = &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", a.Config.ListenAddress, a.Config.ListenPort),
@@ -85,7 +83,7 @@ func (a *Application) Start() {
 
 //Shutdown try's to end all modules gracefully where needed
 func (a *Application) Shutdown() {
-	a.Dao.Close()
+	a.bs.Close()
 	a.BGJobs.StopMonitor()
 	if a.HTTPServer != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

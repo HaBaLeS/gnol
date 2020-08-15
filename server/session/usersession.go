@@ -1,7 +1,7 @@
 package session
 
 import (
-	"github.com/HaBaLeS/gnol/server/dao"
+	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/rs/xid"
 )
 
@@ -12,7 +12,7 @@ type UserSession struct {
 	SessionID     string
 	UserName      string
 	UserID		  string
-	ComicList	  *dao.ComicList
+	ComicList	  *storage.ComicList
 	authenticated bool
 	D             interface{}
 }
