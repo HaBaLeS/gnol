@@ -13,8 +13,8 @@ import (
 )
 
 
-type ComicList struct {
-	Comics []Metadata
+type MetadataList struct {
+	Comics []*Metadata
 }
 
 
@@ -30,20 +30,29 @@ func newComicStore(bs *BoltStorage, cfg *util.ToolConfig) *ComicStorage {
 	}
 }
 
-func (cs *ComicStorage) GetMetadata(id string) (*Metadata, error) {
-	return nil, nil
-}
-
-
-func (cs *ComicStorage) GetComiList() *ComicList {
-	//panic("Implement me")
-	return &ComicList{}
+func (cs *ComicStorage) GetMetadata(mid []byte) (*Metadata) {
+	me := &Metadata{}
+	err := cs.bs.ReadRaw(func(tx *bolt.Tx) error {
+		b := tx.Bucket(META_BUCKET)
+		k, v := b.Cursor().Seek(mid)
+		if k != nil && bytes.Equal(k, mid) {
+			der := loadFromJson(me, v)
+			return der
+		} else {
+			return fmt.Errorf("metadata with Id %s not found", mid)
+		}
+	})
+	if err != nil {
+		fmt.Printf("Error Loading Metadata. %s\n", err)
+		return nil
+	}
+	return me
 }
 
 func (cs *ComicStorage) GetPageImage(comicID string, pageNum int) (string, error) {
 
-	me, notfound := cs.GetMetadata(comicID)
-	if notfound != nil {
+	me := cs.GetMetadata([]byte(comicID))
+	if me == nil {
 		return "", fmt.Errorf("Unknown ComicID: %s", comicID)
 	}
 
@@ -53,7 +62,7 @@ func (cs *ComicStorage) GetPageImage(comicID string, pageNum int) (string, error
 
 	//TODO add a config parameter to enforce jpeg instead of preserving the original
 	cnt := 0
-	extractError := me.arc.Walk(me.FilePath, func(f archiver.File) error {
+	extractError := me.arc().Walk(me.FilePath, func(f archiver.File) error {
 		if !isImageFile(f.Name()) {
 			return nil
 		}
@@ -90,9 +99,9 @@ func (cs *ComicStorage) GetPageImage(comicID string, pageNum int) (string, error
 
 func (cs *ComicStorage) LoadComicMetadata(me *Metadata) error {
 	return cs.bs.ReadRaw(func(tx *bolt.Tx) error {
-		j := tx.Bucket([]byte("meta")).Get([]byte(me.Id))
+		j := tx.Bucket([]byte("meta")).Get(me.IdBytes())
 		if j == nil {
-			return fmt.Errorf("Entity with ID: %s not found", me.Id)
+			return fmt.Errorf("Entity with ID: %s not found", me.IdBytes())
 		}
 		dec := json.NewDecoder(bytes.NewReader(j))
 		return dec.Decode(me)
@@ -101,4 +110,14 @@ func (cs *ComicStorage) LoadComicMetadata(me *Metadata) error {
 
 func (cs *ComicStorage) SaveComicMeta(me *Metadata) error {
 	return cs.bs.Write(me)
+}
+
+func (cs *ComicStorage) MetadataForList(list []string) *MetadataList {
+	ml := &MetadataList{
+		Comics: make([]*Metadata,len(list)),
+	}
+	for i,v := range list {
+		ml.Comics[i] = cs.GetMetadata([]byte(v))
+	}
+	return ml
 }

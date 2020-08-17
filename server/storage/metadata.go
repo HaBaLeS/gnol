@@ -18,7 +18,7 @@ import (
 var META_BUCKET = []byte("meta")
 
 type Metadata struct {
-	BaseEntity
+	*BaseEntity
 	LastUpdate       time.Time
 	FilePath         string
 	Name             string
@@ -27,7 +27,8 @@ type Metadata struct {
 	NumPages         int
 	UploadUser       string
 	Public           bool
-	arc              archiver.Walker
+	//arc              archiver.Walker
+	owners			 []string
 }
 
 func NewMetadata(path string) (error, *Metadata) {
@@ -35,16 +36,7 @@ func NewMetadata(path string) (error, *Metadata) {
 		FilePath:   path,
 		UploadUser: "Anon",
 		Public:     false,
-	}
-
-	ext := filepath.Ext(path)
-	if ext == ".cbz" || ext == ".zip" {
-		m.arc = archiver.NewZip()
-	} else if ext == ".cbr" || ext == ".rar" {
-		m.arc = archiver.NewRar()
-	}
-	if m.arc == nil {
-		return fmt.Errorf("Unsupported File: %s", path), nil
+		BaseEntity: CreateBaseEntity(META_BUCKET),
 	}
 
 	fi, err := os.Stat(path)
@@ -52,7 +44,7 @@ func NewMetadata(path string) (error, *Metadata) {
 		return err, nil
 	}
 	ids := []byte(fmt.Sprintf("%s:%d", fi.Name(), fi.Size()))
-	m.Id = fmt.Sprintf("CMX-%x", sha1.Sum(ids))
+	m.ChangeId(fmt.Sprintf("CMX-%x", sha1.Sum(ids)))
 
 	return nil, m
 }
@@ -73,9 +65,24 @@ func (m *Metadata) UpdateMeta() error {
 	return nil
 }
 
+func (m *Metadata) arc() archiver.Walker {
+	ext := filepath.Ext(m.FilePath)
+	if ext == ".cbz" || ext == ".zip" {
+		return archiver.NewZip()
+	} else if ext == ".cbr" || ext == ".rar" {
+		return archiver.NewRar()
+	}
+	return NilWalker{}
+}
+
+type NilWalker struct{}
+func (r NilWalker) Walk(archive string, walkFn archiver.WalkFunc) error{
+	return fmt.Errorf("Unsuported format")
+}
+
 func (m *Metadata) extractCoverImage() error {
 	var names []string
-	aerr := m.arc.Walk(m.FilePath, func(f archiver.File) error {
+	aerr := m.arc().Walk(m.FilePath, func(f archiver.File) error {
 		isImageFile(f.Name())
 		names = append(names, strings.ToLower(f.Name()))
 		return nil
@@ -89,7 +96,7 @@ func (m *Metadata) extractCoverImage() error {
 		if strings.HasSuffix(name, "/") {
 			fmt.Printf("Dir in archive: %s\n", name)
 		} else if isCoverImage(name) {
-			aerr := m.arc.Walk(m.FilePath, func(f archiver.File) error {
+			aerr := m.arc().Walk(m.FilePath, func(f archiver.File) error {
 				if strings.HasSuffix(strings.ToLower(f.Name()), name) {
 					input, err := ioutil.ReadAll(f.ReadCloser)
 					if err != nil {
@@ -114,6 +121,8 @@ func (m *Metadata) extractCoverImage() error {
 	}
 	return nil
 }
+
+
 
 func isCoverImage(f string) bool {
 	if !isImageFile(f) {

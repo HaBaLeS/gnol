@@ -26,7 +26,7 @@ func (ah *AppHandler) uploadArchive() http.HandlerFunc{
 
 		s2 := request.FormValue("public")
 		us := getUserSession(request.Context())
-		ah.bgJobs.CreateNewArchiveJob(outName, us.UserName, s2)
+		ah.bgJobs.CreateNewArchiveJob(outName, us.UserID, s2)
 
 		ah.renderTemplate("upload.gohtml",w,request,nil)
 	}

@@ -18,24 +18,23 @@ func (j *JobRunner) CreateNewArchiveJob(archive string, user string, public stri
 	j.save(bgjob)
 }
 
-func (j *JobRunner) scanMetaData(job *BGJob) int {
+func (j *JobRunner) scanMetaData(job *BGJob) error {
 	err, meta := storage.NewMetadata(job.InputFile)
 	meta.UploadUser = job.ExtraData["uploadUser"]
 	if job.ExtraData["public"] == "public" {
 		meta.Public = true
 	}
 	if err != nil {
-		return Error
+		return err
 	}
 	err = meta.UpdateMeta()
 	if err != nil {
-		return Error
+		return err
 	}
 	err = j.bs.Comic.SaveComicMeta(meta)
-
 	if err != nil {
-		return Error
+		return err
 	}
-	//job.env.dao.AddComicToList(meta, meta.UploadUser)
-	return Done
+
+	return j.bs.User.AddComic(meta.UploadUser,meta)
 }

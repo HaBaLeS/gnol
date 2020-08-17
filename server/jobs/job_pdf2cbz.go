@@ -23,7 +23,7 @@ func (j *JobRunner) CreatePFCConversionJob(pdfFile string) {
 
 }
 
-func (j *JobRunner) convertToPDF(job *BGJob) int {
+func (j *JobRunner) convertToPDF(job *BGJob) error {
 	fmt.Printf("Running conversion\n")
 
 	doc, err := fitz.New(job.InputFile)
@@ -64,5 +64,5 @@ func (j *JobRunner) convertToPDF(job *BGJob) int {
 
 	//todo cleanup unpacked, and tmp
 
-	return Done
+	return nil
 }

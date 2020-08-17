@@ -37,6 +37,7 @@ type BGJob struct {
 	ExtraData   map[string]string
 }
 
+
 //JOBS are defined by creating a name.job json in a special folder. jobs are processed one after the other by reading the directory where the jobs are and
 //taking one job, reading the description and processing it. MEta is updated while processing ... only 1 job at a time
 
@@ -63,7 +64,7 @@ func NewJobRunner(boltStorage *storage.BoltStorage) *JobRunner { //fixme give co
 func (j *JobRunner) StartMonitor() {
 	j.log.Info("Starting Monitor")
 	j.running = true
-	ticker := time.NewTicker(time.Second * 10) //every 10 sec
+	ticker := time.NewTicker(time.Second * 2) //every 10 sec
 	go func() {
 		for {
 			if !j.running {
@@ -100,16 +101,16 @@ func (j *JobRunner) StopMonitor() {
 }
 
 func (j *JobRunner) processJob(job *BGJob) {
-	newStatus := job.JobStatus
+	var jobError error
 	switch job.JobType {
 	case PdfToCbz:
 		{
-			newStatus = j.convertToPDF(job)
+			jobError = j.convertToPDF(job)
 		}
 	case ScanMeta:
 		{
 			//FIXME begin time
-			newStatus = j.scanMetaData(job)
+			jobError = j.scanMetaData(job)
 			//FIXME endTime
 		}
 
@@ -118,7 +119,17 @@ func (j *JobRunner) processJob(job *BGJob) {
 
 	}
 
-	j.UpdateJobStatus(job, newStatus)
+	j.bs.Delete(job)
+	if jobError != nil{
+		fmt.Printf("Error in job: %s\n", jobError)
+		job.ChangeBucket(bucketJobError)
+	} else {
+		job.ChangeBucket(bucketJobDone)
+	}
+	j.bs.Write(job)
+
+
+
 
 	j.jobLocked = false
 }
@@ -147,39 +158,4 @@ func (j *JobRunner) FirstOpenJob() *BGJob {
 		return nil
 	}
 	return r
-}
-
-func (j *JobRunner) UpdateJobStatus(job *BGJob, newStatus int) {
-	/*oldBucket := bucketJobOpen
-	newBucket := bucketJobOpen
-	switch job.JobStatus {
-	case NotStarted:
-		oldBucket = bucketJobOpen
-	case Done:
-		oldBucket = bucketJobDone
-	case Error:
-		oldBucket = bucketJobError
-	default:
-		panic(fmt.Errorf("unknown job status %d", job.JobStatus))
-	}
-	job.JobStatus = newStatus
-	switch job.JobStatus {
-	case NotStarted:
-		newBucket = bucketJobOpen
-	case Done:
-		newBucket = bucketJobDone
-	case Error:
-		newBucket = bucketJobError
-	default:
-		panic(fmt.Errorf("unknown job status %d", job.JobStatus))
-	}
-	err := j.bs.Delete(job.IdBytes())
-	if err != nil {
-		panic(err)
-	}
-	err2 := j.bs.Write(job)
-	if err2 != nil {
-		panic(err)
-	} */
-	panic("Reimplement me!!")
 }

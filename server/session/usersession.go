@@ -12,7 +12,7 @@ type UserSession struct {
 	SessionID     string
 	UserName      string
 	UserID		  string
-	ComicList	  *storage.ComicList
+	MetadataList	  *storage.MetadataList
 	authenticated bool
 	D             interface{}
 }

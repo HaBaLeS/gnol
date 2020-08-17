@@ -13,7 +13,7 @@
 <section class="section">
     <div class="container">
         <div class="columns">
-{{ with .ComicList.Comics }}
+{{ with .MetadataList.Comics }}
     {{ range $idxx, $v := . }}
             {{ if mod $idxx 4}} </div><div class="columns"> {{end}}
             <div class="column is-3">
@@ -30,7 +30,7 @@
                             </div>
                         </div>
                         <footer class="card-footer">
-                            <a href="read2/{{$v.Id}}" class="card-footer-item">Read</a>
+                            <a href="comics/{{$v.Id}}" class="card-footer-item">Read</a>
                         </footer>
                     </div>
                 </div>

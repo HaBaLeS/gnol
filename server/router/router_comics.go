@@ -1,9 +1,12 @@
 package router
 
 import (
+	"fmt"
+	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/go-chi/chi"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 )
@@ -11,20 +14,30 @@ import (
 func (ah *AppHandler) comicsList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		us := getUserSession(r.Context())
-		if us.ComicList == nil {
-			us.ComicList = ah.bs.Comic.GetComiList()
+		if us.IsLoggedIn()  {
+			if us.MetadataList == nil || len(us.MetadataList.Comics) == 0 {
+				user := ah.bs.User.UserByID([]byte(us.UserID))
+				us.MetadataList = ah.bs.Comic.MetadataForList(user.MetadataList)
+			}
+			ah.renderTemplate("index.gohtml", w, r, nil)
+		} else {
+			//FIXME Render different Template if user is not logges in
+			us.MetadataList = &storage.MetadataList{
+				Comics: make([]*storage.Metadata,0),
+			}
+			ah.renderTemplate("index.gohtml", w, r, nil)
 		}
-		ah.renderTemplate("index.gohtml", w, r, nil) //TODO move template selection out!
 	}
 }
 
 func (ah *AppHandler) comicsLoad() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		comicID := chi.URLParam(r, "comicId")
-		meta, nfe := ah.bs.Comic.GetMetadata(comicID)
+		comicID,_ = url.QueryUnescape(comicID)
+		meta  := ah.bs.Comic.GetMetadata([]byte(comicID))
 
-		if nfe != nil {
-			renderError(nfe, w)
+		if meta == nil {
+			renderError(fmt.Errorf("comic with id %s not found", comicID), w)
 			return
 		}
 		ah.renderTemplate("jqviewer.gohtml", w, r, meta)

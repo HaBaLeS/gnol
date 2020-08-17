@@ -15,13 +15,7 @@ type User struct {
 	Name    string
 	PwdHash []byte
 	Salt    []byte
-	Comics  []*UserComic
-}
-
-type UserComic struct {
-	Name string
-	Tags []string
-	MetaDataID string
+	MetadataList  []string
 }
 
 type UserStore struct {
@@ -35,21 +29,13 @@ func newUserStore(bs *BoltStorage) *UserStore{
 }
 
 
-func NewUserComic(metadata Metadata) *UserComic{
-	return &UserComic{
-		Name: metadata.Name,
-		Tags: nil,
-		MetaDataID: metadata.Id,
-	}
-}
-
 
 func (us *UserStore) CreateUser(name string, pass string) *User {
 	//FIXME users can just override each others
 	hash, salt := hashPassword(pass)
 	u := &User{
 		BaseEntity: CreateBaseEntity(USER_BUCKET),
-		Comics: make([]*UserComic,0),
+		MetadataList: make([]string,0),
 		Name:       name,
 		PwdHash:    hash,
 		Salt:       salt,
@@ -59,14 +45,18 @@ func (us *UserStore) CreateUser(name string, pass string) *User {
 }
 
 
-func (us *UserStore) AddComic(metadata Metadata, u User){
-	cm := NewUserComic(metadata)
-	u.Comics = append(u.Comics, cm)
-	us.save(u)
-}
+func (us *UserStore) AddComic(uid string, metadata *Metadata) error {
+	u := us.UserByID([]byte(uid))
+	if u == nil {
+		return fmt.Errorf("user with id %s does not exist", uid)
+	}
 
-func (us *UserStore) save(u User){
-	us.bs.Write(u)
+	u.MetadataList = append(u.MetadataList, metadata.Id)
+	metadata.owners = append(metadata.owners, uid)
+
+	err := us.bs.Write(metadata)
+	err = us.bs.Write(u)
+	return err
 }
 
 func hashPassword(pass string) ([]byte, []byte) {
@@ -104,4 +94,23 @@ func (us *UserStore) AuthUser(name string, pass string) (*User, error) {
 		return fmt.Errorf("Login failed")
 	})
 	return u, logError
+}
+
+func (us *UserStore) UserByID(uid []byte) *User {
+	user := &User{}
+	err := us.bs.ReadRaw(func(tx *bolt.Tx) error {
+		b := tx.Bucket(USER_BUCKET)
+		k, v := b.Cursor().Seek(uid)
+		if k != nil && bytes.Equal(k, uid) {
+			der := loadFromJson(user, v)
+			return der
+		} else {
+			return fmt.Errorf("user with Id %s not found", uid)
+		}
+	})
+	if err != nil {
+		fmt.Printf("Error Loading User. %s\n", err)
+		return nil
+	}
+	return  user
 }

@@ -86,7 +86,7 @@ func (ah *AppHandler) loginUser() http.HandlerFunc {
 		us := getUserSession(r.Context())
 		us.AuthSession()
 		us.UserName = user.Name
-		us.UserID = user.Id
+		us.UserID = string(user.IdBytes())
 
 		http.Redirect(w,r,"/comics",303)
 	}

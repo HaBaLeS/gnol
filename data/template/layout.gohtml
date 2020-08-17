@@ -30,7 +30,7 @@
 
 
 
-
+                    {{ if .IsLoggedIn}}
                     <div class="navbar-item has-dropdown is-hoverable">
                         <a class="navbar-link">
                             Upload
@@ -48,6 +48,7 @@
                             </a>
                         </div>
                     </div>
+                    {{end}}
                 </div>
             </div>
             {{ if .IsLoggedIn}}

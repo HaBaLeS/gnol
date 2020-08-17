@@ -57,7 +57,7 @@ func (ms *BoltStorage) Load( id string, into BaseEntity ) error {
 }
 
 func (ms *BoltStorage) Write(from Entity) error {
-	bucket := bucketFromID(from.IdBytes())
+	bucket := from.Bucket()
 	return ms.write(bucket, from)
 }
 
@@ -75,11 +75,11 @@ func (ms *BoltStorage) write(bucket []byte, data Entity) error {
 	})
 }
 
-func (ms *BoltStorage) Delete(id []byte) error{
-	//find Bucket by ID
-
-	//delete from bucket
-	panic("not implemented")
+func (ms *BoltStorage) Delete(entity Entity) error{
+	return ms.db.Update(func(tx *bolt.Tx) error {
+		 bck := tx.Bucket(entity.Bucket())
+		 return bck.Delete(entity.IdBytes())
+	})
 }
 
 func (ms *BoltStorage) ReadRaw(fn StorageFunc) error {
@@ -93,9 +93,7 @@ func (ms *BoltStorage) Close() {
 	ms.db.Close()
 }
 
-func bucketFromID(id []byte) []byte {
-	return bytes.Split(id,[]byte("|"))[0]
-}
+
 
 func loadFromJson(i interface{}, v []byte) error {
 	d := json.NewDecoder(bytes.NewReader(v))
@@ -105,20 +103,40 @@ func loadFromJson(i interface{}, v []byte) error {
 
 type Entity interface {
 	IdBytes() []byte
+	Bucket() []byte
 }
 
 type BaseEntity struct {
-	Id string
+	Id string //DO NOT CHANGE visibilitie! JSon needs it to be exported!
 }
 
+func (b *BaseEntity) ChangeBucket(bucket []byte) {
+	b.Id = fmt.Sprintf("%s|%s", b.ident(), bucket)
+}
 
 func (b *BaseEntity) IdBytes() []byte {
 	return []byte(b.Id)
 }
 
+func (b *BaseEntity) ChangeId(ident string) {
+	bu := b.Bucket()
+	b.Id = fmt.Sprintf("%s|%s", ident, bu)
+}
+
+func (b *BaseEntity) Bucket() []byte {
+	sl:= bytes.Split([]byte(b.Id),[]byte("|"))
+	return sl[len(sl)-1]
+}
+
+func (b *BaseEntity) ident() []byte {
+	sl:= bytes.Split([]byte(b.Id),[]byte("|"))
+	return bytes.Join(sl[:len(sl)-1],[]byte("|"))
+}
+
+//CreateBaseEntity creates an entity, generates an Id and appends the bucket and
 func CreateBaseEntity(bucket []byte) *BaseEntity {
 	return &BaseEntity{
-		Id: fmt.Sprintf("%s|%s",bucket,xid.New().String()),
+		Id: fmt.Sprintf("%s|%s",xid.New().String(),bucket),
 	}
 }
 
