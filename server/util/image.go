@@ -11,16 +11,19 @@ import (
 	"strings"
 )
 
+//CreateThumbnail takes a jpeg or png and creates a jpg encoded thumbnail
 func CreateThumbnail(data []byte, ext string) ([]byte, error) {
 	if ext == ".jpg" {
-		return CreateThumbnailJPG(data)
+		return createThumbnailJPG(data)
 	} else if ext == ".png" {
-		return CreateThumbnailPNG(data)
+		return createThumbnailPNG(data)
 	} else {
-		return nil, fmt.Errorf("Cannot Create Thumbnail form: %s", ext)
+		return nil, fmt.Errorf("cannot create thumbnail form: %s", ext)
 	}
 }
 
+//LimitSize resizes image to a maximum size in w/h keeping the aspect ratio
+//Output format is always JPEG to support compression
 func LimitSize(reader io.Reader, ext string, maxWidth uint, maxHeight uint) (io.Reader, error) {
 	var img image.Image
 	var err error
@@ -29,7 +32,7 @@ func LimitSize(reader io.Reader, ext string, maxWidth uint, maxHeight uint) (io.
 	} else if strings.ToLower(ext) == ".png" {
 		img, err = png.Decode(reader)
 	} else {
-		return nil, fmt.Errorf("Cannot Create Thumbnail form: %s", ext)
+		return nil, fmt.Errorf("cannot ceate thumbnail form: %s", ext)
 	}
 
 	m := resize.Thumbnail(maxWidth, maxHeight, img, resize.Bicubic)
@@ -38,16 +41,14 @@ func LimitSize(reader io.Reader, ext string, maxWidth uint, maxHeight uint) (io.
 	}
 
 	buf := *new(bytes.Buffer)
-	/*if ext == ".jpg" {
-		jpeg.Encode(&buf, m, nil)
-	}else if ext == ".png" {
-		png.Encode(&buf, m)
-	}*/
-	jpeg.Encode(&buf, m, nil)
+	ence := jpeg.Encode(&buf, m, nil)
+	if ence != nil {
+		panic(ence)
+	}
 	return &buf, nil
 }
 
-func CreateThumbnailPNG(data []byte) ([]byte, error) {
+func createThumbnailPNG(data []byte) ([]byte, error) {
 	img, err := png.Decode(bytes.NewReader(data))
 	if err != nil {
 		return nil, err
@@ -55,7 +56,7 @@ func CreateThumbnailPNG(data []byte) ([]byte, error) {
 	return createTN(img)
 }
 
-func CreateThumbnailJPG(data []byte) ([]byte, error) {
+func createThumbnailJPG(data []byte) ([]byte, error) {
 	img, err := jpeg.Decode(bytes.NewReader(data))
 	if err != nil {
 		return nil, err
@@ -64,11 +65,12 @@ func CreateThumbnailJPG(data []byte) ([]byte, error) {
 }
 
 func createTN(img image.Image) ([]byte, error) {
-	// resize to width 1000 using Lanczos resampling
-	// and preserve aspect ratio
+	//preserve aspect ratio
 	m := resize.Thumbnail(240, 300, img, resize.Bicubic)
 	buf := *new(bytes.Buffer)
-	jpeg.Encode(&buf, m, nil)
-
+	ence := jpeg.Encode(&buf, m, nil)
+	if ence != nil {
+		panic(ence)
+	}
 	return buf.Bytes(), nil
 }

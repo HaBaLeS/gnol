@@ -6,3 +6,4 @@ c.out
 coverage.html
 playground.upx
 gnol
+*.log

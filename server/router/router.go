@@ -1,41 +1,42 @@
+//Package router holds all controllers implementing basic Business logic for the routes
 package router
 
 import (
 	"context"
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/cache"
-	"github.com/HaBaLeS/gnol/server/conversion"
-	"github.com/HaBaLeS/gnol/server/dao"
+	"github.com/HaBaLeS/gnol/server/jobs"
+	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/session"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"html/template"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 )
 
+//AppHandler combines Router with other submodules Implementations, like DOA, Config, Cache
 type AppHandler struct {
 	Router    chi.Router
 	config    *util.ToolConfig
-	dao       *dao.DAOHandler
+	bs       *storage.BoltStorage
 	cache     *cache.ImageCache
-	bgJobs    *conversion.JobRunner
+	bgJobs    *jobs.JobRunner
 	templates *template.Template
 }
 
-func NewHandler(config *util.ToolConfig, dao *dao.DAOHandler, cache *cache.ImageCache, bgj *conversion.JobRunner) *AppHandler {
+//NewHandler Create a new AppHandler for the Server
+func NewHandler(config *util.ToolConfig, bs *storage.BoltStorage, cache *cache.ImageCache, bgj *jobs.JobRunner) *AppHandler {
 	ah := &AppHandler{
 		Router: chi.NewRouter(),
 		config: config,
-		dao:    dao,
+		bs:    bs,
 		cache:  cache,
 		bgJobs: bgj,
 	}
@@ -44,88 +45,54 @@ func NewHandler(config *util.ToolConfig, dao *dao.DAOHandler, cache *cache.Image
 	return ah
 }
 
-func (r *AppHandler) SetupRoutes() {
+//Routes defines all routes for /user and below.
+//this path cares about UserManagement
+func (ah *AppHandler) Routes() {
 
-	r.Router.Use(middleware.DefaultLogger)
-	r.Router.Use(userSession)
+	//Define global middleware
+	ah.Router.Use(middleware.DefaultLogger)
+	ah.Router.Use(userSession)
 
-	if r.config.LocalResources {
+	//Handle static Resources
+	if ah.config.LocalResources {
 		fmt.Print("Using Local resources instead of embedded\n")
 		workDir, _ := os.Getwd()
 		filesDir := filepath.Join(workDir, "data/")
-		r.Router.Get("/*", http.FileServer(http.Dir(filesDir)).ServeHTTP)
+		ah.Router.Get("/*", http.FileServer(http.Dir(filesDir)).ServeHTTP)
 	} else {
-		r.Router.Get("/*", http.FileServer(util.StaticAssets).ServeHTTP)
+		ah.Router.Get("/*", http.FileServer(util.StaticAssets).ServeHTTP)
 	}
 
-	r.Router.Get("/comics", func(w http.ResponseWriter, req *http.Request) {
-		cl := r.dao.GetComiList()
-
-		tpl, err := r.getTemplate("index.gohtml")
-		if err != nil {
-			panic(err)
-		}
-
-		err = renderTemplate(tpl, w, req, cl) //TODO move template selection out!
-		if err != nil {
-			panic(err)
-		}
+	//Define users
+	ah.Router.Route("/users", func(r chi.Router) { //FIXME remove s in users
+		r.Get("/", ah.listUsers())
+		r.Post("/", ah.createUser())
+		r.Route("/{userID}", func(r chi.Router) {
+			r.Get("/", ah.getUser())
+			r.Put("/", ah.updateUser())
+			r.Delete("/", ah.deleteUser())
+		})
+		r.Get("/create", ah.serveTemplate("create_user.gohtml", nil))
+		r.Get("/login", ah.serveTemplate("login_user.gohtml", nil))
+		r.Post("/login", ah.loginUser())
+		r.Get("/logout", ah.logoutUser())
 	})
 
-	r.Router.Get("/read2/{comicId}", func(w http.ResponseWriter, req *http.Request) {
-		comicId := chi.URLParam(req, "comicId")
-		meta, nfe := r.dao.GetMetadata(comicId)
-
-		if nfe != nil {
-			renderError(nfe, w)
-			return
-		}
-
-		tpl, err := r.getTemplate("jqviewer.gohtml")
-		err = renderTemplate(tpl, w, req, meta)
-		if err != nil {
-			renderError(err, w)
-			return
-		}
-
+	//Define Uploads
+	ah.Router.Route("/upload", func(r chi.Router) {
+		r.Get("/archive", ah.serveTemplate("upload_archive.gohtml",nil))
+		r.Get("/pdf", ah.serveTemplate("upload_pdf.gohtml",nil))
+		r.Post("/archive", ah.uploadArchive())
 	})
 
-	r.Router.Get("/read2/{comicId}/{imageId}", func(w http.ResponseWriter, req *http.Request) {
-		comicID := chi.URLParam(req, "comicId")
-		image := chi.URLParam(req, "imageId")
-		num, ce := strconv.Atoi(image)
-		if ce != nil {
-			renderError(ce, w)
-			return
-		}
-
-		//get file from cache
-		var err error
-		file, hit := r.cache.GetFileFromCache(comicID, num)
-		if !hit {
-			file, err = r.dao.GetPageImage(comicID, num)
-			if err != nil {
-				renderError(err, w)
-				return
-			}
-			r.cache.AddFileToCache(file)
-		}
-
-		//as a image-provider module not the cache directly
-		img, oerr := os.Open(file)
-		if oerr != nil {
-			renderError(oerr, w)
-			return
-		}
-
-		data, rerr := ioutil.ReadAll(img)
-		if rerr != nil {
-			renderError(rerr, w)
-			return
-		}
-		w.Write(data)
+	//Define Comic
+	ah.Router.Route("/comics", func(r chi.Router) {
+		r.Get("/", ah.comicsList())
+		r.Get("/{comicId}", ah.comicsLoad())
+		r.Get("/{comicId}/{imageId}", ah.comicsPageImage())
 	})
 }
+
 
 func userSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -150,18 +117,14 @@ func getUserSession(ctx context.Context) *session.UserSession {
 	return us
 }
 
-func renderTemplate(t *template.Template, w io.Writer, r *http.Request, pageData interface{}) error {
-	us := getUserSession(r.Context())
-	us.D = pageData
-	return t.Execute(w, us)
-}
 
-func (r *AppHandler) initTemplates() {
+
+func (ah *AppHandler) initTemplates() {
 	var allFiles []string
 	var err error
-	r.templates = template.New("root")
-	r.templates = r.templates.Funcs(template.FuncMap{"mod": mod})
-	if r.config.LocalResources {
+	ah.templates = template.New("root")
+	ah.templates = ah.templates.Funcs(template.FuncMap{"mod": mod})
+	if ah.config.LocalResources {
 		fi, _ := ioutil.ReadDir("data/template/")
 		for _, file := range fi {
 			filename := file.Name()
@@ -169,26 +132,45 @@ func (r *AppHandler) initTemplates() {
 				allFiles = append(allFiles, "data/template/"+filename)
 			}
 		}
-		r.templates, err = r.templates.ParseFiles(allFiles...)
+		ah.templates, err = ah.templates.ParseFiles(allFiles...)
 		if err != nil {
 			panic(err)
 		}
 	} else {
-		r.templates, err = vfstemplate.ParseGlob(util.StaticAssets, r.templates, "template/*.gohtml")
+		ah.templates, err = vfstemplate.ParseGlob(util.StaticAssets, ah.templates, "template/*.gohtml")
 	}
 
 }
 
-func (r *AppHandler) getTemplate(name string) (*template.Template, error) {
-	r.initTemplates() //FIXME this is a DEBUG only option!!
-	tpl := r.templates.Lookup(name)
+func (ah *AppHandler) getTemplate(name string) (*template.Template, error) {
+	if ah.config.LocalResources {
+		//Reload templates
+		ah.initTemplates()
+	}
+	tpl := ah.templates.Lookup(name)
 	return tpl, nil
 }
 
-func renderError(e error, w http.ResponseWriter) {
+func (ah *AppHandler) renderTemplate(templateName string, w http.ResponseWriter, r *http.Request, pageData interface{}) {
+	tpl, tlerr := ah.getTemplate(templateName)
+	if tlerr != nil {
+		renderError(tlerr, w)
+	}
+	us := getUserSession(r.Context())
+	us.D = pageData
+	re := tpl.Execute(w, us)
+	if re != nil {
+		panic(re)
+	}
+}
+
+func renderError(e error, w http.ResponseWriter){
 	w.WriteHeader(500)
-	fmt.Fprintf(w, "Error: %v", e)
+	_, re := fmt.Fprintf(w, "Error: %v", e)
 	fmt.Printf("%v\n", e)
+	if re != nil {
+		panic(re)
+	}
 }
 
 func mod(i, j int) bool {

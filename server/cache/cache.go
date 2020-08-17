@@ -1,6 +1,5 @@
-//Very simple cache implementation with a hashmap as lookup for images that would otherwise be extracted from an cbz or cbr
-//There is not yet any cleanup implemented
-//There is not yet any statistics implemented
+//Package cache offerst cached access to image files.
+//Files in cache are resized and converted to save traffic
 package cache
 
 import (

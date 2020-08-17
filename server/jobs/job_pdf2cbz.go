@@ -1,8 +1,8 @@
-package conversion
+package jobs
 
 import (
 	"fmt"
-	"github.com/HaBaLeS/gnol/server/dao"
+	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/gen2brain/go-fitz"
 	"image/jpeg"
 	"io/ioutil"
@@ -10,19 +10,20 @@ import (
 	"path/filepath"
 )
 
+//CreatePFCConversionJob creates a new job for processing PDF files and crate a CBZ out of it
 func (j *JobRunner) CreatePFCConversionJob(pdfFile string) {
 	bgjob := &BGJob{
 		JobType:     PdfToCbz,
 		InputFile:   pdfFile,
 		DisplayName: "Create CBZ from PDF",
 		JobStatus:   NotStarted,
-		BaseEntity:  dao.CreateBaseEntity(),
+		BaseEntity:  storage.CreateBaseEntity(bucketJobOpen),
 	}
 	j.save(bgjob)
 
 }
 
-func convertToPDF(job *BGJob) int {
+func (j *JobRunner) convertToPDF(job *BGJob) error {
 	fmt.Printf("Running conversion\n")
 
 	doc, err := fitz.New(job.InputFile)
@@ -63,5 +64,5 @@ func convertToPDF(job *BGJob) int {
 
 	//todo cleanup unpacked, and tmp
 
-	return Done
+	return nil
 }

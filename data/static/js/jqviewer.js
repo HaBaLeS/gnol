@@ -12,7 +12,7 @@ function loadComic(comicId, numPages, di) {
     doubleImage = di
     pages = new Array(pages)
     console.log("Should load:" + comicId + " with " + numPages + " pages");
-    pageUrl = "/read2/" + comicId
+    pageUrl = "/comics/" + comicId
     loadAndCacheImage(0)
 
     document.addEventListener('keydown', handleKeyboardInput);
