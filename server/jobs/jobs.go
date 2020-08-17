@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/storage"
+	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/HaBaLeS/go-logger"
 	"github.com/boltdb/bolt"
 	"os"
+	"path"
 	"time"
 )
 
@@ -19,6 +21,7 @@ var bucketJobError = []byte("jobs_error")
 const (
 	PdfToCbz = iota
 	ScanMeta
+	DownloadUrl
 )
 
 const (
@@ -35,6 +38,7 @@ type BGJob struct {
 	Duration    string //how long did it take
 	InputFile   string
 	ExtraData   map[string]string
+	UserID		string
 }
 
 
@@ -46,17 +50,19 @@ type JobRunner struct {
 	jobLocked bool
 	log       *logger.Logger
 	bs		  *storage.BoltStorage
+	cfg		  *util.ToolConfig
 }
 
 //NewJobRunner Constructor
-func NewJobRunner(boltStorage *storage.BoltStorage) *JobRunner { //fixme give config instead of job path
-	out, _ := os.Create("jobs.log")
+func NewJobRunner(boltStorage *storage.BoltStorage, cfg *util.ToolConfig) *JobRunner { //fixme give config instead of job path
+	out, _ := os.Create(path.Join(cfg.TempDirectory,"jobs.log"))
 	lg, _ := logger.NewLogger("GnolJob", 0, logger.InfoLevel, out)
 	return &JobRunner{
 		running:   false,
 		jobLocked: false,
 		log:       lg,
 		bs:       boltStorage,
+		cfg: cfg,
 	}
 }
 
@@ -79,7 +85,7 @@ func (j *JobRunner) StartMonitor() {
 					go j.processJob(job)
 				}
 			} else {
-				j.log.Info("Skipping run, Job is processing")
+				//j.log.Info("Skipping run, Job is processing")
 			}
 		}
 	}()
@@ -109,9 +115,11 @@ func (j *JobRunner) processJob(job *BGJob) {
 		}
 	case ScanMeta:
 		{
-			//FIXME begin time
 			jobError = j.scanMetaData(job)
-			//FIXME endTime
+		}
+	case DownloadUrl:
+		{
+			jobError = j.downloadFromUrl(job)
 		}
 
 	default:
@@ -127,10 +135,6 @@ func (j *JobRunner) processJob(job *BGJob) {
 		job.ChangeBucket(bucketJobDone)
 	}
 	j.bs.Write(job)
-
-
-
-
 	j.jobLocked = false
 }
 

@@ -27,6 +27,6 @@ func TestJobRunner_CheckForJobs(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	jr = NewJobRunner(nil)
+	jr = NewJobRunner(nil, nil)
 	m.Run()
 }

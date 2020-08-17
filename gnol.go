@@ -64,7 +64,7 @@ func (a *Application) Start() {
 	a.Cache = cache.NewImageCache(a.Config)
 	go a.Cache.RecoverCacheDir()
 
-	a.BGJobs = jobs.NewJobRunner(a.bs)
+	a.BGJobs = jobs.NewJobRunner(a.bs, a.Config)
 	a.BGJobs.StartMonitor()
 
 	//TODO move router in server

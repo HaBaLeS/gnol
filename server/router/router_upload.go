@@ -32,3 +32,14 @@ func (ah *AppHandler) uploadArchive() http.HandlerFunc{
 	}
 }
 
+func (ah *AppHandler) uploadUrl() http.HandlerFunc{
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		url := r.FormValue("comicurl")
+		us := getUserSession(r.Context())
+
+		ah.bgJobs.CreateNewURLJob(url, us.UserID)
+		ah.renderTemplate("upload.gohtml",w,r,nil)
+	}
+}
+

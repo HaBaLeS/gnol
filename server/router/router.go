@@ -82,7 +82,9 @@ func (ah *AppHandler) Routes() {
 	ah.Router.Route("/upload", func(r chi.Router) {
 		r.Get("/archive", ah.serveTemplate("upload_archive.gohtml",nil))
 		r.Get("/pdf", ah.serveTemplate("upload_pdf.gohtml",nil))
+		r.Get("/url", ah.serveTemplate("upload_url.gohtml",nil))
 		r.Post("/archive", ah.uploadArchive())
+		r.Post("/url", ah.uploadUrl())
 	})
 
 	//Define Comic
