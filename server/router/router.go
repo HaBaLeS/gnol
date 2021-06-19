@@ -85,6 +85,7 @@ func (ah *AppHandler) Routes() {
 		r.Get("/url", ah.serveTemplate("upload_url.gohtml",nil))
 		r.Post("/archive", ah.uploadArchive())
 		r.Post("/url", ah.uploadUrl())
+		r.Post("/pdf", ah.uploadPdf())
 	})
 
 	//Define Comic

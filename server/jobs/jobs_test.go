@@ -1,6 +1,8 @@
 package jobs
 
 import (
+	"github.com/HaBaLeS/gnol/server/util"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -17,7 +19,10 @@ func TestJobRunner_StopMonitor(t *testing.T) {
 	}
 }
 
+var config *util.ToolConfig
+
 func TestJobRunner_CheckForJobs(t *testing.T) {
+	assert.FailNow(t,"Not implemented")
 	bgjob := jr.CheckForJobs()
 
 	if bgjob == nil {
@@ -27,6 +32,9 @@ func TestJobRunner_CheckForJobs(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	jr = NewJobRunner(nil, nil)
+	config = &util.ToolConfig{
+
+	}
+	jr = NewJobRunner(nil, config)
 	m.Run()
 }

@@ -43,3 +43,25 @@ func (ah *AppHandler) uploadUrl() http.HandlerFunc{
 	}
 }
 
+func (ah *AppHandler) uploadPdf() http.HandlerFunc{
+	return func(w http.ResponseWriter, request *http.Request) {
+		err := request.ParseMultipartForm(10 * 1024)
+		if err != nil {
+			panic(err)
+		}
+		fh := request.MultipartForm.File["pdffile"][0]
+
+		outName := path.Join(os.TempDir(), fh.Filename)
+		out, _ := os.Create(outName)
+		in, _ := fh.Open()
+		_, cpe := io.Copy(out, in)
+		if cpe != nil {
+			panic(cpe)
+		}
+
+		us := getUserSession(request.Context())
+		ah.bgJobs.CreatePFCConversionJob(outName,us.UserID)
+
+		ah.renderTemplate("upload.gohtml",w,request,nil)
+	}
+}

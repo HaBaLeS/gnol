@@ -4,20 +4,24 @@ import (
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/gen2brain/go-fitz"
+	"github.com/mholt/archiver/v3"
+	"github.com/nfnt/resize"
 	"image/jpeg"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 )
 
 //CreatePFCConversionJob creates a new job for processing PDF files and crate a CBZ out of it
-func (j *JobRunner) CreatePFCConversionJob(pdfFile string) {
+func (j *JobRunner) CreatePFCConversionJob(pdfFile,uid string) {
 	bgjob := &BGJob{
 		JobType:     PdfToCbz,
 		InputFile:   pdfFile,
 		DisplayName: "Create CBZ from PDF",
 		JobStatus:   NotStarted,
 		BaseEntity:  storage.CreateBaseEntity(bucketJobOpen),
+		UserID: uid,
 	}
 	j.save(bgjob)
 
@@ -26,43 +30,71 @@ func (j *JobRunner) CreatePFCConversionJob(pdfFile string) {
 func (j *JobRunner) convertToPDF(job *BGJob) error {
 	fmt.Printf("Running conversion\n")
 
-	doc, err := fitz.New(job.InputFile)
-	if err != nil {
-		panic(err)
-	}
-
-	defer doc.Close()
-
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "fitz")
 	if err != nil {
 		panic(err)
 	}
 
+	doc, err := fitz.New(job.InputFile)
+	if err != nil {
+		panic(err)
+	}
+	defer doc.Close()
+
+	//Create ZIP
+	outZipPath := path.Join(j.cfg.DataDirectory, path.Base(job.InputFile) + ".cbz")
+	outZip, cer :=  os.Create(outZipPath)
+	if cer != nil {
+		panic(cer)
+	}
+	zip := archiver.NewZip()
+	zer := zip.Create(outZip)
+	if zer != nil {
+		panic(zer)
+	}
+	defer zip.Close()
+
 	// Extract pages as images
+	j.log.InfoF("Processing %d pages from PDF", doc.NumPage() )
 	for n := 0; n < doc.NumPage(); n++ {
-		img, err := doc.Image(n)
-		//FIXME add shrinking to max size here
-
-		if err != nil {
-			panic(err)
+		img, e1 := doc.Image(n)
+		if e1 != nil {
+			panic(e1)
 		}
 
-		f, err := os.Create(filepath.Join(tmpDir, fmt.Sprintf("test%03d.jpg", n)))
-		if err != nil {
-			panic(err)
+		pagename := fmt.Sprintf("page%03d.jpg", n)
+		tp := filepath.Join(tmpDir, pagename)
+		f, e2 := os.Create(tp)
+		if e2 != nil {
+			panic(e2)
+		}
+		defer f.Close()
+
+		m := resize.Thumbnail(2560, 1440, img, resize.Bicubic)
+		e3 := jpeg.Encode(f, m, &jpeg.Options{Quality: jpeg.DefaultQuality})
+		if e3 != nil {
+			panic(e3)
 		}
 
-		err = jpeg.Encode(f, img, &jpeg.Options{Quality: jpeg.DefaultQuality})
-		if err != nil {
-			panic(err)
-		}
 
-		f.Close()
+		fz, e4 := os.Open(tp)
+		defer fz.Close()
+		if e4!=nil {
+			panic(e4)
+		}
+		info, _ := os.Stat(tp)
+		zip.Write(archiver.File{
+			FileInfo: archiver.FileInfo{
+				FileInfo:   info,
+				CustomName: pagename,
+			},
+			ReadCloser: fz,
+		})
+
 	}
 
-	//TODO create ZIP
-
-	//todo cleanup unpacked, and tmp
+	j.CreateNewArchiveJob(outZipPath,job.UserID,"")
+	//FIXME cleanup unpacked, and tmp
 
 	return nil
 }

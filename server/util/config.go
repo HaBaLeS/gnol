@@ -70,7 +70,7 @@ func ReadConfig(filename string) (*ToolConfig, error) {
 					case int:
 						iv, err := strconv.Atoi(stringVal)
 						if err != nil { //FIXME error should be handled more global
-							panic(err)
+							fmt.Printf("Error parsing %s", err)
 						}
 						val.SetInt(int64(iv))
 					case string:
