@@ -1,16 +1,16 @@
 package jobs
 
 import (
-	"fmt"
+//	"fmt"
 	"github.com/HaBaLeS/gnol/server/storage"
-	"github.com/gen2brain/go-fitz"
-	"github.com/mholt/archiver/v3"
+	//"github.com/gen2brain/go-fitz"
+/*	"github.com/mholt/archiver/v3"
 	"github.com/nfnt/resize"
 	"image/jpeg"
 	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
+	"path/filepath"*/
 )
 
 //CreatePFCConversionJob creates a new job for processing PDF files and crate a CBZ out of it
@@ -28,7 +28,7 @@ func (j *JobRunner) CreatePFCConversionJob(pdfFile,uid string) {
 }
 
 func (j *JobRunner) convertToPDF(job *BGJob) error {
-	fmt.Printf("Running conversion\n")
+	/*fmt.Printf("Running conversion\n")
 
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "fitz")
 	if err != nil {
@@ -95,6 +95,6 @@ func (j *JobRunner) convertToPDF(job *BGJob) error {
 
 	j.CreateNewArchiveJob(outZipPath,job.UserID,"")
 	//FIXME cleanup unpacked, and tmp
-
+*/
 	return nil
 }

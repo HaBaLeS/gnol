@@ -7,3 +7,6 @@ coverage.html
 playground.upx
 gnol
 *.log
+/cmd/gnol-tools/gnol-tools
+/deploy.sh
+/doc/ideas

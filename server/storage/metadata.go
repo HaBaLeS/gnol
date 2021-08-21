@@ -83,21 +83,26 @@ func (r NilWalker) Walk(archive string, walkFn archiver.WalkFunc) error{
 func (m *Metadata) extractCoverImage() error {
 	var names []string
 	aerr := m.arc().Walk(m.FilePath, func(f archiver.File) error {
-		isImageFile(f.Name())
-		names = append(names, strings.ToLower(f.Name()))
+		if isImageFile(f.Name()) {
+			names = append(names, strings.ToLower(f.Name()))
+		}
 		return nil
 	})
 	if aerr != nil {
 		return aerr
 	}
 	sort.Strings(names)
-	m.NumPages = len(names)
+	m.NumPages = len(names) //FIXME  -- NumPages is wrong and has issues on the page count when viewing
 	for _, name := range names {
-		if strings.HasSuffix(name, "/") {
+		if strings.HasPrefix(name, "."){
+			//ignore files starting with a .
+		} else if strings.HasSuffix(name, "/") {
 			fmt.Printf("Dir in archive: %s\n", name)
 		} else if isCoverImage(name) {
 			aerr := m.arc().Walk(m.FilePath, func(f archiver.File) error {
-				if strings.HasSuffix(strings.ToLower(f.Name()), name) {
+				if strings.HasPrefix(f.Name(), "."){
+					//ignore files starting with a .
+				} else if strings.HasSuffix(strings.ToLower(f.Name()), name) {
 					input, err := ioutil.ReadAll(f.ReadCloser)
 					if err != nil {
 						panic(err)
@@ -106,6 +111,7 @@ func (m *Metadata) extractCoverImage() error {
 					//m.CoverImage = res
 					m.CoverImageBase64 = base64.StdEncoding.EncodeToString(res)
 					if resErr != nil {
+						fmt.Printf("File: %s\n", name)
 						panic(resErr)
 					}
 					//ioutil.WriteFile(TN_FOLDER+"_tn.jpg", res, os.ModePerm)
@@ -136,6 +142,9 @@ func isCoverImage(f string) bool {
 
 func isImageFile(f string) bool {
 	ext := strings.ToLower(filepath.Ext(f))
+	if strings.HasPrefix(f, ".") {
+		return false //no . (hidden files)
+	}
 	return ext == ".jpg" || ext == ".jpeg" || ext == ".png"
 }
 

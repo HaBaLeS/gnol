@@ -26,6 +26,9 @@ func CreateThumbnail(data []byte, ext string) ([]byte, error) {
 //Output format is always JPEG to support compression
 func LimitSize(reader io.Reader, ext string, maxWidth uint, maxHeight uint) (io.Reader, error) {
 	var img image.Image
+
+
+
 	var err error
 	if strings.ToLower(ext) == ".jpg" {
 		img, err = jpeg.Decode(reader)
@@ -35,10 +38,10 @@ func LimitSize(reader io.Reader, ext string, maxWidth uint, maxHeight uint) (io.
 		return nil, fmt.Errorf("cannot ceate thumbnail form: %s", ext)
 	}
 
-	m := resize.Thumbnail(maxWidth, maxHeight, img, resize.Bicubic)
 	if err != nil {
 		return nil, err
 	}
+	m := resize.Thumbnail(maxWidth, maxHeight, img, resize.Bicubic)
 
 	buf := *new(bytes.Buffer)
 	ence := jpeg.Encode(&buf, m, nil)

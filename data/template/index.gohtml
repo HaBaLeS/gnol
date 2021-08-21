@@ -17,10 +17,10 @@
     {{ range $idxx, $v := . }}
             {{ if mod $idxx 4}} </div><div class="columns"> {{end}}
             <div class="column is-3">
-                <div class="tile">
-                    <div class="card">
-                        <div class="card-mage">
-                            <figure class="image is-2by3">
+                <div class="tile is-parent">
+                    <div class="tile is-child card">
+                        <div class="card-image">
+                            <figure class="image is-fullwidth">
                                 <img src="data:image/png;base64,{{ $v.CoverImageBase64 }}" alt="Red dot" />
                             </figure>
                         </div>
