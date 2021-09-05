@@ -15,32 +15,42 @@ func (ah *AppHandler) comicsList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		us := getUserSession(r.Context())
 		if us.IsLoggedIn()  {
-			if us.MetadataList == nil || len(us.MetadataList.Comics) == 0 {
-				user := ah.bs.User.UserByID([]byte(us.UserID))
-				us.MetadataList = ah.bs.Comic.MetadataForList(user.MetadataList)
-			}
+			us.ComicList = ah.dao.ComicsForUser(us.UserID)
 			ah.renderTemplate("index.gohtml", w, r, nil)
 		} else {
-			//FIXME Render different Template if user is not logges in
-			us.MetadataList = &storage.MetadataList{
-				Comics: make([]*storage.Metadata,0),
-			}
+			//FIXME Render different Template if user is not logged in
+			us.ComicList = new([]storage.Comic)
 			ah.renderTemplate("index.gohtml", w, r, nil)
 		}
 	}
 }
 
+func (ah *AppHandler) seriesList() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		us := getUserSession(r.Context())
+		if us.IsLoggedIn()  {
+			us.SeriesList = ah.dao.SeriesForUser(us.UserID)
+			ah.renderTemplate("index.gohtml", w, r, nil)
+		} else {
+			//FIXME Render different Template if user is not logged in
+			us.ComicList = new([]storage.Comic)
+			ah.renderTemplate("index.gohtml", w, r, nil)
+		}
+	}
+}
+
+
 func (ah *AppHandler) comicsLoad() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		comicID := chi.URLParam(r, "comicId")
 		comicID,_ = url.QueryUnescape(comicID)
-		meta  := ah.bs.Comic.GetMetadata([]byte(comicID))
+		comic  := ah.dao.ComicById(comicID)
 
-		if meta == nil {
+		if comic == nil {
 			renderError(fmt.Errorf("comic with id %s not found", comicID), w)
 			return
 		}
-		ah.renderTemplate("jqviewer.gohtml", w, r, meta)
+		ah.renderTemplate("jqviewer.gohtml", w, r, comic)
 	}
 }
 
@@ -54,11 +64,13 @@ func (ah *AppHandler) comicsPageImage() http.HandlerFunc {
 			return
 		}
 
+		comic := ah.dao.ComicById(comicID) //FIXME change to getfilename for Comic
+
 		//get file from cache
 		var err error
-		file, hit := ah.cache.GetFileFromCache(comicID, num)
+		file, hit := ah.cache.GetFileFromCache(comic.FilePath, num)
 		if !hit {
-			file, err = ah.bs.Comic.GetPageImage(comicID, num)
+			file, err = ah.bs.Comic.GetPageImage(comic.FilePath,comicID, num)
 			if err != nil {
 				renderError(err, w)
 				return

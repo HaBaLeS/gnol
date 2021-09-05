@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/nfnt/resize"
 	"io/fs"
 	"os"
@@ -23,6 +24,17 @@ func (s *Session) packfolder(args []string, options map[string]string) int {
 	if fi, err := os.Stat(s.InputFile); err != nil || !fi.IsDir(){
 		s.Error("File does not exist or is not a directory: %s", s.InputFile)
 		return -1
+	}
+
+	if _, err := os.Stat(path.Join(s.InputFile, "gnol.json")); err == nil{
+		f, err := os.Open(path.Join(s.InputFile, "gnol.json"))
+		if err == nil {
+			dec := json.NewDecoder(f)
+			dex := dec.Decode(s.MetaData)
+			if dex != nil {
+				s.Error("Error decoding exisiting json", dex)
+			}
+		}
 	}
 
 

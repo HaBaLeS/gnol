@@ -2,22 +2,12 @@ package storage
 
 import (
 	"bytes"
-	"fmt"
-	"github.com/boltdb/bolt"
 	"github.com/rs/xid"
 	"golang.org/x/crypto/argon2"
 )
 
-var USER_BUCKET = []byte("USERS")
 
-type User struct {
-	*BaseEntity
-	Name    string
-	PwdHash []byte
-	Salt    []byte
-	MetadataList  []string
-}
-
+/*
 type UserStore struct {
 	bs *BoltStorage
 }
@@ -26,27 +16,13 @@ func newUserStore(bs *BoltStorage) *UserStore{
 	return &UserStore{
 		bs: bs,
 	}
-}
+}*/
 
 
 
-func (us *UserStore) CreateUser(name string, pass string) *User {
-	//FIXME users can just override each others
-	hash, salt := hashPassword(pass)
-	u := &User{
-		BaseEntity: CreateBaseEntity(USER_BUCKET),
-		MetadataList: make([]string,0),
-		Name:       name,
-		PwdHash:    hash,
-		Salt:       salt,
-	}
-	us.bs.Write(u)
-	return u
-}
-
-
+/*
 func (us *UserStore) AddComic(uid string, metadata *Metadata) error {
-	u := us.UserByID([]byte(uid))
+	/*u := us.UserByID([]byte(uid))
 	if u == nil {
 		return fmt.Errorf("user with id %s does not exist", uid)
 	}
@@ -57,45 +33,11 @@ func (us *UserStore) AddComic(uid string, metadata *Metadata) error {
 	err := us.bs.Write(metadata)
 	err = us.bs.Write(u)
 	return err
-}
-
-func hashPassword(pass string) ([]byte, []byte) {
-	salt := xid.New().Bytes()
-	hash := argon2.Key([]byte(pass), salt, 3, 32*1024, 4, 32)
-	return hash, salt
-}
-
-func checkPassword(salt []byte, dbhash []byte, pass string) error {
-	hash := argon2.Key([]byte(pass), salt, 3, 32*1024, 4, 32)
-	if bytes.Compare(hash, dbhash) != 0 {
-		fmt.Println("Password do not match")
-		return fmt.Errorf("Login Error")
-	}
 	return nil
-}
+}*/
 
 
-func (us *UserStore) AuthUser(name string, pass string) (*User, error) {
-	u := new(User)
-	logError := us.bs.ReadRaw(func(tx *bolt.Tx) error {
-		c := tx.Bucket(USER_BUCKET).Cursor()
-		//spx := []byte(name)
-		//FIXME introduce search instead of scan //&& bytes.HasPrefix(k, spx)
-		for k, v := c.First(); k != nil ; k, v = c.Next() {
-			err := loadFromJson(u, v)
-			if err != nil {
-				return err
-			}
-			if u.Name == name {
-				return checkPassword(u.Salt, u.PwdHash, pass)
-			}
-		}
-		fmt.Printf("Did not find: %s in DB\n", name)
-		return fmt.Errorf("Login failed")
-	})
-	return u, logError
-}
-
+/*
 func (us *UserStore) UserByID(uid []byte) *User {
 	user := &User{}
 	err := us.bs.ReadRaw(func(tx *bolt.Tx) error {
@@ -113,4 +55,69 @@ func (us *UserStore) UserByID(uid []byte) *User {
 		return nil
 	}
 	return  user
+}
+*/
+
+func (dao *DAO) AuthUser(name string, pass string) *User {
+	user := new(User)
+	err := dao.DB.Get(user,"select * from gnoluser where name = $1",name)
+	if err != nil {
+		dao.log.Printf("Error querying for user: %v", err)
+		return nil
+	}
+	auth := checkPassword(user.Salt, user.PasswordHash, pass)
+	if !auth {
+		return nil
+	} else {
+		return user
+	}
+}
+
+
+
+func (dao *DAO)AddUser(name,  password string) bool {
+	password_hash, salt := hashPassword(password)
+	tx := dao.DB.MustBegin()
+	_, err := tx.Exec("INSERT INTO gnoluser (name, password_hash, salt) VALUES ($1, $2, $3)", name, password_hash, salt)
+	if err != nil {
+		dao.log.Printf("Could not insert user. ")
+		tx.Rollback()
+		return false
+	}
+	err = tx.Commit()
+	if err !=  nil {
+		dao.log.Printf("Could not insert user. %v", err)
+		return false
+	}
+	return true
+}
+
+func hashPassword(pass string) ([]byte, []byte) {
+	salt := xid.New().Bytes()
+	hash := argon2.Key([]byte(pass), salt, 3, 32*1024, 4, 32)
+	return hash, salt
+}
+
+
+func checkPassword(salt []byte, dbhash []byte, pass string) bool {
+	hash := argon2.Key([]byte(pass), salt, 3, 32*1024, 4, 32)
+	if bytes.Compare(hash, dbhash) != 0 { //FIXME introduce constant time comparison
+		return false
+	}
+	return true
+}
+
+
+func AddComic(name string) {
+	//"insert into comic (a,b,v) values ($1,$2, $3)"
+}
+
+func AddComicToUser(c Comic, u User) {
+	//"insert into user_to_comic (a,b,v) values ($1,$2, $3)"
+
+}
+
+func ListComicsForUser(u User) *[]Comic{
+	//"select * comic joine to user hwre user = ?"
+	return nil
 }

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/cache"
 	"github.com/HaBaLeS/gnol/server/jobs"
-	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/router"
+	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/HaBaLeS/go-logger"
 	"net/http"
@@ -31,6 +31,7 @@ type Application struct {
 	HTTPServer *http.Server
 	Handler    *router.AppHandler
 	bs        *storage.BoltStorage
+	dao			*storage.DAO
 	Logger     *logger.Logger
 	Cache      *cache.ImageCache
 	BGJobs     *jobs.JobRunner
@@ -52,7 +53,7 @@ func NewServer(cfgPath string) *Application {
 		Logger: log,
 	}
 
-	log.InfoF("Using: http://%s:%d/comics", a.Config.ListenAddress, a.Config.ListenPort)
+	log.InfoF("Using: http://%s:%d/users/login", a.Config.ListenAddress, a.Config.ListenPort)
 	return a
 }
 
@@ -60,15 +61,16 @@ func NewServer(cfgPath string) *Application {
 func (a *Application) Start() {
 
 	a.bs = storage.NewBoltStorage(a.Config)
+	a.dao = storage.NewDAO(a.Config)
 
 	a.Cache = cache.NewImageCache(a.Config)
 	go a.Cache.RecoverCacheDir()
 
-	a.BGJobs = jobs.NewJobRunner(a.bs, a.Config)
+	a.BGJobs = jobs.NewJobRunner(a.bs, a.dao, a.Config)
 	a.BGJobs.StartMonitor()
 
 	//TODO move router in server
-	a.Handler = router.NewHandler(a.Config, a.bs, a.Cache, a.BGJobs)
+	a.Handler = router.NewHandler(a.Config, a.bs, a.Cache, a.BGJobs, a.dao)
 	a.Handler.Routes()
 
 	a.HTTPServer = &http.Server{

@@ -24,13 +24,14 @@ func (ah *AppHandler) uploadArchive() http.HandlerFunc{
 			panic(cpe)
 		}
 
-		s2 := request.FormValue("public")
 		us := getUserSession(request.Context())
-		ah.bgJobs.CreateNewArchiveJob(outName, us.UserID, s2)
+		ah.bgJobs.CreateNewArchiveJob(outName, us.UserID)
 
 		ah.renderTemplate("upload.gohtml",w,request,nil)
 	}
 }
+
+
 
 func (ah *AppHandler) uploadUrl() http.HandlerFunc{
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -65,3 +66,4 @@ func (ah *AppHandler) uploadPdf() http.HandlerFunc{
 		ah.renderTemplate("upload.gohtml",w,request,nil)
 	}
 }
+

@@ -11,8 +11,9 @@ var sessionMap = make(map[string]*UserSession, 100)
 type UserSession struct {
 	SessionID     string
 	UserName      string
-	UserID		  string
-	MetadataList	  *storage.MetadataList
+	UserID		  int
+	ComicList	  *[]storage.Comic
+	SeriesList	  *[]storage.Series
 	authenticated bool
 	D             interface{}
 }

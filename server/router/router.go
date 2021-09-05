@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/cache"
 	"github.com/HaBaLeS/gnol/server/jobs"
-	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/session"
+	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -26,19 +26,21 @@ type AppHandler struct {
 	Router    chi.Router
 	config    *util.ToolConfig
 	bs       *storage.BoltStorage
+	dao		*storage.DAO
 	cache     *cache.ImageCache
 	bgJobs    *jobs.JobRunner
 	templates *template.Template
 }
 
 //NewHandler Create a new AppHandler for the Server
-func NewHandler(config *util.ToolConfig, bs *storage.BoltStorage, cache *cache.ImageCache, bgj *jobs.JobRunner) *AppHandler {
+func NewHandler(config *util.ToolConfig, bs *storage.BoltStorage, cache *cache.ImageCache, bgj *jobs.JobRunner, dao	*storage.DAO) *AppHandler {
 	ah := &AppHandler{
 		Router: chi.NewRouter(),
 		config: config,
 		bs:    bs,
 		cache:  cache,
 		bgJobs: bgj,
+		dao: dao,
 	}
 
 	ah.initTemplates()
@@ -52,6 +54,12 @@ func (ah *AppHandler) Routes() {
 	//Define global middleware
 	ah.Router.Use(middleware.DefaultLogger)
 	ah.Router.Use(userSession)
+
+	ah.Router.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/comics", 301)
+	})
+
+
 
 	//Handle static Resources
 	if ah.config.LocalResources {
@@ -93,6 +101,11 @@ func (ah *AppHandler) Routes() {
 		r.Get("/", ah.comicsList())
 		r.Get("/{comicId}", ah.comicsLoad())
 		r.Get("/{comicId}/{imageId}", ah.comicsPageImage())
+	})
+
+	//Define Series
+	ah.Router.Route("/series", func(r chi.Router) {
+		r.Get("/", ah.seriesList())
 	})
 }
 
@@ -166,6 +179,8 @@ func (ah *AppHandler) renderTemplate(templateName string, w http.ResponseWriter,
 		panic(re)
 	}
 }
+
+
 
 func renderError(e error, w http.ResponseWriter){
 	w.WriteHeader(500)

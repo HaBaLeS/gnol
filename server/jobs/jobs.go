@@ -38,7 +38,7 @@ type BGJob struct {
 	Duration    string //how long did it take
 	InputFile   string
 	ExtraData   map[string]string
-	UserID		string
+	UserID		int
 }
 
 
@@ -51,10 +51,11 @@ type JobRunner struct {
 	log       *logger.Logger
 	bs		  *storage.BoltStorage
 	cfg		  *util.ToolConfig
+	dao       *storage.DAO
 }
 
 //NewJobRunner Constructor
-func NewJobRunner(boltStorage *storage.BoltStorage, cfg *util.ToolConfig) *JobRunner { //fixme give config instead of job path
+func NewJobRunner(boltStorage *storage.BoltStorage,dao       *storage.DAO, cfg *util.ToolConfig) *JobRunner { //fixme give config instead of job path
 	out, _ := os.Create(path.Join(cfg.TempDirectory,"jobs.log"))
 	lg, _ := logger.NewLogger("GnolJob", 0, logger.InfoLevel, out)
 	return &JobRunner{
@@ -62,6 +63,7 @@ func NewJobRunner(boltStorage *storage.BoltStorage, cfg *util.ToolConfig) *JobRu
 		jobLocked: false,
 		log:       lg,
 		bs:       boltStorage,
+		dao: dao,
 		cfg: cfg,
 	}
 }
@@ -127,11 +129,12 @@ func (j *JobRunner) processJob(job *BGJob) {
 
 	}
 
-	j.bs.Delete(job)
+
 	if jobError != nil{
 		fmt.Printf("Error in job: %s\n", jobError)
 		job.ChangeBucket(bucketJobError)
 	} else {
+		j.bs.Delete(job) //FIXME this makes the job run forever!! not good!!!
 		job.ChangeBucket(bucketJobDone)
 	}
 	j.bs.Write(job)

@@ -13,7 +13,7 @@
 <section class="section">
     <div class="container">
         <div class="columns">
-{{ with .MetadataList.Comics }}
+{{ with .ComicList }}
     {{ range $idxx, $v := . }}
             {{ if mod $idxx 4}} </div><div class="columns"> {{end}}
             <div class="column is-3">

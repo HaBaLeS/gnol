@@ -8,7 +8,7 @@ import (
 	"path"
 )
 
-func (j *JobRunner) CreateNewURLJob(url, uid string) {
+func (j *JobRunner) CreateNewURLJob(url string, uid int) {
 	bgjob := &BGJob{
 		JobType:     DownloadUrl,
 		InputFile:   url,
@@ -43,7 +43,7 @@ func (j *JobRunner) downloadFromUrl(job *BGJob) error {
 	j.log.InfoF("Copyed %d bytes", w)
 
 	//Create followup job after downlaod
-	j.CreateNewArchiveJob(outName, job.UserID, "")
+	j.CreateNewArchiveJob(outName, job.UserID)
 
 	return nil
 }

@@ -141,6 +141,7 @@ func (s *Session) processOptionsAndValidate(args []string, options map[string]st
 		s.Error("Error: %s", err)
 		return false
 	}
+
 	return true
 }
 

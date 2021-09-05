@@ -66,11 +66,14 @@ func (ah *AppHandler) createUser() http.HandlerFunc {
 
 		//TODO check for username
 
-		user := ah.bs.User.CreateUser(name, pass)
-		us := getUserSession(r.Context())
-		us.UserName = user.Name
-
-		http.Redirect(w,r,"/comics",303)
+		if ok := ah.dao.AddUser(name,pass); !ok {
+			est = "Duplicate Username"
+			ah.renderTemplate("create_user.gohtml", w, r, est)
+		} else {
+			us := getUserSession(r.Context())
+			us.UserName = name
+			http.Redirect(w,r,"/comics",303)
+		}
 	}
 }
 
@@ -78,15 +81,15 @@ func (ah *AppHandler) loginUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		name := r.FormValue("username")
 		pass := r.FormValue("pass")
-		user, loginerr := ah.bs.User.AuthUser(name, pass)
-		if loginerr != nil {
-			ah.renderTemplate("login_user.gohtml", w, r, loginerr)
+		user := ah.dao.AuthUser(name, pass)
+		if user == nil {
+			ah.renderTemplate("login_user.gohtml", w, r, "Login Failed")
 			return
 		}
 		us := getUserSession(r.Context())
 		us.AuthSession()
 		us.UserName = user.Name
-		us.UserID = string(user.IdBytes())
+		us.UserID = user.Id
 
 		http.Redirect(w,r,"/comics",303)
 	}

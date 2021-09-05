@@ -14,7 +14,7 @@ import (
 )
 
 //CreatePFCConversionJob creates a new job for processing PDF files and crate a CBZ out of it
-func (j *JobRunner) CreatePFCConversionJob(pdfFile,uid string) {
+func (j *JobRunner) CreatePFCConversionJob(pdfFile string,uid int) {
 	bgjob := &BGJob{
 		JobType:     PdfToCbz,
 		InputFile:   pdfFile,

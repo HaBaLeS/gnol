@@ -15,14 +15,12 @@ import (
 type BoltStorage struct {
 	db        *bolt.DB
 	Comic     *ComicStorage
-	User	  *UserStore
 }
 
 func NewBoltStorage(cfg *util.ToolConfig) *BoltStorage{
 	bs := &BoltStorage{}
 	bs.Init(cfg)
 	bs.Comic = newComicStore(bs, cfg)
-	bs.User = newUserStore(bs)
 	return bs
 }
 
@@ -40,7 +38,6 @@ func (ms *BoltStorage) Init(config *util.ToolConfig){
 		_, err = tx.CreateBucketIfNotExists([]byte("jobs_open"))
 		_, err = tx.CreateBucketIfNotExists([]byte("jobs_error"))
 		_, err = tx.CreateBucketIfNotExists([]byte("jobs_done"))
-		_, err = tx.CreateBucketIfNotExists(USER_BUCKET)
 		return err
 	})
 	if err != nil {
@@ -107,7 +104,7 @@ type Entity interface {
 }
 
 type BaseEntity struct {
-	Id string //DO NOT CHANGE visibilitie! JSon needs it to be exported!
+	Id string
 }
 
 func (b *BaseEntity) ChangeBucket(bucket []byte) {
