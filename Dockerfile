@@ -12,8 +12,11 @@ COPY go.sum ./
 COPY *.go ./
 COPY data ./data/
 COPY server ./server
+COPY container.cfg ./
+
+
 
 RUN go generate
 RUN go build
 
-CMD [ "./gnol" ]
+CMD [ "./gnol", "-c", "container.cfg" ]
