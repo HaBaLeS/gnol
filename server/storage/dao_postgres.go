@@ -16,6 +16,7 @@ const(
 	CURRENT_VERSION = "select max(version) from schema_version"
 
 	OLDEST_OPEN_JOB ="select * from gnoljobs where job_status = 0 order by id asc limit 1"
+	UPDATE_JOB_STATUS = "update gnoljobs set job_status = $1 where id = $2"
 
 	CREATE_COMIC = "insert into comic (name, nsfw, series_id, cover_image_base64, num_pages, file_path) values ($1, $2, $3, $4, $5, $6)"
 	CREATE_JOB = "insert into gnoljobs (user_id, job_type, input_data) values ($1,$2,$3);"
@@ -178,13 +179,10 @@ func (dao *DAO) GetOldestOpenJob() *GnolJob{
 	return job
 }
 
-type GnolJob struct {
-	Id int
-	JobStatus int `db:"job_status"`
-	UserID int `db:"user_id"`
-	JobType int `db:"job_type"`
-	Data string `db:"input_data"`
+func (dao *DAO) UpdatJobStatus(job *GnolJob, newStatus int) {
+	dao.DB.MustExec(UPDATE_JOB_STATUS, newStatus, job.Id)
 }
+
 
 type User struct {
 	Id int
@@ -209,3 +207,13 @@ type Series struct {
 	CoverImageBase64 string `db:"cover_image_base64"`
 	ComicsInSeries int `db:"comics_in_series"`
 }
+
+
+type GnolJob struct {
+	Id int
+	JobStatus int `db:"job_status"`
+	UserID int `db:"user_id"`
+	JobType int `db:"job_type"`
+	Data string `db:"input_data"`
+}
+

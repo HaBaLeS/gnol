@@ -25,7 +25,6 @@ import (
 type AppHandler struct {
 	Router    chi.Router
 	config    *util.ToolConfig
-	bs       *storage.BoltStorage
 	dao		*storage.DAO
 	cache     *cache.ImageCache
 	bgJobs    *jobs.JobRunner
@@ -33,11 +32,10 @@ type AppHandler struct {
 }
 
 //NewHandler Create a new AppHandler for the Server
-func NewHandler(config *util.ToolConfig, bs *storage.BoltStorage, cache *cache.ImageCache, bgj *jobs.JobRunner, dao	*storage.DAO) *AppHandler {
+func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobRunner, dao	*storage.DAO) *AppHandler {
 	ah := &AppHandler{
 		Router: chi.NewRouter(),
 		config: config,
-		bs:    bs,
 		cache:  cache,
 		bgJobs: bgj,
 		dao: dao,

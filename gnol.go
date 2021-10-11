@@ -30,7 +30,6 @@ type Application struct {
 	Config     *util.ToolConfig
 	HTTPServer *http.Server
 	Handler    *router.AppHandler
-	bs        *storage.BoltStorage
 	dao			*storage.DAO
 	Logger     *logger.Logger
 	Cache      *cache.ImageCache
@@ -60,17 +59,16 @@ func NewServer(cfgPath string) *Application {
 //Start gnol, serve HTTP
 func (a *Application) Start() {
 
-	a.bs = storage.NewBoltStorage(a.Config)
 	a.dao = storage.NewDAO(a.Config)
 
 	a.Cache = cache.NewImageCache(a.Config)
 	go a.Cache.RecoverCacheDir()
 
-	a.BGJobs = jobs.NewJobRunner(a.bs, a.dao, a.Config)
+	a.BGJobs = jobs.NewJobRunner(a.dao, a.Config)
 	a.BGJobs.StartMonitor()
 
 	//TODO move router in server
-	a.Handler = router.NewHandler(a.Config, a.bs, a.Cache, a.BGJobs, a.dao)
+	a.Handler = router.NewHandler(a.Config, a.Cache, a.BGJobs, a.dao)
 	a.Handler.Routes()
 
 	a.HTTPServer = &http.Server{
@@ -85,7 +83,6 @@ func (a *Application) Start() {
 
 //Shutdown try's to end all modules gracefully where needed
 func (a *Application) Shutdown() {
-	a.bs.Close()
 	a.BGJobs.StopMonitor()
 	if a.HTTPServer != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

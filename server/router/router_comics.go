@@ -70,7 +70,7 @@ func (ah *AppHandler) comicsPageImage() http.HandlerFunc {
 		var err error
 		file, hit := ah.cache.GetFileFromCache(comic.FilePath, num)
 		if !hit {
-			file, err = ah.bs.Comic.GetPageImage(comic.FilePath,comicID, num)
+			file, err = storage.GetPageImage(ah.config, comic.FilePath,comicID, num)
 			if err != nil {
 				renderError(err, w)
 				return

@@ -10,22 +10,22 @@ import (
 
 //CreateNewArchiveJob create a prepared Job form processing a new CBR/CBZ/RAR/ZIP file
 func (j *JobRunner) CreateNewArchiveJob(archive string, userID int) {
-	bgjob := &BGJob{
+	bgjob := &storage.GnolJob{
 		JobType:     ScanMeta,
-		InputFile:   archive,
-		DisplayName: "Scan Metadata",
+		Data:   archive,
+		//DisplayName: "Scan Metadata",
 		JobStatus:   NotStarted,
-		ExtraData:   make(map[string]string, 10),
-		BaseEntity:  storage.CreateBaseEntity(bucketJobOpen),
+		//ExtraData:   make(map[string]string, 10),
+		//BaseEntity:  storage.CreateBaseEntity(bucketJobOpen),
 		UserID: userID,
 	}
 
 	j.save(bgjob)
 }
 
-func (j *JobRunner) scanMetaData(job *BGJob) error {
+func (j *JobRunner) scanMetaData(job *storage.GnolJob) error {
 
-	f, err :=  os.Open(job.InputFile)
+	f, err :=  os.Open(job.Data)
 	if err != nil {
 		return err
 	}
@@ -36,11 +36,11 @@ func (j *JobRunner) scanMetaData(job *BGJob) error {
 
 	e, ok := eIface.(archiver.Walker)
 	if !ok {
-		return fmt.Errorf("format specified by source filename is not an extractor format: %s (%T)", job.InputFile, eIface)
+		return fmt.Errorf("format specified by source filename is not an extractor format: %s (%T)", job.Data, eIface)
 	}
 
 	c := &storage.Comic{}
-	err = e.Walk(job.InputFile, func(f archiver.File) error {
+	err = e.Walk(job.Data, func(f archiver.File) error {
 		if f.Name() == "gnol.json" {
 			dec := json.NewDecoder(f)
 			err := dec.Decode(c)
@@ -51,7 +51,7 @@ func (j *JobRunner) scanMetaData(job *BGJob) error {
 	if err != nil {
 		return err
 	}
-	c.FilePath = job.InputFile
+	c.FilePath = job.Data
 	id, err :=  j.dao.SaveComic(c)
 	if err != nil {
 		return err

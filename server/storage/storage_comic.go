@@ -1,11 +1,8 @@
 package storage
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/util"
-	"github.com/boltdb/bolt"
 	"github.com/mholt/archiver/v3"
 	"io"
 	"os"
@@ -13,50 +10,9 @@ import (
 )
 
 
-type MetadataList struct {
-	Comics []*Metadata
-}
+func GetPageImage(config *util.ToolConfig, filepath string,comicIdent string, pageNum int) (string, error) {
 
-
-type ComicStorage struct {
-	bs *BoltStorage
-	config *util.ToolConfig
-}
-
-func newComicStore(bs *BoltStorage, cfg *util.ToolConfig) *ComicStorage {
-	return &ComicStorage{
-		bs: bs,
-		config: cfg,
-	}
-}
-
-func (cs *ComicStorage) GetMetadata(mid []byte) (*Metadata) {
-	me := &Metadata{}
-	err := cs.bs.ReadRaw(func(tx *bolt.Tx) error {
-		b := tx.Bucket(META_BUCKET)
-		k, v := b.Cursor().Seek(mid)
-		if k != nil && bytes.Equal(k, mid) {
-			der := loadFromJson(me, v)
-			return der
-		} else {
-			return fmt.Errorf("metadata with Id %s not found", mid)
-		}
-	})
-	if err != nil {
-		fmt.Printf("Error Loading Metadata. %s\n", err)
-		return nil
-	}
-	return me
-}
-
-func (cs *ComicStorage) GetPageImage(filepath string,comicIdent string, pageNum int) (string, error) {
-
-	//me := cs.GetMetadata([]byte(comicID))
-	//if me == nil {
-	//	return "", fmt.Errorf("Unknown ComicID: %s", comicID)
-	//}
-
-	comicDir := path.Join(cs.config.TempDirectory, comicIdent)
+	comicDir := path.Join(config.TempDirectory, comicIdent)
 	fileID := fmt.Sprintf("page-%d", pageNum)
 	filename := path.Join(comicDir, fileID+".gnol")
 
@@ -106,30 +62,4 @@ func (cs *ComicStorage) GetPageImage(filepath string,comicIdent string, pageNum 
 
 	return filename, nil
 
-}
-
-
-func (cs *ComicStorage) LoadComicMetadata(me *Metadata) error {
-	return cs.bs.ReadRaw(func(tx *bolt.Tx) error {
-		j := tx.Bucket([]byte("meta")).Get(me.IdBytes())
-		if j == nil {
-			return fmt.Errorf("Entity with ID: %s not found", me.IdBytes())
-		}
-		dec := json.NewDecoder(bytes.NewReader(j))
-		return dec.Decode(me)
-	})
-}
-
-func (cs *ComicStorage) SaveComicMeta(me *Metadata) error {
-	return cs.bs.Write(me)
-}
-
-func (cs *ComicStorage) MetadataForList(list []string) *MetadataList {
-	ml := &MetadataList{
-		Comics: make([]*Metadata,len(list)),
-	}
-	for i,v := range list {
-		ml.Comics[i] = cs.GetMetadata([]byte(v))
-	}
-	return ml
 }

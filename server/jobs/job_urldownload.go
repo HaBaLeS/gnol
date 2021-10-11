@@ -1,23 +1,21 @@
 package jobs
 
-import (
-	"github.com/HaBaLeS/gnol/server/storage"
-)
+import "github.com/HaBaLeS/gnol/server/storage"
 
 func (j *JobRunner) CreateNewURLJob(url string, uid int) {
-	bgjob := &BGJob{
+	bgjob := &storage.GnolJob{
 		JobType:     DownloadUrl,
-		InputFile:   url,
-		DisplayName: "Download URL",
+		Data:   url,
+		//DisplayName: "Download URL",
 		JobStatus:   NotStarted,
-		ExtraData:   make(map[string]string, 10),
-		BaseEntity:  storage.CreateBaseEntity(bucketJobOpen),
+		//ExtraData:   make(map[string]string, 10),
+		//BaseEntity:  storage.CreateBaseEntity(bucketJobOpen),
 		UserID: 	 uid,
 	}
 	j.save(bgjob)
 }
 
-func (j *JobRunner) downloadFromUrl(job *BGJob) error {
+func (j *JobRunner) downloadFromUrl(job *storage.GnolJob) error {
 	/*uri := job.InputFile
 	r, err := http.Get(uri)
 	if err != nil {

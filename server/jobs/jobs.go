@@ -27,17 +27,6 @@ const (
 	Done
 )
 
-type BGJob struct {
-	*storage.BaseEntity
-	JobType     int    //Convert to CBR, Scan for Metadata, Scrape Meta, SortFolder, Clean Cache etc....
-	JobStatus   int    //What's the status done, not started, error
-	DisplayName string //Name the Job
-	Duration    string //how long did it take
-	InputFile   string
-	ExtraData   map[string]string
-	UserID		int
-}
-
 
 //JOBS are defined by creating a name.job json in a special folder. jobs are processed one after the other by reading the directory where the jobs are and
 //taking one job, reading the description and processing it. MEta is updated while processing ... only 1 job at a time
@@ -45,20 +34,18 @@ type JobRunner struct {
 	running   bool
 	jobLocked bool
 	log       *logger.Logger
-	bs		  *storage.BoltStorage
 	cfg		  *util.ToolConfig
 	dao       *storage.DAO
 }
 
 //NewJobRunner Constructor
-func NewJobRunner(boltStorage *storage.BoltStorage,dao       *storage.DAO, cfg *util.ToolConfig) *JobRunner { //fixme give config instead of job path
+func NewJobRunner(dao *storage.DAO, cfg *util.ToolConfig) *JobRunner { //fixme give config instead of job path
 	out, _ := os.Create(path.Join(cfg.TempDirectory,"jobs.log"))
 	lg, _ := logger.NewLogger("GnolJob", 0, logger.InfoLevel, out)
 	return &JobRunner{
 		running:   false,
 		jobLocked: false,
 		log:       lg,
-		bs:       boltStorage,
 		dao: dao,
 		cfg: cfg,
 	}
@@ -90,7 +77,7 @@ func (j *JobRunner) StartMonitor() {
 }
 
 //checkForJobs scans folder for job metadata if there is at least one it is created and returned to be executed
-func (j *JobRunner) CheckForJobs() *BGJob {
+func (j *JobRunner) CheckForJobs() *storage.GnolJob {
 	job := j.FirstOpenJob()
 	if job != nil {
 		return job
@@ -104,7 +91,7 @@ func (j *JobRunner) StopMonitor() {
 	j.running = false
 }
 
-func (j *JobRunner) processJob(job *BGJob) {
+func (j *JobRunner) processJob(job *storage.GnolJob) {
 	var jobError error
 	switch job.JobType {
 	case PdfToCbz:
@@ -122,56 +109,30 @@ func (j *JobRunner) processJob(job *BGJob) {
 
 	default:
 		j.log.Errorf("Unsupported Job Type: %v", job.JobType)
-
 	}
-
 
 	if jobError != nil{
 		fmt.Printf("Error in job: %s\n", jobError)
-		job.ChangeBucket(bucketJobError)
+		j.dao.UpdatJobStatus(job, Error)
 	} else {
-		j.bs.Delete(job) //FIXME this makes the job run forever!! not good!!!
-		job.ChangeBucket(bucketJobDone)
+		//j.bs.Delete(job) //FIXME this makes the job run forever!! not good!!!
+		j.dao.UpdatJobStatus(job, Done)
 	}
-	j.bs.Write(job)
 	j.jobLocked = false
 }
 
-func (j *JobRunner) save(job *BGJob) {
-	err := j.dao.CreateJob(job.JobType, job.UserID, job.InputFile)
+func (j *JobRunner) save(job *storage.GnolJob) {
+	err := j.dao.CreateJob(job.JobType, job.UserID, job.Data)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (j *JobRunner) FirstOpenJob() *BGJob {
-	/*r := new(BGJob)
-	err := j.bs.ReadRaw(func(tx *bolt.Tx) error {
-		t := tx.Bucket([]byte("jobs_open"))
-		_, v := t.Cursor().First()
-		if v == nil {
-			return fmt.Errorf("no jobs available")
-		}
-
-		dec := json.NewDecoder(bytes.NewReader(v))
-		return dec.Decode(r)
-	})
-	if err != nil {
-		//legal reason is not errors found
-		return nil
-	}*/
-
+func (j *JobRunner) FirstOpenJob() *storage.GnolJob {
 	job := j.dao.GetOldestOpenJob()
 	if job == nil {
 		return nil
 	}
-	r := new(BGJob)
-	r.UserID = job.UserID
-	r.JobStatus = job.JobStatus
-	r.InputFile = job.Data
-	//r.Id = job.Id
-	r.JobType = job.JobType
 
-
-	return r
+	return job
 }

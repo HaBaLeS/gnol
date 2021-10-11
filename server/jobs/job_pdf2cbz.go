@@ -1,33 +1,22 @@
 package jobs
 
-import (
-//	"fmt"
-	"github.com/HaBaLeS/gnol/server/storage"
-	//"github.com/gen2brain/go-fitz"
-/*	"github.com/mholt/archiver/v3"
-	"github.com/nfnt/resize"
-	"image/jpeg"
-	"io/ioutil"
-	"os"
-	"path"
-	"path/filepath"*/
-)
+import "github.com/HaBaLeS/gnol/server/storage"
 
 //CreatePFCConversionJob creates a new job for processing PDF files and crate a CBZ out of it
 func (j *JobRunner) CreatePFCConversionJob(pdfFile string,uid int) {
-	bgjob := &BGJob{
+	bgjob := &storage.GnolJob{
 		JobType:     PdfToCbz,
-		InputFile:   pdfFile,
-		DisplayName: "Create CBZ from PDF",
+		Data:   pdfFile,
+		//DisplayName: "Create CBZ from PDF",
 		JobStatus:   NotStarted,
-		BaseEntity:  storage.CreateBaseEntity(bucketJobOpen),
+		//BaseEntity:  storage.CreateBaseEntity(bucketJobOpen),
 		UserID: uid,
 	}
 	j.save(bgjob)
 
 }
 
-func (j *JobRunner) convertToPDF(job *BGJob) error {
+func (j *JobRunner) convertToPDF(job *storage.GnolJob) error {
 	/*fmt.Printf("Running conversion\n")
 
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "fitz")
