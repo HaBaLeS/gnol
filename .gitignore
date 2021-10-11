@@ -11,3 +11,4 @@ gnol
 /deploy.sh
 /doc/ideas
 __deleteme.db
+gnol_sqlite.db

@@ -45,13 +45,14 @@ func (ms *BoltStorage) Init(config *util.ToolConfig){
 	}
 }
 
+/*
 func (ms *BoltStorage) Load( id string, into BaseEntity ) error {
 	//find Bucket by ID
 
 	//find item and load
 	panic("not implemented")
 	//deserialize item -> into
-}
+}*/
 
 func (ms *BoltStorage) Write(from Entity) error {
 	bucket := from.Bucket()

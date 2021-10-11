@@ -2,10 +2,6 @@ package jobs
 
 import (
 	"github.com/HaBaLeS/gnol/server/storage"
-	"io"
-	"net/http"
-	"os"
-	"path"
 )
 
 func (j *JobRunner) CreateNewURLJob(url string, uid int) {
@@ -22,7 +18,7 @@ func (j *JobRunner) CreateNewURLJob(url string, uid int) {
 }
 
 func (j *JobRunner) downloadFromUrl(job *BGJob) error {
-	uri := job.InputFile
+	/*uri := job.InputFile
 	r, err := http.Get(uri)
 	if err != nil {
 		j.log.Errorf("Error downloading %s with error, %s\n", uri,err)
@@ -44,6 +40,6 @@ func (j *JobRunner) downloadFromUrl(job *BGJob) error {
 
 	//Create followup job after downlaod
 	j.CreateNewArchiveJob(outName, job.UserID)
-
+*/
 	return nil
 }

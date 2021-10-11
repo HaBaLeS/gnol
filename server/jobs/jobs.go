@@ -1,13 +1,10 @@
 package jobs
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/HaBaLeS/go-logger"
-	"github.com/boltdb/bolt"
 	"os"
 	"path"
 	"time"
@@ -44,7 +41,6 @@ type BGJob struct {
 
 //JOBS are defined by creating a name.job json in a special folder. jobs are processed one after the other by reading the directory where the jobs are and
 //taking one job, reading the description and processing it. MEta is updated while processing ... only 1 job at a time
-
 type JobRunner struct {
 	running   bool
 	jobLocked bool
@@ -87,7 +83,7 @@ func (j *JobRunner) StartMonitor() {
 					go j.processJob(job)
 				}
 			} else {
-				//j.log.Info("Skipping run, Job is processing")
+				j.log.Info("Skipping run, Job is processing")
 			}
 		}
 	}()
@@ -142,14 +138,14 @@ func (j *JobRunner) processJob(job *BGJob) {
 }
 
 func (j *JobRunner) save(job *BGJob) {
-	err := j.bs.Write(job)
+	err := j.dao.CreateJob(job.JobType, job.UserID, job.InputFile)
 	if err != nil {
 		panic(err)
 	}
 }
 
 func (j *JobRunner) FirstOpenJob() *BGJob {
-	r := new(BGJob)
+	/*r := new(BGJob)
 	err := j.bs.ReadRaw(func(tx *bolt.Tx) error {
 		t := tx.Bucket([]byte("jobs_open"))
 		_, v := t.Cursor().First()
@@ -163,6 +159,19 @@ func (j *JobRunner) FirstOpenJob() *BGJob {
 	if err != nil {
 		//legal reason is not errors found
 		return nil
+	}*/
+
+	job := j.dao.GetOldestOpenJob()
+	if job == nil {
+		return nil
 	}
+	r := new(BGJob)
+	r.UserID = job.UserID
+	r.JobStatus = job.JobStatus
+	r.InputFile = job.Data
+	//r.Id = job.Id
+	r.JobType = job.JobType
+
+
 	return r
 }

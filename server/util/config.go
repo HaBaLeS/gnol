@@ -38,7 +38,6 @@ func ReadConfig(filename string) (*ToolConfig, error) {
 		DataDirectory:  ".",
 		TempDirectory:  "/tmp/",
 		ForceRescan:    false,
-		Database:       "gnol.db",
 	}
 	of := reflect.ValueOf(ret).Elem()
 	file, e := os.Open(filename)

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"database/sql"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
@@ -10,17 +11,31 @@ import (
 const(
 	SERIES_FOR_USER = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = ? group by s.id"
 	COMICS_FOR_USER = "select c.* from comic as c join user_to_comic utc on c.id = utc.comic_id and utc.user_id = ?"
-	CREATE_COMIC = "insert into comic (name, nsfw, series_id, cover_image_base64, num_pages, file_path) values ($1, $2, $3, $4, $5, $6)"
 	ADD_USER_2_COMIC = "insert into user_to_comic (user_id, comic_id) values ($1, $2)"
+	UPDATE_VERSION = "insert into schema_version (version) values ($1)"
+	CURRENT_VERSION = "select max(version) from schema_version"
+
+	OLDEST_OPEN_JOB ="select * from gnoljobs where job_status = 0 order by id asc limit 1"
+
+	CREATE_COMIC = "insert into comic (name, nsfw, series_id, cover_image_base64, num_pages, file_path) values ($1, $2, $3, $4, $5, $6)"
+	CREATE_JOB = "insert into gnoljobs (user_id, job_type, input_data) values ($1,$2,$3);"
+
 )
 
 
-var schema = `
+var schema_1 = `
 
+DROP TABLE IF EXISTS "schema_version";
 DROP TABLE IF EXISTS "gnoluser";
 DROP TABLE IF EXISTS "comic";
 DROP TABLE IF EXISTS "series";
 DROP TABLE IF EXISTS "user_to_comic";
+
+CREATE TABLE "schema_version" (
+    id INTEGER  PRIMARY KEY AUTOINCREMENT NOT NULL,
+    version INTEGER NOT NULL,
+  	migration_date DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 
 CREATE TABLE "gnoluser"(
    id INTEGER  PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -35,7 +50,7 @@ CREATE TABLE "comic"(
    series_id INTEGER,
    nsfw bool,
    cover_image_base64 TEXT,
-   num_pages         INTEGER,
+   num_pages INTEGER,
    file_path TEXT
 );
 
@@ -56,8 +71,18 @@ CREATE UNIQUE INDEX gnoluser_name_key ON "gnoluser"(name);
 
 `
 
+var schema_2 = `
 
+DROP TABLE IF EXISTS "gnoljobs";
+CREATE TABLE "gnoljobs" (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	job_status INTEGER NOT NULL DEFAULT 0,
+	user_id int NOT NULL,
+	job_type int NOT NULL,
+	input_data TEXT
+);
 
+`
 
 
 
@@ -74,15 +99,32 @@ func NewDAO(cfg *util.ToolConfig) *DAO{
 
 
 func (dao *DAO) init() {
-	db, err := sqlx.Connect("sqlite3", "__deleteme.db")
+	db, err := sqlx.Connect("sqlite3", "gnol_sqlite.db")
 	if err != nil {
 		log.Fatalln(err)
 	}
 	dao.DB = db
 	dao.log = log.Default()
 
-	db.MustExec(schema)
-	dao.AddUser("falko","falko")
+	var version int
+
+	//version = getVersion
+	noVersion := db.Get(&version,CURRENT_VERSION)
+	if noVersion == sql.ErrNoRows {
+		version = 0
+	}
+
+	if version < 1 {
+		db.MustExec(schema_1)
+		db.MustExec(UPDATE_VERSION, 1)
+		dao.AddUser("falko","oklaf")
+	}
+
+	if version < 2 {
+		db.MustExec(schema_2)
+		db.MustExec(UPDATE_VERSION, 2)
+	}
+
 }
 
 func (dao *DAO) ComicsForUser(id int) *[]Comic {
@@ -117,6 +159,31 @@ func (dao *DAO) ComicById(id string) *Comic {
 	c := &Comic{}
 	dao.DB.Get(c,"select * from comic where id = $1", id)
 	return c
+}
+
+func (dao *DAO) CreateJob(jtype, juser int, data string) error{
+	_, err := dao.DB.Exec(CREATE_JOB, jtype, juser, data)
+	return err
+}
+
+func (dao *DAO) GetOldestOpenJob() *GnolJob{
+	job := new(GnolJob)
+	err := dao.DB.Get(job, OLDEST_OPEN_JOB)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		panic(err)
+	}
+	return job
+}
+
+type GnolJob struct {
+	Id int
+	JobStatus int `db:"job_status"`
+	UserID int `db:"user_id"`
+	JobType int `db:"job_type"`
+	Data string `db:"input_data"`
 }
 
 type User struct {
