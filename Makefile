@@ -3,7 +3,6 @@
 all: build check test
 
 release: check test build
-	echo "RElease loool"
 
 build: prepare generate
 	go build
@@ -12,8 +11,8 @@ generate:
 	go generate
 
 check:
-	#golint  ./...
-	#go vet ./...
+	golint  ./...
+	go vet ./...
 
 prepare:
 	go get github.com/shurcooL/vfsgen@92b8a710ab6cab4c09182a1fcf469157bc938f8f
