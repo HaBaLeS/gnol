@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bytes"
+	"github.com/duo-labs/webauthn/webauthn"
 	"github.com/rs/xid"
 	"golang.org/x/crypto/argon2"
 )
@@ -70,4 +71,40 @@ func AddComicToUser(c Comic, u User) {
 func ListComicsForUser(u User) *[]Comic{
 	//"select * comic joine to user hwre user = ?"
 	return nil
+}
+
+
+
+type Uxer struct {
+	creds []webauthn.Credential
+
+}
+
+
+func (user *Uxer) WebAuthnID() []byte {
+	return []byte("sdas")
+}
+
+func (user *Uxer) WebAuthnName() string {
+	return "newUser"
+}
+
+func (user *Uxer) WebAuthnDisplayName() string {
+	return "New User"
+}
+
+func (user *Uxer) WebAuthnIcon() string {
+	return "https://pics.com/avatar.png"
+}
+
+func (user *Uxer) WebAuthnCredentials() []webauthn.Credential {
+	if user.creds == nil {
+		user.creds = []webauthn.Credential{}
+	}
+	return user.creds
+}
+
+func (user *Uxer) AddCredential(credential webauthn.Credential){
+	user.WebAuthnCredentials() //make sure the array exists
+	user.creds = append(user.creds, credential)
 }

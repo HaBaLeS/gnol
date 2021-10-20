@@ -46,7 +46,7 @@ func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobR
 	web, err := webauthn.New(&webauthn.Config{
 		RPDisplayName: "Duo Labs", // Display Name for your site
 		RPID: "localhost", // Generally the FQDN for your site
-		RPOrigin: "http://localhost", // The origin URL for WebAuthn requests
+		RPOrigin: "http://localhost:8666", // The origin URL for WebAuthn requests
 		RPIcon: "http://localhost/logo.png", // Optional icon URL for your site
 	})
 	if err != nil {
@@ -101,6 +101,9 @@ func (ah *AppHandler) Routes() {
 	ah.Router.Route("/webauthn", func(r chi.Router) {
 		r.Get("/", ah.webAuthnIndex)
 		r.Get("/{userID}", ah.BeginRegistration)
+		r.Post("/add", ah.FinishRegistration)
+		r.Get("/assertion/{userID}", ah.BeginLogin)
+		r.Post("/assertion", ah.FinishLogin)
 	})
 
 
