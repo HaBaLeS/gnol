@@ -92,7 +92,7 @@ func (ah *AppHandler) Routes() {
 			r.Put("/", ah.updateUser())
 			r.Delete("/", ah.deleteUser())
 		})
-		r.Get("/create", ah.serveTemplate("create_user.gohtml", nil))
+		r.Get("/create", ah.serveTemplate("register.gohtml", nil))
 		r.Get("/login", ah.serveTemplate("login_user.gohtml", nil))
 		r.Post("/login", ah.loginUser())
 		r.Get("/logout", ah.logoutUser())

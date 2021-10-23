@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Gnol Login</title>
+    <title>Register Gnol Account</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.2/css/bulma.min.css">
     <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
     <script type="text/javascript"  src="https://code.jquery.com/jquery-3.6.0.js"></script>
@@ -43,29 +43,7 @@
                 {{end}}
 
                 <div id="classicAuthForm">
-                <form action="/users/login" enctype=multipart/form-data method="post">
-                    <div class="card">
-                        <div class="card-content">
-
-                            <div class="field">
-                                <label class="label">Username</label>
-                                <input class="input" type="text" name="username" placeholder="Username"><br>
-                            </div>
-                            <div class="field">
-                                <label class="label">Password</label>
-                                <input class="input" type="password" name="pass" placeholder="password"><br>
-                            </div>
-                            <div class="field">
-                                <div class="control">
-                                    <input type="submit" value="Login" class="button is-link">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-                </div>
-
-                <div id="classicWebAuthnForm" style="display:none">
+                    <form action="/users" enctype=multipart/form-data method="post">
                         <div class="card">
                             <div class="card-content">
 
@@ -74,12 +52,38 @@
                                     <input class="input" type="text" name="username" placeholder="Username"><br>
                                 </div>
                                 <div class="field">
+                                    <label class="label">Password</label>
+                                    <input class="input" type="password" name="pass" placeholder="password"><br>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Password Confirm</label>
+                                    <input class="input" type="password" name="repass" placeholder="password"><br>
+                                </div>
+                                <div class="field">
                                     <div class="control">
-                                        <button class="button is-link" onclick="login();">Login</button>
+                                        <input type="submit" value="Register" class="button is-link">
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </form>
+                </div>
+
+                <div id="classicWebAuthnForm" style="display:none">
+                    <div class="card">
+                        <div class="card-content">
+
+                            <div class="field">
+                                <label class="label">Username</label>
+                                <input id="webauthnUserName" class="input" type="text" placeholder="Username"><br>
+                            </div>
+                            <div class="field">
+                                <div class="control">
+                                    <button class="button is-link" onclick="registerWithToken();">Register</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

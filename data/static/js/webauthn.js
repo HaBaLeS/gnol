@@ -1,5 +1,6 @@
-function step1(){
-$.get('/webauthn/' + 'userparam', {
+function registerWithToken(){
+    uname = $("webauthnUserName").val();
+$.get('/webauthn/' + uname, {
    /* attType: attestation_type,
     authType: authenticator_attachment,
     userVerification: user_verification,
