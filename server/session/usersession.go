@@ -17,8 +17,8 @@ type UserSession struct {
 	SeriesList	  *[]storage.Series
 	authenticated bool
 	D             interface{}
-	WebAuthnSession *webauthn.SessionData
-	WebAuthnUser *storage.Uxer
+	WebAuthnSession *webauthn.SessionData //fixme add to registration Session
+	WebAuthnUser *storage.User  //fixme add to registration Session
 }
 
 //NewUserSession creates a session for Anon and stores it in the Session map

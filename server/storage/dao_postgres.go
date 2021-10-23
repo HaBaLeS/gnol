@@ -42,7 +42,8 @@ CREATE TABLE "gnoluser"(
    id INTEGER  PRIMARY KEY AUTOINCREMENT NOT NULL,
    name text NOT NULL,
    password_hash bytea,
-   salt bytea
+   salt bytea,
+   webauthn bool DEFAULT false                  	
 );
 
 CREATE TABLE "comic"(
@@ -85,6 +86,25 @@ CREATE TABLE "gnoljobs" (
 
 `
 
+var schema_3 = `
+
+DROP TABLE IF EXISTS "webauthn_authenticator";
+CREATE TABLE "webauthn_authenticator" (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    aagu_id  bytea NOT NULL,
+    signcount uint32 NOT NULL,
+    clonewarning bool default false
+);
+
+DROP TABLE IF EXISTS "webauthn_credential";
+CREATE TABLE "webauthn_credential" (
+    id bytea PRIMARY KEY NOT NULL,
+    publicKey bytea NOT NULL,
+    attestationType TEXT,
+    authenticator_id int NOT NULL,
+    user_id int NOT NULL
+);
+`
 
 
 type DAO struct {
@@ -126,6 +146,11 @@ func (dao *DAO) init() {
 		db.MustExec(UPDATE_VERSION, 2)
 	}
 
+	if version < 3 {
+		db.MustExec(schema_3)
+		db.MustExec(UPDATE_VERSION, 3)
+	}
+
 }
 
 func (dao *DAO) ComicsForUser(id int) *[]Comic {
@@ -163,7 +188,7 @@ func (dao *DAO) ComicById(id string) *Comic {
 }
 
 func (dao *DAO) CreateJob(jtype, juser int, data string) error{
-	_, err := dao.DB.Exec(CREATE_JOB, jtype, juser, data)
+	_, err := dao.DB.Exec(CREATE_JOB, juser, jtype, data)
 	return err
 }
 
@@ -183,13 +208,6 @@ func (dao *DAO) UpdatJobStatus(job *GnolJob, newStatus int) {
 	dao.DB.MustExec(UPDATE_JOB_STATUS, newStatus, job.Id)
 }
 
-
-type User struct {
-	Id int
-	Name    string
-	PasswordHash []byte `db:"password_hash"`
-	Salt    []byte
-}
 
 type Comic struct {
 	Id int

@@ -1,36 +1,71 @@
-function registerWithToken(){
-    uname = $("webauthnUserName").val();
-$.get('/webauthn/' + uname, {
-   /* attType: attestation_type,
-    authType: authenticator_attachment,
-    userVerification: user_verification,
-    residentKeyRequirement: resident_key_requirement,
-    txAuthExtension: txAuthSimple_extension,*/
-}, null, 'json')
-    .done(function (makeCredentialOptions) {
-        makeCredentialOptions.publicKey.challenge = bufferDecode(makeCredentialOptions.publicKey.challenge);
-        makeCredentialOptions.publicKey.user.id = bufferDecode(makeCredentialOptions.publicKey.user.id);
-        if (makeCredentialOptions.publicKey.excludeCredentials) {
-            for (var i = 0; i < makeCredentialOptions.publicKey.excludeCredentials.length; i++) {
-                makeCredentialOptions.publicKey.excludeCredentials[i].id = bufferDecode(makeCredentialOptions.publicKey.excludeCredentials[i].id);
+//Step 1/2 for Registration
+//Request a challenge
+function doRegister(){
+    uname = $("#webauthnUserName").val();
+    //FIXME do sanity checks
+    $.get('/webauthn/' + uname, {
+       /* attType: attestation_type,
+        authType: authenticator_attachment,
+        userVerification: user_verification,
+        residentKeyRequirement: resident_key_requirement,
+        txAuthExtension: txAuthSimple_extension,*/
+    }, null, 'json')
+        .done(function (makeCredentialOptions) {
+            makeCredentialOptions.publicKey.challenge = bufferDecode(makeCredentialOptions.publicKey.challenge);
+            makeCredentialOptions.publicKey.user.id = bufferDecode(makeCredentialOptions.publicKey.user.id);
+            if (makeCredentialOptions.publicKey.excludeCredentials) {
+                for (var i = 0; i < makeCredentialOptions.publicKey.excludeCredentials.length; i++) {
+                    makeCredentialOptions.publicKey.excludeCredentials[i].id = bufferDecode(makeCredentialOptions.publicKey.excludeCredentials[i].id);
+                }
             }
-        }
-        console.log("Credential Creation Options");
-        console.log(makeCredentialOptions);
-        navigator.credentials.create({
-            publicKey: makeCredentialOptions.publicKey
-        }).then(function (newCredential) {
-            console.log("PublicKeyCredential Created");
-            console.log(newCredential);
-            registerNewCredential(newCredential);
-        }).catch(function (err) {
-            console.info(err);
+            //console.log("Credential Creation Options");
+            //console.log(makeCredentialOptions);
+            navigator.credentials.create({
+                publicKey: makeCredentialOptions.publicKey
+            }).then(function (newCredential) {
+                //console.log("PublicKeyCredential Created");
+                //console.log(newCredential);
+                registerNewCredential(newCredential);
+            }).catch(function (err) {
+                //console.info(err);
+                alert("//FIXME Handle Error!!" + err);
+            });
         });
+}
+
+// Step2/2 for Registrations
+// This should be used to verify the auth data with the server
+function registerNewCredential(newCredential) {
+    // Move data into Arrays incase it is super long
+    let attestationObject = new Uint8Array(newCredential.response.attestationObject);
+    let clientDataJSON = new Uint8Array(newCredential.response.clientDataJSON);
+    let rawId = new Uint8Array(newCredential.rawId);
+
+    $.ajax({
+        url: '/webauthn/add',
+        type: 'POST',
+        data: JSON.stringify({
+            id: newCredential.id,
+            rawId: bufferEncode(rawId),
+            type: newCredential.type,
+            response: {
+                attestationObject: bufferEncode(attestationObject),
+                clientDataJSON: bufferEncode(clientDataJSON),
+            },
+        }),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function (response) {
+            console.log("Added Credentials to Server")
+            window.location.href = "http://localhost:8666/comics"; //FIXME ... use template for FQDN and Port
+        }//FIXME handle error
     });
 }
 
+
 function login() {
-    $.get('/webauthn/assertion/' + 'hello', {
+    uname = $("#webauthnUserName").val();
+    $.get('/webauthn/assertion/' + uname, {
         //userVer: user_verification,
         //txAuthExtension: txAuthSimple_extension
     }, null, 'json')
@@ -83,37 +118,11 @@ function verifyAssertion(assertedCredential) {
         success: function (response) {
             //window.location = "/dashboard"
             console.log(response)
+            window.location.href = "http://localhost:8666/comics"; //FIXME ... use template for FQDN and Port
         }
     });
 }
 
-
-// This should be used to verify the auth data with the server
-function registerNewCredential(newCredential) {
-    // Move data into Arrays incase it is super long
-    let attestationObject = new Uint8Array(newCredential.response.attestationObject);
-    let clientDataJSON = new Uint8Array(newCredential.response.clientDataJSON);
-    let rawId = new Uint8Array(newCredential.rawId);
-
-    $.ajax({
-        url: '/webauthn/add',
-        type: 'POST',
-        data: JSON.stringify({
-            id: newCredential.id,
-            rawId: bufferEncode(rawId),
-            type: newCredential.type,
-            response: {
-                attestationObject: bufferEncode(attestationObject),
-                clientDataJSON: bufferEncode(clientDataJSON),
-            },
-        }),
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-        success: function (response) {
-            console.log("Added Credentials to Server")
-        }
-    });
-}
 
 // Don't drop any blanks
 // decode

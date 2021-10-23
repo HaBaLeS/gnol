@@ -7,7 +7,11 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
-
+var SELECT_WEBAUTN_CRED = "select " +
+	"wa.aagu_id, wa.signcount, wa.clonewarning, " +
+	"wc.id, wc.publicKey, wc.attestationType " +
+	"from webauthn_credential wc, webauthn_authenticator wa " +
+	"where wc.user_id = $1 and wc.authenticator_id = wa.id"
 
 func (dao *DAO) AuthUser(name string, pass string) *User {
 	user := new(User)
@@ -43,6 +47,54 @@ func (dao *DAO)AddUser(name,  password string) bool {
 	return true
 }
 
+func (dao *DAO)AddWebAuthnUser(user *User) bool {
+
+	creds := user.creds[0]
+
+	tx := dao.DB.MustBegin()
+	res, err := tx.Exec("INSERT INTO gnoluser (name, password_hash, salt, webauthn) VALUES ($1, $2, $3, $4)", user.Name, "", "", true)
+	if err != nil {
+		dao.log.Printf("Could not insert user. ")
+		tx.Rollback()
+		return false
+	}
+	uid, _ := res.LastInsertId()
+	aid , _ := tx.MustExec("insert into webauthn_authenticator (aagu_id, signcount) values ($1,$2)", creds.Authenticator.AAGUID, creds.Authenticator.SignCount ).LastInsertId()
+	tx.MustExec("insert into webauthn_credential (id, publicKey, attestationType, authenticator_id, user_id) values ($1, $2, $3, $4, $5 )", creds.ID, creds.PublicKey, creds.AttestationType, aid, uid)
+
+	err = tx.Commit()
+	if err !=  nil {
+		dao.log.Printf("Could not insert user. %v", err)
+		return false
+	}
+	return true
+}
+
+func (dao *DAO) GetWebAuthnUser(username string) *User {
+	user := new(User)
+	err := dao.DB.Get(user, "select * from gnoluser where name =$1 and webauthn = true", username)
+	if err != nil {
+		return nil
+	}
+	row  := dao.DB.QueryRow(SELECT_WEBAUTN_CRED, user.Id)
+	if row.Err() != nil {
+		return nil
+	}
+
+	a := webauthn.Authenticator{}
+	c := webauthn.Credential{}
+	err = row.Scan(&a.AAGUID,&a.SignCount,&a.CloneWarning,&c.ID,&c.PublicKey,&c.AttestationType)
+	if err != nil {
+		panic(err)
+	}
+	c.Authenticator = a
+	user.creds = make([]webauthn.Credential, 0)
+	user.creds = append(user.creds, c)
+	return user
+}
+
+
+
 func hashPassword(pass string) ([]byte, []byte) {
 	salt := xid.New().Bytes()
 	hash := argon2.Key([]byte(pass), salt, 3, 32*1024, 4, 32)
@@ -75,36 +127,40 @@ func ListComicsForUser(u User) *[]Comic{
 
 
 
-type Uxer struct {
+type User struct {
+	Id int
+	Name    string
+	PasswordHash []byte `db:"password_hash"`
+	Salt    []byte
+	WebAuthn bool  `db:"webauthn"`
 	creds []webauthn.Credential
-
 }
 
 
-func (user *Uxer) WebAuthnID() []byte {
-	return []byte("sdas")
+func (user *User) WebAuthnID() []byte {
+	return []byte(user.Name)
 }
 
-func (user *Uxer) WebAuthnName() string {
-	return "newUser"
+func (user *User) WebAuthnName() string {
+	return user.Name
 }
 
-func (user *Uxer) WebAuthnDisplayName() string {
-	return "New User"
+func (user *User) WebAuthnDisplayName() string {
+	return user.Name
 }
 
-func (user *Uxer) WebAuthnIcon() string {
+func (user *User) WebAuthnIcon() string {
 	return "https://pics.com/avatar.png"
 }
 
-func (user *Uxer) WebAuthnCredentials() []webauthn.Credential {
+func (user *User) WebAuthnCredentials() []webauthn.Credential {
 	if user.creds == nil {
 		user.creds = []webauthn.Credential{}
 	}
 	return user.creds
 }
 
-func (user *Uxer) AddCredential(credential webauthn.Credential){
+func (user *User) AddCredential(credential webauthn.Credential){
 	user.WebAuthnCredentials() //make sure the array exists
 	user.creds = append(user.creds, credential)
 }
