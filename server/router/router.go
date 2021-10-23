@@ -9,6 +9,7 @@ import (
 	"github.com/HaBaLeS/gnol/server/session"
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/util"
+	"github.com/duo-labs/webauthn/webauthn"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
@@ -29,6 +30,7 @@ type AppHandler struct {
 	cache     *cache.ImageCache
 	bgJobs    *jobs.JobRunner
 	templates *template.Template
+	web 	*webauthn.WebAuthn
 }
 
 //NewHandler Create a new AppHandler for the Server
@@ -41,6 +43,17 @@ func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobR
 		dao: dao,
 	}
 
+	web, err := webauthn.New(&webauthn.Config{
+		RPDisplayName: "Duo Labs", // Display Name for your site
+		RPID: "localhost", // Generally the FQDN for your site
+		RPOrigin: "http://localhost:8666", // The origin URL for WebAuthn requests
+		RPIcon: "http://localhost/logo.png", // Optional icon URL for your site
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+	ah.web = web
+
 	ah.initTemplates()
 	return ah
 }
@@ -48,6 +61,7 @@ func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobR
 //Routes defines all routes for /user and below.
 //this path cares about UserManagement
 func (ah *AppHandler) Routes() {
+
 
 	//Define global middleware
 	ah.Router.Use(middleware.DefaultLogger)
@@ -78,11 +92,20 @@ func (ah *AppHandler) Routes() {
 			r.Put("/", ah.updateUser())
 			r.Delete("/", ah.deleteUser())
 		})
-		r.Get("/create", ah.serveTemplate("create_user.gohtml", nil))
+		r.Get("/create", ah.serveTemplate("register.gohtml", nil))
 		r.Get("/login", ah.serveTemplate("login_user.gohtml", nil))
 		r.Post("/login", ah.loginUser())
 		r.Get("/logout", ah.logoutUser())
 	})
+
+	ah.Router.Route("/webauthn", func(r chi.Router) {
+		r.Get("/", ah.webAuthnIndex)
+		r.Get("/{userID}", ah.BeginRegistration)
+		r.Post("/add", ah.FinishRegistration)
+		r.Get("/assertion/{userID}", ah.BeginLogin)
+		r.Post("/assertion", ah.FinishLogin)
+	})
+
 
 	//Define Uploads
 	ah.Router.Route("/upload", func(r chi.Router) {

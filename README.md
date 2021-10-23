@@ -27,7 +27,9 @@ install via go get
 run ./gnol
 
 ## Building from Source
-checkout project, run make
+checkout project, 
+
+run make 
 
 ## Configuration
 By default gnol will run on localhost:8666 it will scan for comic archives in working directory. You can use 
