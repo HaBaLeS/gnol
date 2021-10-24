@@ -110,17 +110,20 @@ CREATE TABLE "webauthn_credential" (
 type DAO struct {
 	log *log.Logger
 	DB *sqlx.DB
+	cfg *util.ToolConfig
 }
 
 func NewDAO(cfg *util.ToolConfig) *DAO{
-	dao := &DAO{}
+	dao := &DAO{
+		cfg: cfg,
+	}
 	dao.init()
 	return dao
 }
 
 
 func (dao *DAO) init() {
-	db, err := sqlx.Connect("sqlite3", "gnol_sqlite.db")
+	db, err := sqlx.Connect("sqlite3", dao.cfg.Database)
 	if err != nil {
 		log.Fatalln(err)
 	}

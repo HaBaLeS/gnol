@@ -56,8 +56,7 @@ function registerNewCredential(newCredential) {
         contentType: "application/json; charset=utf-8",
         dataType: "json",
         success: function (response) {
-            console.log("Added Credentials to Server")
-            window.location.href = "http://localhost:8666/comics"; //FIXME ... use template for FQDN and Port
+            processResponse(response)
         }//FIXME handle error
     });
 }
@@ -116,10 +115,8 @@ function verifyAssertion(assertedCredential) {
         contentType: "application/json; charset=utf-8",
         dataType: "json",
         success: function (response) {
-            //window.location = "/dashboard"
-            console.log(response)
-            window.location.href = "http://localhost:8666/comics"; //FIXME ... use template for FQDN and Port
-        }
+            processResponse(response)
+        } //FIXME handle error
     });
 }
 
@@ -136,4 +133,15 @@ function bufferEncode(value) {
         .replace(/\+/g, "-")
         .replace(/\//g, "_")
         .replace(/=/g, "");
+}
+
+function processResponse(resp){
+    if(resp.ReturnCode == 200) {
+        switch (resp.Command){
+            case 'redirect':
+                window.location.href=resp.Payload.Target;
+                break;
+            //TODO other commands
+        }
+    }
 }

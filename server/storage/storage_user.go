@@ -67,6 +67,8 @@ func (dao *DAO)AddWebAuthnUser(user *User) bool {
 		dao.log.Printf("Could not insert user. %v", err)
 		return false
 	}
+	user.Id = int(uid)
+
 	return true
 }
 
