@@ -9,7 +9,6 @@ require (
 	github.com/gen2brain/go-fitz v0.0.0-20190716092309-62357ab3d4a9
 	github.com/go-chi/chi v4.1.1+incompatible
 	github.com/go-chi/render v1.0.1
-	github.com/golang-jwt/jwt/v4 v4.1.0 // indirect
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/mattn/go-sqlite3 v1.14.6
 	github.com/mholt/archiver/v3 v3.5.1-0.20201230180942-1ee1dbd58314

@@ -5,8 +5,6 @@ import (
 	"github.com/duo-labs/webauthn/protocol"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
-	//"github.com/duo-labs/webauthn/protocol"
-	//"github.com/duo-labs/webauthn/webauthn"
 	"net/http"
 )
 

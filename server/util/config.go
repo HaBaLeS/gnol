@@ -12,7 +12,9 @@ import (
 //ToolConfig defines the central configuration in gnol. It uses a init style config files
 //you the struct ToolConfig describes all possible values
 type ToolConfig struct {
-	ListenAddress  string
+	WebAuthnHostname string
+	WebAuthnOriginURL string
+	Hostname  string
 	ListenPort     int
 	LocalResources bool
 	//LogPath
@@ -22,7 +24,6 @@ type ToolConfig struct {
 	Database      string
 	ForceRescan   bool
 	//CacheSize
-
 }
 
 //ReadConfig reads a configuration from a file. Configuration is ini stlye KEY=Value
@@ -32,7 +33,9 @@ type ToolConfig struct {
 func ReadConfig(filename string) (*ToolConfig, error) {
 	//FIXME all printf should be logs
 	ret := &ToolConfig{
-		ListenAddress:  "localhost",
+		WebAuthnOriginURL: "https://localhost:8666",
+		WebAuthnHostname: "localhost",
+		Hostname:  "localhost",
 		ListenPort:     8666,
 		LocalResources: false,
 		DataDirectory:  ".",

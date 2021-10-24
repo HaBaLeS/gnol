@@ -52,7 +52,7 @@ func NewServer(cfgPath string) *Application {
 		Logger: log,
 	}
 
-	log.InfoF("Using: http://%s:%d/users/login", a.Config.ListenAddress, a.Config.ListenPort)
+	log.InfoF("Using: http://%s:%d/users/login", a.Config.Hostname, a.Config.ListenPort)
 	return a
 }
 
@@ -72,7 +72,7 @@ func (a *Application) Start() {
 	a.Handler.Routes()
 
 	a.HTTPServer = &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", a.Config.ListenAddress, a.Config.ListenPort),
+		Addr:    fmt.Sprintf("%s:%d", a.Config.Hostname, a.Config.ListenPort),
 		Handler: a.Handler.Router,
 	}
 	err := a.HTTPServer.ListenAndServe()

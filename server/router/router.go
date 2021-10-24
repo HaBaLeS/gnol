@@ -44,9 +44,9 @@ func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobR
 	}
 
 	web, err := webauthn.New(&webauthn.Config{
-		RPDisplayName: "Duo Labs", // Display Name for your site
-		RPID: "localhost", // Generally the FQDN for your site
-		RPOrigin: "http://localhost:8666", // The origin URL for WebAuthn requests
+		RPDisplayName: "GNOL Online", // Display Name for your site
+		RPID: config.WebAuthnHostname, // Generally the FQDN for your site
+		RPOrigin: config.WebAuthnOriginURL, // The origin URL for WebAuthn requests
 		RPIcon: "http://localhost/logo.png", // Optional icon URL for your site
 	})
 	if err != nil {
