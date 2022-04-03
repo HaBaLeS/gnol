@@ -33,10 +33,14 @@
                     {{ if .IsLoggedIn}}
                     <div class="navbar-item has-dropdown is-hoverable">
                         <a class="navbar-link">
-                            Upload
+                            Manage
                         </a>
 
                         <div class="navbar-dropdown">
+                            <a class="navbar-item" href="/series/create">
+                                Create Series
+                            </a>
+
                             <a class="navbar-item" href="/upload/url">
                                 Fetch CBZ/CBR from URL
                             </a>

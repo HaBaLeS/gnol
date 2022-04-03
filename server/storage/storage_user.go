@@ -15,7 +15,7 @@ var SELECT_WEBAUTN_CRED = "select " +
 
 func (dao *DAO) AuthUser(name string, pass string) *User {
 	user := new(User)
-	err := dao.DB.Get(user,"select * from gnoluser where name = $1",name)
+	err := dao.DB.Get(user, "select * from gnoluser where name = $1", name)
 	if err != nil {
 		dao.log.Printf("Error querying for user: %v", err)
 		return nil
@@ -28,42 +28,40 @@ func (dao *DAO) AuthUser(name string, pass string) *User {
 	}
 }
 
-
-
-func (dao *DAO)AddUser(name,  password string) bool {
+func (dao *DAO) AddUser(name, password string) bool {
 	password_hash, salt := hashPassword(password)
 	tx := dao.DB.MustBegin()
 	_, err := tx.Exec("INSERT INTO gnoluser (name, password_hash, salt) VALUES ($1, $2, $3)", name, password_hash, salt)
 	if err != nil {
-		dao.log.Printf("Could not insert user. ")
+		dao.log.Printf("Could not insert user. %v", err)
 		tx.Rollback()
 		return false
 	}
 	err = tx.Commit()
-	if err !=  nil {
+	if err != nil {
 		dao.log.Printf("Could not insert user. %v", err)
 		return false
 	}
 	return true
 }
 
-func (dao *DAO)AddWebAuthnUser(user *User) bool {
+func (dao *DAO) AddWebAuthnUser(user *User) bool {
 
 	creds := user.creds[0]
 
 	tx := dao.DB.MustBegin()
 	res, err := tx.Exec("INSERT INTO gnoluser (name, password_hash, salt, webauthn) VALUES ($1, $2, $3, $4)", user.Name, "", "", true)
 	if err != nil {
-		dao.log.Printf("Could not insert user. ")
+		dao.log.Printf("Could not insert user. %v", err) //xx
 		tx.Rollback()
 		return false
 	}
 	uid, _ := res.LastInsertId()
-	aid , _ := tx.MustExec("insert into webauthn_authenticator (aagu_id, signcount) values ($1,$2)", creds.Authenticator.AAGUID, creds.Authenticator.SignCount ).LastInsertId()
+	aid, _ := tx.MustExec("insert into webauthn_authenticator (aagu_id, signcount) values ($1,$2)", creds.Authenticator.AAGUID, creds.Authenticator.SignCount).LastInsertId()
 	tx.MustExec("insert into webauthn_credential (id, publicKey, attestationType, authenticator_id, user_id) values ($1, $2, $3, $4, $5 )", creds.ID, creds.PublicKey, creds.AttestationType, aid, uid)
 
 	err = tx.Commit()
-	if err !=  nil {
+	if err != nil {
 		dao.log.Printf("Could not insert user. %v", err)
 		return false
 	}
@@ -78,14 +76,14 @@ func (dao *DAO) GetWebAuthnUser(username string) *User {
 	if err != nil {
 		return nil
 	}
-	row  := dao.DB.QueryRow(SELECT_WEBAUTN_CRED, user.Id)
+	row := dao.DB.QueryRow(SELECT_WEBAUTN_CRED, user.Id)
 	if row.Err() != nil {
 		return nil
 	}
 
 	a := webauthn.Authenticator{}
 	c := webauthn.Credential{}
-	err = row.Scan(&a.AAGUID,&a.SignCount,&a.CloneWarning,&c.ID,&c.PublicKey,&c.AttestationType)
+	err = row.Scan(&a.AAGUID, &a.SignCount, &a.CloneWarning, &c.ID, &c.PublicKey, &c.AttestationType)
 	if err != nil {
 		panic(err)
 	}
@@ -95,14 +93,11 @@ func (dao *DAO) GetWebAuthnUser(username string) *User {
 	return user
 }
 
-
-
 func hashPassword(pass string) ([]byte, []byte) {
 	salt := xid.New().Bytes()
 	hash := argon2.Key([]byte(pass), salt, 3, 32*1024, 4, 32)
 	return hash, salt
 }
-
 
 func checkPassword(salt []byte, dbhash []byte, pass string) bool {
 	hash := argon2.Key([]byte(pass), salt, 3, 32*1024, 4, 32)
@@ -111,7 +106,6 @@ func checkPassword(salt []byte, dbhash []byte, pass string) bool {
 	}
 	return true
 }
-
 
 func AddComic(name string) {
 	//"insert into comic (a,b,v) values ($1,$2, $3)"
@@ -122,22 +116,19 @@ func AddComicToUser(c Comic, u User) {
 
 }
 
-func ListComicsForUser(u User) *[]Comic{
+func ListComicsForUser(u User) *[]Comic {
 	//"select * comic joine to user hwre user = ?"
 	return nil
 }
 
-
-
 type User struct {
-	Id int
-	Name    string
+	Id           int
+	Name         string
 	PasswordHash []byte `db:"password_hash"`
-	Salt    []byte
-	WebAuthn bool  `db:"webauthn"`
-	creds []webauthn.Credential
+	Salt         []byte
+	WebAuthn     bool `db:"webauthn"`
+	creds        []webauthn.Credential
 }
-
 
 func (user *User) WebAuthnID() []byte {
 	return []byte(user.Name)
@@ -162,7 +153,7 @@ func (user *User) WebAuthnCredentials() []webauthn.Credential {
 	return user.creds
 }
 
-func (user *User) AddCredential(credential webauthn.Credential){
+func (user *User) AddCredential(credential webauthn.Credential) {
 	user.WebAuthnCredentials() //make sure the array exists
 	user.creds = append(user.creds, credential)
 }

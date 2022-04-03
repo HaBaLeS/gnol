@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  web:
+    image: "habales/gnol-light"
+    ports:
+      - "9123:9123"
+    volumes:
+      - /home/falko/projekte/falko/gnol-data/db/:/databasedir
+      - /home/falko/projekte/falko/gnol-data/cache/:/cache
+      - /home/falko/projekte/falko/gnol-data/files/:/files

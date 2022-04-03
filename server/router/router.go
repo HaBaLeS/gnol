@@ -26,28 +26,28 @@ import (
 type AppHandler struct {
 	Router    chi.Router
 	config    *util.ToolConfig
-	dao		*storage.DAO
+	dao       *storage.DAO
 	cache     *cache.ImageCache
 	bgJobs    *jobs.JobRunner
 	templates *template.Template
-	web 	*webauthn.WebAuthn
+	web       *webauthn.WebAuthn
 }
 
 //NewHandler Create a new AppHandler for the Server
-func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobRunner, dao	*storage.DAO) *AppHandler {
+func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobRunner, dao *storage.DAO) *AppHandler {
 	ah := &AppHandler{
 		Router: chi.NewRouter(),
 		config: config,
 		cache:  cache,
 		bgJobs: bgj,
-		dao: dao,
+		dao:    dao,
 	}
 
 	web, err := webauthn.New(&webauthn.Config{
-		RPDisplayName: "GNOL Online", // Display Name for your site
-		RPID: config.WebAuthnHostname, // Generally the FQDN for your site
-		RPOrigin: config.WebAuthnOriginURL, // The origin URL for WebAuthn requests
-		RPIcon: "http://localhost/logo.png", // Optional icon URL for your site
+		RPDisplayName: "GNOL Online",               // Display Name for your site
+		RPID:          config.WebAuthnHostname,     // Generally the FQDN for your site
+		RPOrigin:      config.WebAuthnOriginURL,    // The origin URL for WebAuthn requests
+		RPIcon:        "http://localhost/logo.png", // Optional icon URL for your site
 	})
 	if err != nil {
 		fmt.Println(err)
@@ -62,7 +62,6 @@ func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobR
 //this path cares about UserManagement
 func (ah *AppHandler) Routes() {
 
-
 	//Define global middleware
 	ah.Router.Use(middleware.DefaultLogger)
 	ah.Router.Use(userSession)
@@ -70,8 +69,6 @@ func (ah *AppHandler) Routes() {
 	ah.Router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/comics", 301)
 	})
-
-
 
 	//Handle static Resources
 	if ah.config.LocalResources {
@@ -106,12 +103,11 @@ func (ah *AppHandler) Routes() {
 		r.Post("/assertion", ah.FinishLogin)
 	})
 
-
 	//Define Uploads
 	ah.Router.Route("/upload", func(r chi.Router) {
-		r.Get("/archive", ah.serveTemplate("upload_archive.gohtml",nil))
-		r.Get("/pdf", ah.serveTemplate("upload_pdf.gohtml",nil))
-		r.Get("/url", ah.serveTemplate("upload_url.gohtml",nil))
+		r.Get("/archive", ah.serveTemplate("upload_archive.gohtml", nil))
+		r.Get("/pdf", ah.serveTemplate("upload_pdf.gohtml", nil))
+		r.Get("/url", ah.serveTemplate("upload_url.gohtml", nil))
 		r.Post("/archive", ah.uploadArchive())
 		r.Post("/url", ah.uploadUrl())
 		r.Post("/pdf", ah.uploadPdf())
@@ -127,9 +123,10 @@ func (ah *AppHandler) Routes() {
 	//Define Series
 	ah.Router.Route("/series", func(r chi.Router) {
 		r.Get("/", ah.seriesList())
+		r.Get("/create", ah.serveTemplate("series_create.gohtml", nil))
+		r.Post("/create", ah.createSeries())
 	})
 }
-
 
 func userSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -153,8 +150,6 @@ func getUserSession(ctx context.Context) *session.UserSession {
 	us := ctx.Value("user-session").(*session.UserSession)
 	return us
 }
-
-
 
 func (ah *AppHandler) initTemplates() {
 	var allFiles []string
@@ -201,9 +196,7 @@ func (ah *AppHandler) renderTemplate(templateName string, w http.ResponseWriter,
 	}
 }
 
-
-
-func renderError(e error, w http.ResponseWriter){
+func renderError(e error, w http.ResponseWriter) {
 	w.WriteHeader(500)
 	_, re := fmt.Fprintf(w, "Error: %v", e)
 	fmt.Printf("%v\n", e)

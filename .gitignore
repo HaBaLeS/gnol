@@ -12,3 +12,5 @@ gnol
 /doc/ideas
 __deleteme.db
 gnol_sqlite.db
+gnol-tools
+gnol.db

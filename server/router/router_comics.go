@@ -14,7 +14,7 @@ import (
 func (ah *AppHandler) comicsList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		us := getUserSession(r.Context())
-		if us.IsLoggedIn()  {
+		if us.IsLoggedIn() {
 			us.ComicList = ah.dao.ComicsForUser(us.UserID)
 			ah.renderTemplate("index.gohtml", w, r, nil)
 		} else {
@@ -28,7 +28,7 @@ func (ah *AppHandler) comicsList() http.HandlerFunc {
 func (ah *AppHandler) seriesList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		us := getUserSession(r.Context())
-		if us.IsLoggedIn()  {
+		if us.IsLoggedIn() {
 			us.SeriesList = ah.dao.SeriesForUser(us.UserID)
 			ah.renderTemplate("index.gohtml", w, r, nil)
 		} else {
@@ -39,12 +39,25 @@ func (ah *AppHandler) seriesList() http.HandlerFunc {
 	}
 }
 
+func (ah *AppHandler) createSeries() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		us := getUserSession(r.Context())
+		if us.IsLoggedIn() {
+			us.SeriesList = ah.dao.SeriesForUser(us.UserID)
+			ah.renderTemplate("index.gohtml", w, r, nil)
+		} else {
+			//FIXME Render different Template if user is not logged in
+			us.ComicList = new([]storage.Comic)
+			ah.renderTemplate("index.gohtml", w, r, nil)
+		}
+	}
+}
 
 func (ah *AppHandler) comicsLoad() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		comicID := chi.URLParam(r, "comicId")
-		comicID,_ = url.QueryUnescape(comicID)
-		comic  := ah.dao.ComicById(comicID)
+		comicID, _ = url.QueryUnescape(comicID)
+		comic := ah.dao.ComicById(comicID)
 
 		if comic == nil {
 			renderError(fmt.Errorf("comic with id %s not found", comicID), w)
@@ -70,7 +83,7 @@ func (ah *AppHandler) comicsPageImage() http.HandlerFunc {
 		var err error
 		file, hit := ah.cache.GetFileFromCache(comic.FilePath, num)
 		if !hit {
-			file, err = storage.GetPageImage(ah.config, comic.FilePath,comicID, num)
+			file, err = storage.GetPageImage(ah.config, comic.FilePath, comicID, num)
 			if err != nil {
 				renderError(err, w)
 				return
@@ -96,5 +109,3 @@ func (ah *AppHandler) comicsPageImage() http.HandlerFunc {
 		}
 	}
 }
-
-
