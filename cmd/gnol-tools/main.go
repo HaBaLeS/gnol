@@ -25,25 +25,27 @@ import (
 
 type CbzMetaData struct {
 	Name             string
-	Author 			 string
-	Series			 string
-	NumInSeries		 int
-	CoverPage		 int
+	Author           string
+	Series           string
+	NumInSeries      int
+	CoverPage        int
 	CoverImageBase64 string
 	NumPages         int
-	Tags			 []string
-	Genre			 []string
-	Nsfw 			  bool
+	Tags             []string
+	Genre            []string
+	Nsfw             bool
 }
 
 type Session struct {
-	TempDir string
-	Verbose bool
-	Logger *log.Logger
-	InputFile string
+	TempDir    string
+	Verbose    bool
+	Logger     *log.Logger
+	InputFile  string
 	OutputFile string
-	MetaData *CbzMetaData
-	HasErrors bool
+	MetaData   *CbzMetaData
+	HasErrors  bool
+	DryRun     bool
+	ListOrder  bool
 }
 
 func NewSession() *Session {
@@ -52,18 +54,17 @@ func NewSession() *Session {
 		panic(err)
 	}
 	return &Session{
-		Logger: log.Default(),
+		Logger:  log.Default(),
 		TempDir: td,
 		Verbose: false,
+		DryRun:  false,
 		MetaData: &CbzMetaData{
-			Tags: make([]string,0),
-			Genre: make([]string,0),
+			Tags:      make([]string, 0),
+			Genre:     make([]string, 0),
 			CoverPage: 1,
 		},
 	}
 }
-
-
 
 func main() {
 	s := NewSession()
@@ -76,8 +77,9 @@ func main() {
 	nsfw := cli.NewOption("nsfw", "Mark Graphic Novel as NSFW").WithType(cli.TypeBool).WithChar('x')
 	coverImage := cli.NewOption("coverpage", "Select page to use a cover. Starting from 1").WithType(cli.TypeInt).WithChar('c')
 	outFile := cli.NewOption("out_cbz", "Output file").WithType(cli.TypeString).WithChar('o')
+	listOrder := cli.NewOption("listOrder", "preview order of file.(e.g. or cover selection) CBZ will not be created").WithChar('l').WithType(cli.TypeBool)
 
-	pdf2cbz := cli.NewCommand("pdf2cbz","PDF to CBZ/CBR converter with support for GNOL Metadata").
+	pdf2cbz := cli.NewCommand("pdf2cbz", "PDF to CBZ/CBR converter with support for GNOL Metadata").
 		WithArg(inPdfArg).
 		WithOption(outFile).
 		WithOption(tags).
@@ -85,12 +87,13 @@ func main() {
 		WithOption(coverImage).
 		WithAction(s.convert)
 
-	folder2cbz := cli.NewCommand("folder2cbz","Pack folder of images to CBZ with support for GNOL Metadata. Files will be converted to JPEG and Downsized").
+	folder2cbz := cli.NewCommand("folder2cbz", "Pack folder of images to CBZ with support for GNOL Metadata. Files will be converted to JPEG and Downsized").
 		WithArg(inDirArg).
 		WithOption(outFile).
 		WithOption(tags).
 		WithOption(nsfw).
 		WithOption(coverImage).
+		WithOption(listOrder).
 		WithAction(s.packfolder)
 
 	upload := cli.NewCommand("upload", "Upload CBZ/CBR to a Gnol instance").
@@ -111,25 +114,29 @@ func main() {
 		WithCommand(repack).
 		WithOption(verbose)
 
-
 	os.Exit(app.Run(os.Args, os.Stdout))
 }
 
-
-func (s *Session) processOptionsAndValidate(args []string, options map[string]string) bool{
+func (s *Session) processOptionsAndValidate(args []string, options map[string]string) bool {
 	if options["verbose"] != "" {
 		s.Verbose = true
 	}
 	if options["nsfw"] != "" {
 		s.MetaData.Nsfw = true
 	}
+
+	if options["listOrder"] != "" {
+		s.DryRun = true
+		s.ListOrder = true
+	}
+
 	if options["coverpage"] != "" {
 		c, _ := strconv.Atoi(options["coverpage"])
 		s.MetaData.CoverPage = c
 	}
 	if options["out_cbz"] == "" {
 		dir := path.Base(args[0])
-		s.OutputFile = strings.ReplaceAll(dir, " ","_") + ".cbz"
+		s.OutputFile = strings.ReplaceAll(dir, " ", "_") + ".cbz"
 	} else {
 		s.OutputFile = options["out_cbz"]
 	}
@@ -171,8 +178,8 @@ func (s *Session) cleanup() {
 func (s *Session) fillMetaData(doc *fitz.Document) {
 	md := doc.Metadata()
 	s.MetaData.NumPages = doc.NumPage()
-	s.MetaData.Name = strings.Trim(md["title"],"\x00")
-	for _,v := range strings.Split(strings.Trim(md["keywords"],"\x00"), " ") {
+	s.MetaData.Name = strings.Trim(md["title"], "\x00")
+	for _, v := range strings.Split(strings.Trim(md["keywords"], "\x00"), " ") {
 		s.MetaData.Tags = append(s.MetaData.Tags, v)
 	}
 }
@@ -191,7 +198,7 @@ func (s *Session) LoadImage(file string) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	i,_, err := image.Decode(fi)
+	i, _, err := image.Decode(fi)
 	return i, err
 }
 
@@ -199,14 +206,14 @@ func (s *Session) StoreAsJpg(idx int, img image.Image) error {
 	name := fmt.Sprintf("page%03d.jpg", idx)
 	of, err := os.Create(path.Join(s.TempDir, name))
 	if err != nil {
-		return  err
+		return err
 	}
 	return jpeg.Encode(of, img, &jpeg.Options{Quality: jpeg.DefaultQuality})
 }
 
-func (s *Session) ZipFilesInWorkFolder() error{
-	ofz,e := os.Create(s.OutputFile)
-	if e!= nil {
+func (s *Session) ZipFilesInWorkFolder() error {
+	ofz, e := os.Create(s.OutputFile)
+	if e != nil {
 		return e
 	}
 	defer ofz.Close()
@@ -217,19 +224,19 @@ func (s *Session) ZipFilesInWorkFolder() error{
 		if fi.IsDir() {
 			return nil //Ignore the . dir
 		}
-		w, e :=outw.CreateHeader(&zip.FileHeader{
-			Name: fi.Name(),
+		w, e := outw.CreateHeader(&zip.FileHeader{
+			Name:   fi.Name(),
 			Method: zip.Store, //make sure to not compress, helps to unpack much faster!
 		})
 
-		if e!= nil {
-			return e
-		}
-		r,e := os.Open(p)
 		if e != nil {
 			return e
 		}
-		io.Copy(w,r)
+		r, e := os.Open(p)
+		if e != nil {
+			return e
+		}
+		io.Copy(w, r)
 		s.Log("Writing ZipEntry: %s", fi.Name())
 		return nil
 	})
@@ -237,8 +244,8 @@ func (s *Session) ZipFilesInWorkFolder() error{
 	return err
 }
 
-func (s *Session) WriteMetadataJson() error{
-	meta, err := os.Create(path.Join(s.TempDir,"gnol.json"))
+func (s *Session) WriteMetadataJson() error {
+	meta, err := os.Create(path.Join(s.TempDir, "gnol.json"))
 	if err != nil {
 		return err
 	}
@@ -250,4 +257,3 @@ func (s *Session) WriteMetadataJson() error{
 	}
 	return nil
 }
-

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/nfnt/resize"
 	"io/fs"
 	"os"
@@ -11,8 +12,8 @@ import (
 )
 
 var allowedTypes = map[string]struct{}{
-	".png": {},
-	".jpg": {},
+	".png":  {},
+	".jpg":  {},
 	".jpeg": {},
 }
 
@@ -21,12 +22,12 @@ func (s *Session) packfolder(args []string, options map[string]string) int {
 		return -1
 	}
 
-	if fi, err := os.Stat(s.InputFile); err != nil || !fi.IsDir(){
+	if fi, err := os.Stat(s.InputFile); err != nil || !fi.IsDir() {
 		s.Error("File does not exist or is not a directory: %s", s.InputFile)
 		return -1
 	}
 
-	if _, err := os.Stat(path.Join(s.InputFile, "gnol.json")); err == nil{
+	if _, err := os.Stat(path.Join(s.InputFile, "gnol.json")); err == nil {
 		f, err := os.Open(path.Join(s.InputFile, "gnol.json"))
 		if err == nil {
 			dec := json.NewDecoder(f)
@@ -37,13 +38,12 @@ func (s *Session) packfolder(args []string, options map[string]string) int {
 		}
 	}
 
-
 	s.Log("Creating: %s", s.OutputFile)
 
-	files := make([]string,0)
+	files := make([]string, 0)
 	filepath.Walk(s.InputFile, func(p string, fi fs.FileInfo, err error) error {
 		ext := path.Ext(fi.Name())
-		if _,ok := allowedTypes[ext]; !ok {
+		if _, ok := allowedTypes[ext]; !ok {
 			s.Log("Skipping file: '%s' extension '%s' not supported", fi.Name(), ext)
 			return nil
 		}
@@ -51,8 +51,20 @@ func (s *Session) packfolder(args []string, options map[string]string) int {
 		return nil
 	})
 	sort.Strings(files)
-	for idx,v := range files {
-		img, err := s.LoadImage(path.Join(s.InputFile,v))
+
+	if s.ListOrder {
+		for i, v := range files {
+			fmt.Printf("[%d]\t%s\n", i, v)
+		}
+	}
+
+	if s.DryRun {
+		fmt.Printf("DryRun - Exiting before any file are created")
+		return 0
+	}
+
+	for idx, v := range files {
+		img, err := s.LoadImage(path.Join(s.InputFile, v))
 		if err != nil {
 			s.Error("Could not open Image %s", v)
 			continue
@@ -84,5 +96,3 @@ func (s *Session) packfolder(args []string, options map[string]string) int {
 	}
 	return 0
 }
-
-

@@ -142,22 +142,10 @@ func (ah *AppHandler) Routes() {
 	api := ah.Router.Group("/api")
 	{
 		api.Use(ah.requireAPIToken)
-		api.GET("/list", ah.seriesList)
+		api.GET("/list", ah.apiListComics)
+		api.POST("/upload", ah.apiUploadComic)
 	}
 
-}
-
-func (ah *AppHandler) requireAPIToken(ctx *gin.Context) {
-	gt := ctx.GetHeader("gnol-token")
-	if "" == gt {
-		ctx.AbortWithStatusJSON(http.StatusUnauthorized, "missing header 'gnol-token'")
-	}
-	err, uid := ah.dao.GetUserForApiToken(gt)
-	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusUnauthorized, "unknown gnol token")
-	}
-	ctx.Set("api-user-id", uid)
-	ctx.Next()
 }
 
 func requireAuth(ctx *gin.Context) {
