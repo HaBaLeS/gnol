@@ -47,7 +47,7 @@ func (i *ImageCache) GetFileFromCache(comicID string, pageNum int) (string, bool
 	return ce.filename, hit
 }
 
-//NewImageCache is the constructor for the Cache. Takes a session to access the Configuration
+//NewImageCache is the constructor for the Cache. Takes a gnolsession to access the Configuration
 func NewImageCache(config *util.ToolConfig) *ImageCache {
 	return &ImageCache{
 		cacheTable: make(map[string]CacheEntry, 100),

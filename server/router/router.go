@@ -2,16 +2,16 @@
 package router
 
 import (
-	"context"
+	"encoding/gob"
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/cache"
+	"github.com/HaBaLeS/gnol/server/gnolsession"
 	"github.com/HaBaLeS/gnol/server/jobs"
-	"github.com/HaBaLeS/gnol/server/session"
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/duo-labs/webauthn/webauthn"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-gonic/gin"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"html/template"
 	"io/ioutil"
@@ -19,12 +19,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 //AppHandler combines Router with other submodules Implementations, like DOA, Config, Cache
 type AppHandler struct {
-	Router    chi.Router
+	Router    *gin.Engine
 	config    *util.ToolConfig
 	dao       *storage.DAO
 	cache     *cache.ImageCache
@@ -36,7 +35,7 @@ type AppHandler struct {
 //NewHandler Create a new AppHandler for the Server
 func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobRunner, dao *storage.DAO) *AppHandler {
 	ah := &AppHandler{
-		Router: chi.NewRouter(),
+		Router: gin.Default(), //Fixme, don't use defaults
 		config: config,
 		cache:  cache,
 		bgJobs: bgj,
@@ -62,93 +61,141 @@ func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobR
 //this path cares about UserManagement
 func (ah *AppHandler) Routes() {
 
-	//Define global middleware
-	ah.Router.Use(middleware.DefaultLogger)
-	ah.Router.Use(userSession)
+	gob.Register(gnolsession.UserSession{})
 
-	ah.Router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/comics", 301)
+	//Define global middleware
+	store := gnolsession.NewGnolSessionStore()
+	ah.Router.Use(sessions.Sessions("gnolsession", store))
+	ah.Router.Use(userSessionMiddleware)
+
+	ah.Router.GET("/", func(c *gin.Context) {
+		http.Redirect(c.Writer, c.Request, "/comics", 301)
 	})
 
 	//Handle static Resources
 	if ah.config.LocalResources {
 		fmt.Print("Using Local resources instead of embedded\n")
 		workDir, _ := os.Getwd()
-		filesDir := filepath.Join(workDir, "data/")
-		ah.Router.Get("/*", http.FileServer(http.Dir(filesDir)).ServeHTTP)
+		filesDir := filepath.Join(workDir, "data/static/")
+		//ah.Router.GET("/*", http.FileServer().ServeHTTP)
+		ah.Router.StaticFS("/static", http.Dir(filesDir))
 	} else {
-		ah.Router.Get("/*", http.FileServer(util.StaticAssets).ServeHTTP)
+		ah.Router.StaticFS("/static", util.StaticAssets)
 	}
 
 	//Define users
-	ah.Router.Route("/users", func(r chi.Router) { //FIXME remove s in users
-		r.Get("/", ah.listUsers())
-		r.Post("/", ah.createUser())
-		r.Route("/{userID}", func(r chi.Router) {
-			r.Get("/", ah.getUser())
-			r.Put("/", ah.updateUser())
-			r.Delete("/", ah.deleteUser())
-		})
-		r.Get("/create", ah.serveTemplate("register.gohtml", nil))
-		r.Get("/login", ah.serveTemplate("login_user.gohtml", nil))
-		r.Post("/login", ah.loginUser())
-		r.Get("/logout", ah.logoutUser())
-	})
+	user := ah.Router.Group("/users")
+	{
+		user.GET("/", ah.listUsers)
+		user.POST("/", ah.createUser)
+		user.GET("/create", ah.serveTemplate("register.gohtml", nil))
+		user.GET("/login", ah.serveTemplate("login_user.gohtml", nil))
+		user.POST("/login", ah.loginUser)
+		user.GET("/logout", ah.logoutUser)
+	}
 
-	ah.Router.Route("/webauthn", func(r chi.Router) {
-		r.Get("/", ah.webAuthnIndex)
-		r.Get("/{userID}", ah.BeginRegistration)
-		r.Post("/add", ah.FinishRegistration)
-		r.Get("/assertion/{userID}", ah.BeginLogin)
-		r.Post("/assertion", ah.FinishLogin)
-	})
+	stng := ah.Router.Group("/setting")
+	{
+		stng.Use(requireAuth)
+		stng.GET("/api-token", ah.APIToken)
+	}
+
+	wn := ah.Router.Group("/webauthn")
+	{
+		wn.GET("/", ah.webAuthnIndex)
+		wn.GET("/:userID", ah.BeginRegistration)
+		wn.POST("/add", ah.FinishRegistration)
+		wn.GET("/assertion/:userID", ah.BeginLogin)
+		wn.POST("/assertion", ah.FinishLogin)
+	}
 
 	//Define Uploads
-	ah.Router.Route("/upload", func(r chi.Router) {
-		r.Get("/archive", ah.serveTemplate("upload_archive.gohtml", nil))
-		r.Get("/pdf", ah.serveTemplate("upload_pdf.gohtml", nil))
-		r.Get("/url", ah.serveTemplate("upload_url.gohtml", nil))
-		r.Post("/archive", ah.uploadArchive())
-		r.Post("/url", ah.uploadUrl())
-		r.Post("/pdf", ah.uploadPdf())
-	})
+	up := ah.Router.Group("/upload")
+	{
+		up.Use(requireAuth)
+		up.GET("/archive", ah.serveTemplate("upload_archive.gohtml", nil))
+		up.GET("/pdf", ah.serveTemplate("upload_pdf.gohtml", nil))
+		up.GET("/url", ah.serveTemplate("upload_url.gohtml", nil))
+		up.POST("/archive", ah.uploadArchive)
+		up.POST("/url", ah.uploadUrl)
+		up.POST("/pdf", ah.uploadPdf)
+	}
 
 	//Define Comic
-	ah.Router.Route("/comics", func(r chi.Router) {
-		r.Get("/", ah.comicsList())
-		r.Get("/{comicId}", ah.comicsLoad())
-		r.Get("/{comicId}/{imageId}", ah.comicsPageImage())
-	})
+	cm := ah.Router.Group("/comics")
+	{
+		cm.Use(requireAuth)
+		cm.GET("/", ah.comicsList)
+		cm.GET("/:comicId", ah.comicsLoad)
+		cm.GET("/:comicId/:imageId", ah.comicsPageImage)
+	}
 
 	//Define Series
-	ah.Router.Route("/series", func(r chi.Router) {
-		r.Get("/", ah.seriesList())
-		r.Get("/create", ah.serveTemplate("series_create.gohtml", nil))
-		r.Post("/create", ah.createSeries())
-	})
+	srs := ah.Router.Group("/series")
+	{
+		srs.Use(requireAuth)
+		srs.GET("/", ah.seriesList)
+		srs.GET("/create", ah.serveTemplate("series_create.gohtml", nil))
+		srs.POST("/create", ah.createSeries)
+	}
+
+	api := ah.Router.Group("/api")
+	{
+		api.Use(ah.requireAPIToken)
+		api.GET("/list", ah.seriesList)
+	}
+
 }
 
-func userSession(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c, _ := r.Cookie("gnol")
-		fmt.Printf("Session: %s\n", c)
-		var us *session.UserSession
-		if c != nil {
-			us = session.UserSessionByID(c.Value)
-		}
-		if us == nil {
-			fmt.Println("newSession")
-			us = session.NewUserSession()
-			http.SetCookie(w, &http.Cookie{Name: "gnol", Path: "/", Value: us.SessionID, Expires: time.Now().Add(time.Hour * 24)})
-		}
-		ctx := context.WithValue(r.Context(), "user-session", us)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+func (ah *AppHandler) requireAPIToken(ctx *gin.Context) {
+	gt := ctx.GetHeader("gnol-token")
+	if "" == gt {
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, "missing header 'gnol-token'")
+	}
+	err, uid := ah.dao.GetUserForApiToken(gt)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, "unknown gnol token")
+	}
+	ctx.Set("api-user-id", uid)
+	ctx.Next()
 }
 
-func getUserSession(ctx context.Context) *session.UserSession {
-	us := ctx.Value("user-session").(*session.UserSession)
+func requireAuth(ctx *gin.Context) {
+	ssn := sessions.Default(ctx)
+	gnoluser := ssn.Get("user-session")
+	if gnoluser != nil && gnoluser.(*gnolsession.UserSession).IsLoggedIn() {
+		ctx.Next()
+		return
+	}
+	ctx.AbortWithError(http.StatusUnauthorized, fmt.Errorf("Unauthenticated requrest for: %s", ctx.Request.RequestURI))
+}
+
+func userSessionMiddleware(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+	var us *gnolsession.UserSession
+	if session.Get("user-session") == nil {
+		fmt.Println("newSession")
+		us = gnolsession.NewUserSession()
+		session.Set("user-session", us)
+	}
+	ctx.Next()
+
+	if e := session.Save(); e != nil {
+		panic(e)
+	}
+
+}
+
+func getUserSession(ctx *gin.Context) *gnolsession.UserSession {
+	s := sessions.Default(ctx)
+	us := s.Get("user-session").(*gnolsession.UserSession)
 	return us
+}
+
+func updateUSerSession(ctx *gin.Context, us *gnolsession.UserSession) {
+	s := sessions.Default(ctx)
+	s.Set("user-session", us)
+	s.Save()
 }
 
 func (ah *AppHandler) initTemplates() {
@@ -183,14 +230,14 @@ func (ah *AppHandler) getTemplate(name string) (*template.Template, error) {
 	return tpl, nil
 }
 
-func (ah *AppHandler) renderTemplate(templateName string, w http.ResponseWriter, r *http.Request, pageData interface{}) {
+func (ah *AppHandler) renderTemplate(templateName string, ctx *gin.Context, pageData interface{}) {
 	tpl, tlerr := ah.getTemplate(templateName)
 	if tlerr != nil {
-		renderError(tlerr, w)
+		renderError(tlerr, ctx.Writer)
 	}
-	us := getUserSession(r.Context())
+	us := getUserSession(ctx)
 	us.D = pageData
-	re := tpl.Execute(w, us)
+	re := tpl.Execute(ctx.Writer, us)
 	if re != nil {
 		panic(re)
 	}

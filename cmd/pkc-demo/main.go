@@ -21,7 +21,7 @@ func main() {
 	TestECDSA()
 	TestRSA()
 
-	openpgp.
+	//openpgp.
 
 	//Generate Keypair
 	_, priv, err := ed25519.GenerateKey(rand.Reader)

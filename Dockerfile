@@ -17,7 +17,7 @@ COPY *.go ./
 COPY data ./data/
 COPY server ./server
 
-
+RUN go get github.com/shurcooL/vfsgen
 RUN go mod download
 RUN go generate
 RUN go build

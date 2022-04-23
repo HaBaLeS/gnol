@@ -1,0 +1,29 @@
+{
+	"LeechDBs": {
+		"habales.de": {
+			"Host": "",
+			"UrlMap": {
+				"heise.de": {
+					"Created": "2020-12-23T11:39:25.417683258+01:00",
+					"DataUrl": {
+						"Scheme": "",
+						"Opaque": "",
+						"User": null,
+						"Host": "",
+						"Path": "heise.de",
+						"RawPath": "",
+						"ForceQuery": false,
+						"RawQuery": "",
+						"Fragment": "",
+						"RawFragment": ""
+					},
+					"DataPath": "",
+					"DataContentType": "",
+					"LastScan": "0001-01-01T00:00:00Z",
+					"FirstScan": "0001-01-01T00:00:00Z"
+				}
+			}
+		}
+	},
+	"FileName": "test.json"
+}

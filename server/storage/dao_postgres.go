@@ -3,7 +3,9 @@ package storage
 import (
 	"database/sql"
 	"github.com/HaBaLeS/gnol/server/util"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 )
@@ -105,6 +107,15 @@ CREATE TABLE "webauthn_credential" (
 );
 `
 
+var schema_4 = `
+drop table  if exists apitoken;
+create table apitoken (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    token TEXT not null,
+    user_id INTEGER UNIQUE not null
+);
+`
+
 type DAO struct {
 	log *log.Logger
 	DB  *sqlx.DB
@@ -149,6 +160,11 @@ func (dao *DAO) init() {
 	if version < 3 {
 		db.MustExec(schema_3)
 		db.MustExec(UPDATE_VERSION, 3)
+	}
+
+	if version < 4 {
+		db.MustExec(schema_4)
+		db.MustExec(UPDATE_VERSION, 4)
 	}
 
 }
@@ -213,6 +229,31 @@ func (dao *DAO) GetOldestOpenJob() *GnolJob {
 
 func (dao *DAO) UpdatJobStatus(job *GnolJob, newStatus int) {
 	dao.DB.MustExec(UPDATE_JOB_STATUS, newStatus, job.Id)
+}
+
+func (dao *DAO) GetUserForApiToken(gt string) (error, int) {
+	var uid int
+	err := dao.DB.Get(&uid, "select us.id from gnoluser us, apitoken at where us.id = at.user_id and at.token = ?", gt)
+	if err != nil {
+		return err, -1
+	}
+	return nil, uid
+}
+
+func (dao *DAO) GetOrCreateAPItoken(id int) pq.StringArray {
+	var res []string
+	err := dao.DB.Select(&res, "select token from apitoken where user_id = ?", id)
+	if err != nil {
+		panic(err)
+	}
+
+	if len(res) == 0 {
+		newToken := uuid.New().String()
+		dao.DB.MustExec("insert into apitoken (user_id,token) values (?,?);", id, newToken)
+
+		return dao.GetOrCreateAPItoken(id)
+	}
+	return res
 }
 
 type Comic struct {

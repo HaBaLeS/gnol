@@ -2,68 +2,63 @@ package router
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"io"
-	"net/http"
 	"os"
 	"path"
 )
 
-func (ah *AppHandler) uploadArchive() http.HandlerFunc {
-	return func(w http.ResponseWriter, request *http.Request) {
-		err := request.ParseMultipartForm(10 * 1024)
-		if err != nil {
-			panic(err)
-		}
-		fh := request.MultipartForm.File["arc"][0]
+func (ah *AppHandler) uploadArchive(ctx *gin.Context) {
 
-		outName := path.Join(ah.config.DataDirectory, fh.Filename)
-		out, err := os.Create(outName)
-		if err != nil {
-			panic(fmt.Sprintf("Error creating: %s\n %v", outName, err))
-		}
-		in, _ := fh.Open()
-		_, cpe := io.Copy(out, in)
-		if cpe != nil {
-			panic(fmt.Sprintf("Error copying to: %s\n %v", outName, cpe))
-		}
-
-		us := getUserSession(request.Context())
-		ah.bgJobs.CreateNewArchiveJob(outName, us.UserID)
-
-		ah.renderTemplate("upload.gohtml", w, request, nil)
+	form, err := ctx.MultipartForm()
+	if err != nil {
+		panic(err)
 	}
+	fh := form.File["arc"][0]
+
+	outName := path.Join(ah.config.DataDirectory, fh.Filename)
+	out, err := os.Create(outName)
+	if err != nil {
+		panic(fmt.Sprintf("Error creating: %s\n %v", outName, err))
+	}
+	in, _ := fh.Open()
+	_, cpe := io.Copy(out, in)
+	if cpe != nil {
+		panic(fmt.Sprintf("Error copying to: %s\n %v", outName, cpe))
+	}
+
+	us := getUserSession(ctx)
+	ah.bgJobs.CreateNewArchiveJob(outName, us.UserID)
+
+	ah.renderTemplate("upload.gohtml", ctx, nil)
 }
 
-func (ah *AppHandler) uploadUrl() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (ah *AppHandler) uploadUrl(ctx *gin.Context) {
 
-		url := r.FormValue("comicurl")
-		us := getUserSession(r.Context())
+	url := ctx.PostForm("comicurl")
+	us := getUserSession(ctx)
 
-		ah.bgJobs.CreateNewURLJob(url, us.UserID)
-		ah.renderTemplate("upload.gohtml", w, r, nil)
-	}
+	ah.bgJobs.CreateNewURLJob(url, us.UserID)
+	ah.renderTemplate("upload.gohtml", ctx, nil)
 }
 
-func (ah *AppHandler) uploadPdf() http.HandlerFunc {
-	return func(w http.ResponseWriter, request *http.Request) {
-		err := request.ParseMultipartForm(10 * 1024)
-		if err != nil {
-			panic(err)
-		}
-		fh := request.MultipartForm.File["pdffile"][0]
-
-		outName := path.Join(os.TempDir(), fh.Filename)
-		out, _ := os.Create(outName)
-		in, _ := fh.Open()
-		_, cpe := io.Copy(out, in)
-		if cpe != nil {
-			panic(cpe)
-		}
-
-		us := getUserSession(request.Context())
-		ah.bgJobs.CreatePFCConversionJob(outName, us.UserID)
-
-		ah.renderTemplate("upload.gohtml", w, request, nil)
+func (ah *AppHandler) uploadPdf(ctx *gin.Context) {
+	form, err := ctx.MultipartForm()
+	if err != nil {
+		panic(err)
 	}
+	fh := form.File["pdffile"][0]
+
+	outName := path.Join(os.TempDir(), fh.Filename)
+	out, _ := os.Create(outName)
+	in, _ := fh.Open()
+	_, cpe := io.Copy(out, in)
+	if cpe != nil {
+		panic(cpe)
+	}
+
+	us := getUserSession(ctx)
+	ah.bgJobs.CreatePFCConversionJob(outName, us.UserID)
+
+	ah.renderTemplate("upload.gohtml", ctx, nil)
 }
