@@ -16,6 +16,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -46,6 +47,8 @@ type Session struct {
 	HasErrors  bool
 	DryRun     bool
 	ListOrder  bool
+	From       int
+	To         int
 }
 
 func NewSession() *Session {
@@ -63,6 +66,8 @@ func NewSession() *Session {
 			Genre:     make([]string, 0),
 			CoverPage: 1,
 		},
+		From: 0,
+		To:   math.MaxInt64,
 	}
 }
 
@@ -78,6 +83,9 @@ func main() {
 	coverImage := cli.NewOption("coverpage", "Select page to use a cover. Starting from 1").WithType(cli.TypeInt).WithChar('c')
 	outFile := cli.NewOption("out_cbz", "Output file").WithType(cli.TypeString).WithChar('o')
 	listOrder := cli.NewOption("listOrder", "preview order of file.(e.g. or cover selection) CBZ will not be created").WithChar('l').WithType(cli.TypeBool)
+
+	from := cli.NewOption("from", "StartPage Default 0 ").WithType(cli.TypeInt)
+	to := cli.NewOption("to", "LastPage Default 0").WithType(cli.TypeInt)
 
 	pdf2cbz := cli.NewCommand("pdf2cbz", "PDF to CBZ/CBR converter with support for GNOL Metadata").
 		WithArg(inPdfArg).
@@ -105,6 +113,9 @@ func main() {
 		WithOption(tags).
 		WithOption(nsfw).
 		WithOption(coverImage).
+		WithOption(from).
+		WithOption(to).
+		WithOption(listOrder).
 		WithAction(s.repack)
 
 	app := cli.New("CLI utils for GNOL").
@@ -123,6 +134,7 @@ func (s *Session) processOptionsAndValidate(args []string, options map[string]st
 	}
 	if options["nsfw"] != "" {
 		s.MetaData.Nsfw = true
+		s.MetaData.Tags = append(s.MetaData.Tags, "nsfw")
 	}
 
 	if options["listOrder"] != "" {
@@ -130,10 +142,26 @@ func (s *Session) processOptionsAndValidate(args []string, options map[string]st
 		s.ListOrder = true
 	}
 
+	if options["tags"] != "" {
+		for _, t := range strings.Split(options["tags"], ",") {
+			s.MetaData.Tags = append(s.MetaData.Tags, strings.TrimSpace(t))
+		}
+	}
+
+	if options["from"] != "" {
+		c, _ := strconv.Atoi(options["from"])
+		s.From = c
+	}
+
+	if options["to"] != "" {
+		c, _ := strconv.Atoi(options["to"])
+		s.To = c
+	}
 	if options["coverpage"] != "" {
 		c, _ := strconv.Atoi(options["coverpage"])
 		s.MetaData.CoverPage = c
 	}
+
 	if options["out_cbz"] == "" {
 		dir := path.Base(args[0])
 		s.OutputFile = strings.ReplaceAll(dir, " ", "_") + ".cbz"
@@ -254,6 +282,13 @@ func (s *Session) WriteMetadataJson() error {
 	encErr := enc.Encode(s.MetaData)
 	if encErr != nil {
 		return err
+	}
+	if s.Verbose {
+		out, err := json.MarshalIndent(s.MetaData, "", "\t")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("Meta:\n%s\n", out)
 	}
 	return nil
 }

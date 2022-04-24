@@ -11,8 +11,18 @@ import (
 )
 
 const (
-	SERIES_FOR_USER  = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = ? group by s.id"
-	COMICS_FOR_USER  = "select c.* from comic as c join user_to_comic utc on c.id = utc.comic_id and utc.user_id = ?"
+	NO_TAG_FILTER   = -1
+	NSFW_TAG_FILTER = 1
+)
+
+const (
+	SERIES_FOR_USER = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = ? group by s.id"
+	COMICS_FOR_USER = `
+select  c.* from comic as c
+    join user_to_comic utc on c.id = utc.comic_id
+    where utc.user_id = ? and c.id not in (select comic_id from tag_to_comic where tag_id in (?))
+`
+
 	ADD_USER_2_COMIC = "insert into user_to_comic (user_id, comic_id) values ($1, $2)"
 	UPDATE_VERSION   = "insert into schema_version (version) values ($1)"
 	CURRENT_VERSION  = "select max(version) from schema_version"
@@ -116,6 +126,24 @@ create table apitoken (
 );
 `
 
+var schema_5 = `
+DROP TABLE IF EXISTS tags;
+create table tags (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Tag TEXT UNIQUIE NOT NULL
+);
+
+DROP TABLE IF EXISTS tag_to_comic;
+create table tag_to_comic(
+    comic_id integer,
+    tag_id integer,
+    UNIQUE(tag_id, comic_id)
+);
+insert into tags (Tag) values ("Nsfw");
+insert into tags (Tag) values ("Marvel");
+insert into tags (Tag) values ("DC");
+`
+
 type DAO struct {
 	log *log.Logger
 	DB  *sqlx.DB
@@ -167,14 +195,29 @@ func (dao *DAO) init() {
 		db.MustExec(UPDATE_VERSION, 4)
 	}
 
+	if version < 5 {
+		db.MustExec(schema_5)
+		db.MustExec(UPDATE_VERSION, 5)
+	}
+
 }
 
-func (dao *DAO) ComicsForUser(id int) *[]Comic {
-	retList := make([]Comic, 0)
-	if err := dao.DB.Select(&retList, COMICS_FOR_USER, id); err != nil {
+func (dao *DAO) ComicsForUser(id int) []*Comic {
+	retList := make([]*Comic, 0)
+	if err := dao.DB.Select(&retList, COMICS_FOR_USER, id, NSFW_TAG_FILTER); err != nil {
 		dao.log.Printf("SQL Errror, %v", err)
 	}
-	return &retList
+
+	//--  dont knwo if we should do that lazy or direct \o/
+	for _, c := range retList {
+		q := "select tag as Tags from tags join tag_to_comic ttc on tags.Id = ttc.tag_id where ttc.comic_id =?"
+		err := dao.DB.Select(&c.Tags, q, c.Id)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return retList
 }
 
 func (dao *DAO) SeriesForUser(id int) *[]Series {
@@ -254,29 +297,4 @@ func (dao *DAO) GetOrCreateAPItoken(id int) pq.StringArray {
 		return dao.GetOrCreateAPItoken(id)
 	}
 	return res
-}
-
-type Comic struct {
-	Id               int
-	Name             string
-	Nsfw             bool
-	SeriesId         int    `db:"series_id"`
-	CoverImageBase64 string `db:"cover_image_base64"`
-	NumPages         int    `db:"num_pages"`
-	FilePath         string `db:"file_path"`
-}
-
-type Series struct {
-	Id               int
-	Name             string
-	CoverImageBase64 string `db:"cover_image_base64"`
-	ComicsInSeries   int    `db:"comics_in_series"`
-}
-
-type GnolJob struct {
-	Id        int
-	JobStatus int    `db:"job_status"`
-	UserID    int    `db:"user_id"`
-	JobType   int    `db:"job_type"`
-	Data      string `db:"input_data"`
 }

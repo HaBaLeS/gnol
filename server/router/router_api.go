@@ -31,7 +31,7 @@ func (ah *AppHandler) apiListComics(ctx *gin.Context) {
 	uid := uidi.(int)
 
 	var comix []storage.Comic
-	err := ah.dao.DB.Select(&comix, storage.COMICS_FOR_USER, uid)
+	err := ah.dao.DB.Select(&comix, storage.COMICS_FOR_USER, uid, storage.NO_TAG_FILTER)
 	if err != nil {
 		panic(err)
 	}
@@ -44,9 +44,7 @@ func (ah *AppHandler) apiUploadComic(ctx *gin.Context) {
 
 	fmt.Printf("Safeing file for uid: %d", uid)
 
-	fn := path.Join("/tmp", uuid.New().String())
-
-	//ioutil.WriteFile(fn, ctx.Request.Body, os.ModePerm)
+	fn := path.Join(ah.config.DataDirectory, uuid.New().String())
 
 	f, err := os.Create(fn)
 	if err != nil {

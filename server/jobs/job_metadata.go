@@ -6,15 +6,16 @@ import (
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/mholt/archiver/v3"
 	"os"
+	"strings"
 )
 
 //CreateNewArchiveJob create a prepared Job form processing a new CBR/CBZ/RAR/ZIP file
 func (j *JobRunner) CreateNewArchiveJob(archive string, userID int) {
 	bgjob := &storage.GnolJob{
-		JobType:     ScanMeta,
-		Data:   archive,
+		JobType: ScanMeta,
+		Data:    archive,
 		//DisplayName: "Scan Metadata",
-		JobStatus:   NotStarted,
+		JobStatus: NotStarted,
 		//ExtraData:   make(map[string]string, 10),
 		//BaseEntity:  storage.CreateBaseEntity(bucketJobOpen),
 		UserID: userID,
@@ -25,11 +26,11 @@ func (j *JobRunner) CreateNewArchiveJob(archive string, userID int) {
 
 func (j *JobRunner) scanMetaData(job *storage.GnolJob) error {
 
-	f, err :=  os.Open(job.Data)
+	f, err := os.Open(job.Data)
 	if err != nil {
 		return err
 	}
-	eIface,err := archiver.ByHeader(f)
+	eIface, err := archiver.ByHeader(f)
 	if err != nil {
 		return err
 	}
@@ -52,10 +53,33 @@ func (j *JobRunner) scanMetaData(job *storage.GnolJob) error {
 		return err
 	}
 	c.FilePath = job.Data
-	id, err :=  j.dao.SaveComic(c)
+	id, err := j.dao.SaveComic(c)
 	if err != nil {
 		return err
 	}
+
+	//get existing Tags
+	var knownTags []string
+	err = j.dao.DB.Select(&knownTags, "select lower(Tag) from tags")
+	if err != nil {
+		return err
+	}
+	for _, tag := range c.Tags {
+		added := false
+		for _, kt := range knownTags {
+			if strings.ToLower(tag) == kt {
+				j.dao.DB.MustExec("insert into tag_to_comic (comic_id, tag_id) values ($1, (select Id from tags where lower(tag) = lower($2)))", id, kt)
+				added = true
+				break
+			}
+		}
+		if !added {
+			//Tag does not exist, lets add it
+			j.dao.DB.MustExec("insert into tags (Tag) values ($1)", tag)
+			j.dao.DB.MustExec("insert into tag_to_comic (comic_id, tag_id) values ($1, (select Id from tags where lower(tag) = lower($2)))", id, tag)
+		}
+	}
+
 	err = j.dao.AddComicToUser(id, job.UserID)
 	return err
 }

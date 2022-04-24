@@ -11,7 +11,7 @@ type UserSession struct {
 	SessionID       string
 	UserName        string
 	UserID          int
-	ComicList       *[]storage.Comic
+	ComicList       []*storage.Comic
 	SeriesList      *[]storage.Series
 	authenticated   bool
 	D               interface{}

@@ -21,7 +21,10 @@ func (s *Session) packfolder(args []string, options map[string]string) int {
 	if !s.processOptionsAndValidate(args, options) {
 		return -1
 	}
+	return s.packInternal()
+}
 
+func (s *Session) packInternal() int {
 	if fi, err := os.Stat(s.InputFile); err != nil || !fi.IsDir() {
 		s.Error("File does not exist or is not a directory: %s", s.InputFile)
 		return -1

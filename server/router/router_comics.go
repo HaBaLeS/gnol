@@ -13,6 +13,7 @@ import (
 func (ah *AppHandler) comicsList(ctx *gin.Context) {
 	us := getUserSession(ctx)
 	us.ComicList = ah.dao.ComicsForUser(us.UserID)
+
 	ah.renderTemplate("index.gohtml", ctx, nil)
 }
 
@@ -23,7 +24,7 @@ func (ah *AppHandler) seriesList(ctx *gin.Context) {
 		ah.renderTemplate("index.gohtml", ctx, nil)
 	} else {
 		//FIXME Render different Template if user is not logged in
-		us.ComicList = new([]storage.Comic)
+		us.ComicList = make([]*storage.Comic, 0)
 		ah.renderTemplate("index.gohtml", ctx, nil)
 	}
 }
@@ -35,7 +36,7 @@ func (ah *AppHandler) createSeries(ctx *gin.Context) {
 		ah.renderTemplate("index.gohtml", ctx, nil)
 	} else {
 		//FIXME Render different Template if user is not logged in
-		us.ComicList = new([]storage.Comic)
+		us.ComicList = make([]*storage.Comic, 0)
 		ah.renderTemplate("index.gohtml", ctx, nil)
 	}
 }

@@ -28,6 +28,9 @@
                             <div class="content">
                                 <p ><b>{{ $v.Name }}</b><br> {{$v.NumPages}} Pages</p>
                             </div>
+                            {{ range $idxx, $v := .Tags }}
+                                <span class="button  is-small is-info is-light">{{.}}</span>
+                            {{end}}
                         </div>
                         <footer class="card-footer">
                             <a href="/comics/{{$v.Id}}" class="card-footer-item">Read</a>
