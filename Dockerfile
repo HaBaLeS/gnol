@@ -4,7 +4,7 @@
 ####
 #### BUILD
 ####
-FROM golang:1.16-alpine AS build
+FROM golang:1.17-alpine AS build
 RUN apk update
 RUN apk upgrade
 RUN apk add --update gcc g++
@@ -17,8 +17,10 @@ COPY *.go ./
 COPY data ./data/
 COPY server ./server
 
-RUN go get github.com/shurcooL/vfsgen
 RUN go mod download
+RUN go mod tidy -compat=1.17
+RUN go get github.com/shurcooL/vfsgen
+
 RUN go generate
 RUN go build
 
@@ -48,6 +50,7 @@ USER $USER:$USER
 
 
 COPY --from=build /gnol-build/gnol ./
+COPY data data
 COPY container.cfg ./
 
 

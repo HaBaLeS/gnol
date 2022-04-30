@@ -38,17 +38,19 @@ type CbzMetaData struct {
 }
 
 type Session struct {
-	TempDir    string
-	Verbose    bool
-	Logger     *log.Logger
-	InputFile  string
-	OutputFile string
-	MetaData   *CbzMetaData
-	HasErrors  bool
-	DryRun     bool
-	ListOrder  bool
-	From       int
-	To         int
+	TempDir      string
+	Verbose      bool
+	Logger       *log.Logger
+	InputFile    string
+	OutputFile   string
+	MetaData     *CbzMetaData
+	HasErrors    bool
+	DryRun       bool
+	ListOrder    bool
+	From         int
+	To           int
+	IssueName    string
+	DirectUpload bool
 }
 
 func NewSession() *Session {
@@ -66,8 +68,9 @@ func NewSession() *Session {
 			Genre:     make([]string, 0),
 			CoverPage: 1,
 		},
-		From: 0,
-		To:   math.MaxInt64,
+		From:         0,
+		To:           math.MaxInt64,
+		DirectUpload: false,
 	}
 }
 
@@ -86,6 +89,8 @@ func main() {
 
 	from := cli.NewOption("from", "StartPage Default 0 ").WithType(cli.TypeInt)
 	to := cli.NewOption("to", "LastPage Default 0").WithType(cli.TypeInt)
+	name := cli.NewOption("name", "Name of Issue/Novel").WithType(cli.TypeString).WithChar('n')
+	upload := cli.NewOption("upload", "Directly upload CBZ after creation").WithType(cli.TypeBool).WithChar('u')
 
 	pdf2cbz := cli.NewCommand("pdf2cbz", "PDF to CBZ/CBR converter with support for GNOL Metadata").
 		WithArg(inPdfArg).
@@ -104,7 +109,7 @@ func main() {
 		WithOption(listOrder).
 		WithAction(s.packfolder)
 
-	upload := cli.NewCommand("upload", "Upload CBZ/CBR to a Gnol instance").
+	uploadcmd := cli.NewCommand("upload", "Upload CBZ/CBR to a Gnol instance").
 		WithArg(inFile).
 		WithAction(s.upload)
 
@@ -116,12 +121,14 @@ func main() {
 		WithOption(from).
 		WithOption(to).
 		WithOption(listOrder).
+		WithOption(name).
+		WithOption(upload).
 		WithAction(s.repack)
 
 	app := cli.New("CLI utils for GNOL").
 		WithCommand(pdf2cbz).
 		WithCommand(folder2cbz).
-		WithCommand(upload).
+		WithCommand(uploadcmd).
 		WithCommand(repack).
 		WithOption(verbose)
 
@@ -129,6 +136,9 @@ func main() {
 }
 
 func (s *Session) processOptionsAndValidate(args []string, options map[string]string) bool {
+
+	s.InputFile = args[0]
+
 	if options["verbose"] != "" {
 		s.Verbose = true
 	}
@@ -162,15 +172,22 @@ func (s *Session) processOptionsAndValidate(args []string, options map[string]st
 		s.MetaData.CoverPage = c
 	}
 
-	if options["out_cbz"] == "" {
-		dir := path.Base(args[0])
-		s.OutputFile = strings.ReplaceAll(dir, " ", "_") + ".cbz"
-	} else {
-		s.OutputFile = options["out_cbz"]
+	if options["upload"] != "" {
+		s.DirectUpload = true
 	}
-	s.InputFile = args[0]
 
-	s.MetaData.Name = path.Base(args[0])
+	if options["name"] != "" {
+		s.MetaData.Name = options["name"]
+	} else {
+		s.MetaData.Name = path.Base(s.InputFile)
+	}
+
+	if options["out_cbz"] != "" {
+		s.OutputFile = options["out_cbz"]
+	} else {
+		dir := s.MetaData.Name
+		s.OutputFile = strings.ReplaceAll(dir, " ", "_") + ".cbz"
+	}
 
 	if err := s.validate(); err != "" {
 		s.Error("Error: %s", err)

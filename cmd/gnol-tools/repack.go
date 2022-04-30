@@ -15,6 +15,9 @@ func (s *Session) repack(args []string, options map[string]string) int {
 		return -1
 	}
 
+	fmt.Printf("Name: %s\n", s.MetaData.Name)
+	fmt.Printf("OutFile: %s\n", s.OutputFile)
+
 	f, err := os.Open(s.InputFile)
 	if err != nil {
 		panic(err)
@@ -90,6 +93,15 @@ func (s *Session) repack(args []string, options map[string]string) int {
 	s.InputFile = workdir
 	s.packInternal()
 
+	if s.DirectUpload {
+		fmt.Printf("Directly Uploading %s\n", s.OutputFile)
+		s.InputFile = s.OutputFile
+		s.uploadInternal()
+		fmt.Printf("Deleting CBZ %s\n", s.OutputFile)
+		os.Remove(s.OutputFile)
+	}
+
+	fmt.Printf("Deleting Workdir %s\n", workdir)
 	os.RemoveAll(workdir)
 
 	return -1

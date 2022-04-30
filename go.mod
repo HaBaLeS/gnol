@@ -12,6 +12,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/sessions v1.2.1
 	github.com/jmoiron/sqlx v1.3.4
+	github.com/klauspost/compress v1.13.6
 	github.com/lib/pq v1.10.3
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/mholt/archiver/v3 v3.5.1-0.20201230180942-1ee1dbd58314
@@ -21,6 +22,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/teris-io/cli v1.0.1
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
+
 )
 
 require (
@@ -67,7 +69,6 @@ require (
 	github.com/jhump/protoreflect v1.8.2 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
-	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
@@ -91,7 +92,7 @@ require (
 	github.com/spf13/cobra v1.1.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802 // indirect
-	github.com/ugorji/go/codec v1.1.7 // indirect
+	github.com/ugorji/go/codec v1.2.7 // indirect
 	github.com/ulikunitz/xz v0.5.9 // indirect
 	github.com/urfave/cli v1.22.5 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
