@@ -6,7 +6,40 @@
     <title>GNOL</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.2/css/bulma.min.css">
     <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+    <script>
 
+
+        function processCommand(evt) {
+            console.log("The transfer is complete.");
+            processResponse(evt.target.response)
+        }
+
+        function processError(evt) {
+            console.log("The transfer failed.");
+        }
+
+        function deleteComic(comicID){
+            var oReq = new XMLHttpRequest();
+            oReq.addEventListener("loadend", processCommand);
+            oReq.addEventListener("error", processError);
+            oReq.open("DELETE", "/comics/delete/" + comicID);
+            oReq.responseType = "json";
+            oReq.send();
+            return false //prevent default
+        }
+
+        function processResponse(resp){
+            if(resp.ReturnCode == 200) {
+                switch (resp.Command){
+                    case 'redirect':
+                        window.location.href=resp.Payload.Target;
+                        break;
+                    //TODO other commands
+                }
+            }
+        }
+
+    </script>
 </head>
 <body>
 {{ template "banner"}}
@@ -14,7 +47,7 @@
 <section class="section">
     <div class="container">
         <div class="columns">
-{{ with .ComicList }}
+{{ with .SeriesList }}
     {{ range $idxx, $v := . }}
             {{ if mod $idxx 4}} </div><div class="columns"> {{end}}
             <div class="column is-3">
@@ -27,16 +60,12 @@
                         </div>
                         <div class="card-content">
                             <div class="content">
-                                <p ><b>{{ $v.Name }}</b><br>Page: {{$v.LastPage}}/{{$v.NumPages}} </p>
+                                <p ><b>{{ $v.Name }}</b><br>Comics: {{$v.ComicsInSeries}} </p>
                             </div>
-                            {{ range $idxx, $v := .Tags }}
-                                <span class="button  is-small is-info is-light">{{.}}</span>
-                            {{end}}
                         </div>
                         <footer class="card-footer">
-                            <a href="/comics/{{$v.Id}}/continue/{{$v.LastPage}}" class="card-footer-item">Read/continue</a>
-                            <a href="/comics/{{$v.Id}}/edit" class="card-footer-item" >Edit</a>
-                            <!-- a href="" class="card-footer-item" onclick="return deleteComic({{$v.Id}});">Edit</a -->
+                            <a href="/series/{{$v.Id}}" class="card-footer-item">Open</a>
+
                         </footer>
                     </div>
                 </div>

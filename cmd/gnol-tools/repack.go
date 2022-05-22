@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/klauspost/compress/zip"
 	"github.com/mholt/archiver/v3"
+	"github.com/nwaples/rardecode"
 	"io"
 	"os"
 	"path"
@@ -35,8 +36,18 @@ func (s *Session) repack(args []string, options map[string]string) int {
 
 	filter := make([]string, 0) //All files to filter against
 	err = e.Walk(s.InputFile, func(f archiver.File) error {
-		h := f.Header.(zip.FileHeader)
-		ident := h.Name
+		ident := ""
+		switch h := f.Header.(type) {
+		case zip.FileHeader:
+			ident = h.Name
+			break
+		case *rardecode.FileHeader:
+			ident = h.Name
+			break
+		default:
+			panic(fmt.Errorf("unhandled type: %T", h))
+		}
+
 		if _, ok := allowedTypes[path.Ext(ident)]; ok {
 			filter = append(filter, ident)
 		}
@@ -71,10 +82,20 @@ func (s *Session) repack(args []string, options map[string]string) int {
 	}
 
 	err = e.Walk(s.InputFile, func(f archiver.File) error {
-		h := f.Header.(zip.FileHeader)
-		ident := h.Name
+		ident := ""
+		switch h := f.Header.(type) {
+		case zip.FileHeader:
+			ident = h.Name
+			break
+		case *rardecode.FileHeader:
+			ident = h.Name
+			break
+		default:
+			panic(fmt.Errorf("unhandled type: %T", h))
+		}
 		if _, ok := files[ident]; ok {
-			out, err := os.Create(path.Join(workdir, f.Name()))
+			of := path.Base(f.Name())
+			out, err := os.Create(path.Join(workdir, of))
 			if err != nil {
 				panic(err)
 			}

@@ -21,7 +21,7 @@ func (ah *AppHandler) listUsers(ctx *gin.Context) {
 
 func (ah *AppHandler) logoutUser(ctx *gin.Context) {
 	getUserSession(ctx).Invalidate()
-	ctx.Redirect(303, "/comics")
+	ctx.Redirect(303, "/users/login")
 }
 
 func (ah *AppHandler) deleteUser(ctx *gin.Context) {
@@ -69,7 +69,7 @@ func (ah *AppHandler) createUser(ctx *gin.Context) {
 	} else {
 		us := getUserSession(ctx)
 		us.UserName = name
-		ctx.Redirect(303, "/comics")
+		ctx.Redirect(303, "/series")
 	}
 }
 
@@ -87,7 +87,7 @@ func (ah *AppHandler) loginUser(ctx *gin.Context) {
 	us.UserID = user.Id
 	updateUSerSession(ctx, us)
 
-	ctx.Redirect(303, "/comics")
+	ctx.Redirect(303, "/series")
 }
 
 //renderIndex
@@ -144,7 +144,7 @@ func (ah *AppHandler) FinishRegistration(ctx *gin.Context) {
 		s.AuthSession()
 		s.UserName = user.Name
 		s.UserID = user.Id
-		ctx.JSON(200, command.NewRedirectCommand("/comics"))
+		ctx.JSON(200, command.NewRedirectCommand("/series"))
 	} else {
 		ctx.JSON(200, "Registration FAILED")
 	}
@@ -198,5 +198,5 @@ func (ah *AppHandler) FinishLogin(ctx *gin.Context) {
 	// Handle validation or input errors
 	// If login was successful, handle next steps
 	//JSONResponse(w, "Login Success", http.StatusOK)
-	ctx.JSON(200, command.NewRedirectCommand("/comics"))
+	ctx.JSON(200, command.NewRedirectCommand("/series"))
 }

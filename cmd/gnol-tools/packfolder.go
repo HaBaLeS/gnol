@@ -21,7 +21,16 @@ func (s *Session) packfolder(args []string, options map[string]string) int {
 	if !s.processOptionsAndValidate(args, options) {
 		return -1
 	}
-	return s.packInternal()
+	s.packInternal() //FIXME return error instead of int
+
+	if !s.DryRun && s.DirectUpload {
+		fmt.Printf("Directly Uploading %s\n", s.OutputFile)
+		s.InputFile = s.OutputFile
+		s.uploadInternal()
+		fmt.Printf("Deleting CBZ %s\n", s.OutputFile)
+		os.Remove(s.OutputFile)
+	}
+	return 1
 }
 
 func (s *Session) packInternal() int {

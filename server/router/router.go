@@ -69,7 +69,7 @@ func (ah *AppHandler) Routes() {
 	ah.Router.Use(userSessionMiddleware)
 
 	ah.Router.GET("/", func(c *gin.Context) {
-		http.Redirect(c.Writer, c.Request, "/comics", 301)
+		c.Redirect(http.StatusTemporaryRedirect, "/series")
 	})
 
 	//Handle static Resources
@@ -77,7 +77,6 @@ func (ah *AppHandler) Routes() {
 		fmt.Print("Using Local resources instead of embedded\n")
 		workDir, _ := os.Getwd()
 		filesDir := filepath.Join(workDir, "data/static/")
-		//ah.Router.GET("/*", http.FileServer().ServeHTTP)
 		ah.Router.StaticFS("/static", http.Dir(filesDir))
 	} else {
 		ah.Router.StaticFS("/static", util.StaticAssets)
@@ -127,7 +126,12 @@ func (ah *AppHandler) Routes() {
 		cm.Use(requireAuth)
 		cm.GET("/", ah.comicsList)
 		cm.GET("/:comicId", ah.comicsLoad)
+		cm.GET("/:comicId/edit", ah.comicsEdit)
+		cm.POST("/:comicId/edit", ah.updateComic)
+		cm.GET("/:comicId/continue/:lastpage", ah.comicsLoad)
 		cm.GET("/:comicId/:imageId", ah.comicsPageImage)
+		cm.PUT("/last/:comicId/:lastpage", ah.comicSetLastPage)
+		cm.DELETE("/delete/:comicId", ah.deleteComic)
 	}
 
 	//Define Series
@@ -135,6 +139,7 @@ func (ah *AppHandler) Routes() {
 	{
 		srs.Use(requireAuth)
 		srs.GET("/", ah.seriesList)
+		srs.GET("/:seriesID", ah.comicsInSeriesList)
 		srs.GET("/create", ah.serveTemplate("series_create.gohtml", nil))
 		srs.POST("/create", ah.createSeries)
 	}
@@ -146,6 +151,13 @@ func (ah *AppHandler) Routes() {
 		api.POST("/upload", ah.apiUploadComic)
 	}
 
+	ah.Router.NoRoute(func(ctx *gin.Context) {
+		if ctx.Request.URL.Path == "/favicon.ico" {
+			ctx.Status(http.StatusNotFound)
+			return
+		}
+		ctx.Redirect(http.StatusTemporaryRedirect, "/series")
+	})
 }
 
 func requireAuth(ctx *gin.Context) {
@@ -155,7 +167,8 @@ func requireAuth(ctx *gin.Context) {
 		ctx.Next()
 		return
 	}
-	ctx.AbortWithError(http.StatusUnauthorized, fmt.Errorf("Unauthenticated requrest for: %s", ctx.Request.RequestURI))
+	ctx.Redirect(http.StatusTemporaryRedirect, "/users/login")
+	ctx.Abort()
 }
 
 func userSessionMiddleware(ctx *gin.Context) {

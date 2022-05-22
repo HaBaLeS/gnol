@@ -31,7 +31,7 @@ func (ah *AppHandler) apiListComics(ctx *gin.Context) {
 	uid := uidi.(int)
 
 	var comix []storage.Comic
-	err := ah.dao.DB.Select(&comix, storage.COMICS_FOR_USER, uid, storage.NO_TAG_FILTER)
+	err := ah.dao.DB.Select(&comix, storage.ALL_COMICS_FOR_USER, uid, storage.NO_TAG_FILTER)
 	if err != nil {
 		panic(err)
 	}

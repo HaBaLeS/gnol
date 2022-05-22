@@ -107,20 +107,6 @@ func checkPassword(salt []byte, dbhash []byte, pass string) bool {
 	return true
 }
 
-func AddComic(name string) {
-	//"insert into comic (a,b,v) values ($1,$2, $3)"
-}
-
-func AddComicToUser(c Comic, u User) {
-	//"insert into user_to_comic (a,b,v) values ($1,$2, $3)"
-
-}
-
-func ListComicsForUser(u User) *[]Comic {
-	//"select * comic joine to user hwre user = ?"
-	return nil
-}
-
 type User struct {
 	Id           int
 	Name         string

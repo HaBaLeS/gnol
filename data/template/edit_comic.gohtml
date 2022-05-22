@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hello Bulma!</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.2/css/bulma.min.css">
+    <script>
+
+
+        function processCommand(evt) {
+            console.log("The transfer is complete.");
+            processResponse(evt.target.response)
+        }
+
+        function processError(evt) {
+            console.log("The transfer failed.");
+        }
+
+        function deleteComic(comicID){
+            var oReq = new XMLHttpRequest();
+            oReq.addEventListener("loadend", processCommand);
+            oReq.addEventListener("error", processError);
+            oReq.open("DELETE", "/comics/delete/" + comicID);
+            oReq.responseType = "json";
+            oReq.send();
+            return false //prevent default
+        }
+
+        function processResponse(resp){
+            if(resp.ReturnCode == 200) {
+                switch (resp.Command){
+                    case 'redirect':
+                        window.location.href=resp.Payload.Target;
+                        break;
+                    //TODO other commands
+                }
+            }
+        }
+
+    </script>
+</head>
+<body>
+{{ template "banner"}}
+{{ template "navbar" .}}
+
+<section class="section">
+    <div class="container">
+        <h1>Edit Comic</h1>
+        <form action="" method="POST">
+            <div class="field">
+                <input type="hidden" name="comicID" value="{{.D.Issue.Id}}" >
+                <label class="label">Name</label> <input type="text" name="name" value="{{.D.Issue.Name}}" />
+                <label class="label">nsfw</label> <input type="checkbox" name="nsfw" {{ if .D.Issue.Nsfw}} checked {{end}} />
+                <label class="label">Series</label>
+                <div>
+                    <select name="seriesID">
+                        {{ $sid := .D.Issue.SeriesId}}
+                        {{range $val := .D.SeriesList}}
+                            {{if eq $val.Id  $sid}}
+                                <option value="{{$val.Id}}" selected>{{$val.Name}}</option>
+                            {{else}}
+                                <option value="{{$val.Id}}" >{{$val.Name}}</option>
+                            {{end}}
+
+                        {{end}}
+                    </select>
+                </div>
+                <div>
+                    <button onclick="">Update Comic</button>
+                </div>
+            </form>
+            <div>
+                <button onclick="return deleteComic({{.D.Issue.Id}});">Delete Comic</button>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>
+

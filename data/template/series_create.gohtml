@@ -6,9 +6,11 @@
     <title>Hello Bulma!</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.2/css/bulma.min.css">
     <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/2.0.0-alpha.2/cropper.min.js"></script>
     <script type="text/javascript"  src="https://code.jquery.com/jquery-3.6.0.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/2.0.0-alpha.2/cropper.min.css">
+
+    <script src="/static/js/cropper.js"></script>
+    <link rel="stylesheet" href="/static/css/cropper.css">
+
 </head>
 <body>
 {{ template "banner"}}
@@ -17,36 +19,27 @@
 <section class="section">
     <div class="container">
         <h1>Create new Series</h1>
-            <div class="field">
-                <label class="label">Name</label>
-                <div class="control">
-                    <input class="input" type="text" placeholder="Text input">
+            <form name="create_series_form">
+                <div class="field">
+                    <label class="label">Name</label>
+                    <div class="control">
+                        <input class="input" type="text" name="series_name" placeholder="Text input">
+                    </div>
+                    <div><input type="file" onchange="previewFile()"></div>
+                    <div>
+                        <img style="display: block; max-width: 100%" id="series_cover" src="https://i.picsum.photos/id/25/200/300.jpg?hmac=ScdLbPfGd_kI3MUHvJUb12Fsg1meDQEaHY_mM613BVM">
+                    </div>
+                    <div><button  onclick="exportImage()">Export</button> </div>
                 </div>
-                <div><input type="file" onchange="previewFile()"></div>
-                <div>
-                    <img style="display: block; max-width: 100%" id="series_cover" src="https://i.picsum.photos/id/25/200/300.jpg?hmac=ScdLbPfGd_kI3MUHvJUb12Fsg1meDQEaHY_mM613BVM">
-                </div>
-                <div><button  onclick="exportImage()">Export</button> </div>
-            </div>
+            </form>
     </div>
 
 </section>
 <script>
-    // import 'cropperjs/dist/cropper.css';
-    //import Cropper from 'cropperjs';
 
     const image = document.getElementById('series_cover');
     const cropper = new Cropper(image, {
         aspectRatio: 5/7,
-       /* crop(event) {
-            console.log(event.detail.x);
-            console.log(event.detail.y);
-            console.log(event.detail.width);
-            console.log(event.detail.height);
-            console.log(event.detail.rotate);
-            console.log(event.detail.scaleX);
-            console.log(event.detail.scaleY);
-        },*/
     });
 
     function previewFile() {
@@ -68,13 +61,16 @@
     }
 
     function exportImage(){
+
+        var form = document.forms['create_series_form'];
+        sn = form.elements.series_name.value;
+
         const b64Image = cropper.getCroppedCanvas().toDataURL("image/jpeg", 0.8);
         console.log();
 
         const formData = new FormData();
-        formData.append('name', "SuperDuperCat");
+        formData.append('name', sn);
         formData.append('previewImage', b64Image);
-        formData.append('catid', 73119);
 
         // Use `jQuery.ajax` method for example
         $.ajax('/series/create', {
@@ -103,11 +99,8 @@
                 return;
             }
 
-
             const reader = new FileReader();
             reader.addEventListener("load", function () {
-                // convert image file to base64 string
-                //preview.src = reader.result;
                 cropper.replace(reader.result,false);
                 cropper.reset();
 
@@ -115,8 +108,6 @@
 
             const item = items[0];
             reader.readAsDataURL(item.getAsFile());
-
-
         });
     });
 

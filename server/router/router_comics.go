@@ -2,9 +2,11 @@ package router
 
 import (
 	"fmt"
+	"github.com/HaBaLeS/gnol/server/command"
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
+	"net/http"
 	"net/url"
 	"os"
 	"strconv"
@@ -17,40 +19,72 @@ func (ah *AppHandler) comicsList(ctx *gin.Context) {
 	ah.renderTemplate("index.gohtml", ctx, nil)
 }
 
-func (ah *AppHandler) seriesList(ctx *gin.Context) {
+func (ah *AppHandler) deleteComic(ctx *gin.Context) {
+	comicID := ctx.Param("comicId")
 	us := getUserSession(ctx)
-	if us.IsLoggedIn() {
-		us.SeriesList = ah.dao.SeriesForUser(us.UserID)
-		ah.renderTemplate("index.gohtml", ctx, nil)
-	} else {
-		//FIXME Render different Template if user is not logged in
-		us.ComicList = make([]*storage.Comic, 0)
-		ah.renderTemplate("index.gohtml", ctx, nil)
-	}
-}
-
-func (ah *AppHandler) createSeries(ctx *gin.Context) {
-	us := getUserSession(ctx)
-	if us.IsLoggedIn() {
-		us.SeriesList = ah.dao.SeriesForUser(us.UserID)
-		ah.renderTemplate("index.gohtml", ctx, nil)
-	} else {
-		//FIXME Render different Template if user is not logged in
-		us.ComicList = make([]*storage.Comic, 0)
-		ah.renderTemplate("index.gohtml", ctx, nil)
-	}
+	ah.dao.DB.MustExec("delete from user_to_comic where comic_id = ? and user_id = ?", comicID, us.UserID)
+	ctx.JSON(200, command.NewRedirectCommand("/comics"))
 }
 
 func (ah *AppHandler) comicsLoad(ctx *gin.Context) {
 	comicID := ctx.Param("comicId")
+	lastPage := ctx.Param("lastpage")
 	comicID, _ = url.QueryUnescape(comicID)
 	comic := ah.dao.ComicById(comicID)
+	if lastPage != "" {
+		lp, _ := strconv.Atoi(lastPage) //Fixme ignoring errors is bad
+		comic.LastPage = lp
+	}
 
 	if comic == nil {
 		renderError(fmt.Errorf("comic with id %s not found", comicID), ctx.Writer)
 		return
 	}
 	ah.renderTemplate("jqviewer.gohtml", ctx, comic)
+}
+
+func (ah *AppHandler) comicsEdit(ctx *gin.Context) {
+	type ComicData struct {
+		Issue      *storage.Comic
+		SeriesList []storage.Series
+	}
+	cd := &ComicData{}
+	comicID := ctx.Param("comicId")
+	cd.Issue = ah.dao.ComicById(comicID)
+	cd.SeriesList = ah.dao.AllSeries()
+	ah.renderTemplate("edit_comic.gohtml", ctx, cd)
+}
+
+func (ah *AppHandler) updateComic(ctx *gin.Context) {
+	type ChangeReq struct {
+		ComicID  int    `form:"comicID"`
+		Name     string `form:"name"`
+		Nsfw     string `form:"nsfw"`
+		nsfwbool bool
+		SeriesID int `form:"seriesID"`
+	}
+	cr := &ChangeReq{}
+	berr := ctx.ShouldBind(cr)
+	if berr != nil {
+		panic(berr)
+	}
+
+	if cr.Nsfw == "on" {
+		cr.nsfwbool = true
+	}
+	us := getUserSession(ctx)
+	ah.dao.DB.MustExec("update comic set series_id = ?, nsfw = ?, name = ? where id = ? and ownerID = ?", cr.SeriesID, cr.nsfwbool, cr.Name, cr.ComicID, us.UserID)
+
+	//execute Updates
+	ctx.JSON(http.StatusCreated, command.NewRedirectCommand(fmt.Sprintf("/series/%d/", cr.SeriesID)))
+}
+
+func (ah *AppHandler) comicSetLastPage(ctx *gin.Context) {
+	us := getUserSession(ctx)
+	comicID := ctx.Param("comicId")
+	lastpage := ctx.Param("lastpage")
+
+	ah.dao.DB.MustExec("update user_to_comic set last_page = ? where user_id = ? and comic_id = ?", lastpage, us.UserID, comicID)
 }
 
 func (ah *AppHandler) comicsPageImage(ctx *gin.Context) {

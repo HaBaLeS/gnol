@@ -107,6 +107,7 @@ func main() {
 		WithOption(nsfw).
 		WithOption(coverImage).
 		WithOption(listOrder).
+		WithOption(upload).
 		WithAction(s.packfolder)
 
 	uploadcmd := cli.NewCommand("upload", "Upload CBZ/CBR to a Gnol instance").
