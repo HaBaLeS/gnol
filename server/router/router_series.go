@@ -29,6 +29,6 @@ func (ah *AppHandler) createSeries(ctx *gin.Context) {
 	//fix would be to store full string and make the template render correctly
 	imgB64 = strings.ReplaceAll(imgB64, "data:image/png;base64,", "")
 	imgB64 = strings.ReplaceAll(imgB64, "data:image/jpeg;base64,", "")
-	ah.dao.DB.MustExec("insert into series (name, cover_image_base64) values (?,?)", name, imgB64)
+	ah.dao.DB.MustExec("insert into series (name, cover_image_base64) values ($1,$2)", name, imgB64)
 	ctx.Redirect(http.StatusCreated, "/comics")
 }

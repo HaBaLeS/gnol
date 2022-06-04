@@ -53,7 +53,7 @@ func (j *JobRunner) scanMetaData(job *storage.GnolJob) error {
 		return err
 	}
 	c.FilePath = job.Data
-	id, err := j.dao.SaveComic(c)
+	id := j.dao.SaveComic(c)
 	if err != nil {
 		return err
 	}

@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v4"
+	_ "github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
 )
 
@@ -16,17 +17,17 @@ const (
 )
 
 const (
-	SERIES_FOR_USER     = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = ? group by s.id"
+	SERIES_FOR_USER     = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 group by s.id"
 	ALL_COMICS_FOR_USER = `
 select  c.*, utc.last_page from comic as c
     join user_to_comic utc on c.id = utc.comic_id
-    where utc.user_id = ? and c.id not in (select comic_id from tag_to_comic where tag_id in (?))
+    where utc.user_id = $1 and c.id not in (select comic_id from tag_to_comic where tag_id in ($2))
 `
 
 	COMICS_FOR_USER_IN_SERIES = `
 select  c.*, utc.last_page from comic as c
     join user_to_comic utc on c.id = utc.comic_id
-    where utc.user_id = ? and series_id = ? and c.id not in (select comic_id from tag_to_comic where tag_id in (?))
+    where utc.user_id = $1 and series_id = $2 and c.id not in (select comic_id from tag_to_comic where tag_id in ($3))
 `
 
 	ADD_USER_2_COMIC = "insert into user_to_comic (user_id, comic_id) values ($1, $2)"
@@ -36,7 +37,7 @@ select  c.*, utc.last_page from comic as c
 	OLDEST_OPEN_JOB   = "select * from gnoljobs where job_status = 0 order by id asc limit 1"
 	UPDATE_JOB_STATUS = "update gnoljobs set job_status = $1 where id = $2"
 
-	CREATE_COMIC  = "insert into comic (name, nsfw, series_id, cover_image_base64, num_pages, file_path) values ($1, $2, $3, $4, $5, $6)"
+	CREATE_COMIC  = "insert into comic (id, name, nsfw, series_id, cover_image_base64, num_pages, file_path) values ($1, $2, $3, $4, $5, $6, $7)"
 	CREATE_SERIES = "insert into series (name, cover_image_base64) values ($1,$2)"
 	CREATE_JOB    = "insert into gnoljobs (user_id, job_type, input_data) values ($1,$2,$3);"
 )
@@ -50,13 +51,13 @@ DROP TABLE IF EXISTS "series";
 DROP TABLE IF EXISTS "user_to_comic";
 
 CREATE TABLE "schema_version" (
-    id INTEGER  PRIMARY KEY AUTOINCREMENT NOT NULL,
+    id SERIAL  PRIMARY KEY  NOT NULL,
     version INTEGER NOT NULL,
-  	migration_date DATETIME DEFAULT CURRENT_TIMESTAMP
+  	migration_date timestamp DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE "gnoluser"(
-   id INTEGER  PRIMARY KEY AUTOINCREMENT NOT NULL,
+   id SERIAL  PRIMARY KEY  NOT NULL,
    name text NOT NULL,
    password_hash bytea,
    salt bytea,
@@ -64,7 +65,7 @@ CREATE TABLE "gnoluser"(
 );
 
 CREATE TABLE "comic"(
-   id INTEGER  PRIMARY KEY AUTOINCREMENT NOT NULL,
+   id SERIAL  PRIMARY KEY  NOT NULL,
    name text NOT NULL,
    series_id INTEGER,
    nsfw bool,
@@ -74,7 +75,7 @@ CREATE TABLE "comic"(
 );
 
 CREATE TABLE "series"(
-   id INTEGER  PRIMARY KEY AUTOINCREMENT NOT NULL,
+   id SERIAL  PRIMARY KEY  NOT NULL,
    name text NOT NULL,
    cover_image_base64 TEXT NOT NULL
 );
@@ -94,7 +95,7 @@ var schema_2 = `
 
 DROP TABLE IF EXISTS "gnoljobs";
 CREATE TABLE "gnoljobs" (
-	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	id SERIAL PRIMARY KEY  NOT NULL,
 	job_status INTEGER NOT NULL DEFAULT 0,
 	user_id int NOT NULL,
 	job_type int NOT NULL,
@@ -107,9 +108,9 @@ var schema_3 = `
 
 DROP TABLE IF EXISTS "webauthn_authenticator";
 CREATE TABLE "webauthn_authenticator" (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    id SERIAL PRIMARY KEY  NOT NULL,
     aagu_id  bytea NOT NULL,
-    signcount uint32 NOT NULL,
+    signcount bigint NOT NULL,
     clonewarning bool default false
 );
 
@@ -126,7 +127,7 @@ CREATE TABLE "webauthn_credential" (
 var schema_4 = `
 drop table  if exists apitoken;
 create table apitoken (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    id SERIAL PRIMARY KEY  NOT NULL,
     token TEXT not null,
     user_id INTEGER UNIQUE not null
 );
@@ -135,8 +136,8 @@ create table apitoken (
 var schema_5 = `
 DROP TABLE IF EXISTS tags;
 create table tags (
-    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-    Tag TEXT UNIQUIE NOT NULL
+    Id SERIAL PRIMARY KEY ,
+    Tag TEXT UNIQUE NOT NULL
 );
 
 DROP TABLE IF EXISTS tag_to_comic;
@@ -145,9 +146,9 @@ create table tag_to_comic(
     tag_id integer,
     UNIQUE(tag_id, comic_id)
 );
-insert into tags (Tag) values ("Nsfw");
-insert into tags (Tag) values ("Marvel");
-insert into tags (Tag) values ("DC");
+insert into tags (Tag) values ('Nsfw');
+insert into tags (Tag) values ('Marvel');
+insert into tags (Tag) values ('DC');
 `
 
 var schema_6 = "alter table user_to_comic add column last_page integer default 0;"
@@ -169,10 +170,15 @@ func NewDAO(cfg *util.ToolConfig) *DAO {
 }
 
 func (dao *DAO) init() {
-	db, err := sqlx.Connect("sqlite3", dao.cfg.Database)
+
+	urlExample := "postgres://gnol:geheim@192.168.1.30:5432/gnol?sslmode=disable"
+	connConfig, err := pgx.ParseConfig(urlExample)
 	if err != nil {
-		log.Fatalf("Error while trying to open/create db in: %s, %v", dao.cfg.Database, err)
+		panic(err)
 	}
+	dbc := stdlib.OpenDB(*connConfig)
+	db := sqlx.NewDb(dbc, "pgx")
+
 	dao.DB = db
 	dao.log = log.Default()
 
@@ -235,7 +241,7 @@ func (dao *DAO) ComicsForUser(id int) []*Comic {
 
 	//--  dont knwo if we should do that lazy or direct \o/
 	for _, c := range retList {
-		q := "select tag as Tags from tags join tag_to_comic ttc on tags.Id = ttc.tag_id where ttc.comic_id =?"
+		q := "select tag as Tags from tags join tag_to_comic ttc on tags.Id = ttc.tag_id where ttc.comic_id =$1"
 		err := dao.DB.Select(&c.Tags, q, c.Id)
 		if err != nil {
 			panic(err)
@@ -254,7 +260,7 @@ func (dao *DAO) ComicsForUserInSeries(id int, seriesID string) []*Comic {
 
 	//--  dont knwo if we should do that lazy or direct \o/
 	for _, c := range retList {
-		q := "select tag as Tags from tags join tag_to_comic ttc on tags.Id = ttc.tag_id where ttc.comic_id =?"
+		q := "select tag as Tags from tags join tag_to_comic ttc on tags.Id = ttc.tag_id where ttc.comic_id =$1"
 		err := dao.DB.Select(&c.Tags, q, c.Id)
 		if err != nil {
 			panic(err)
@@ -272,11 +278,12 @@ func (dao *DAO) SeriesForUser(id int) *[]Series {
 	return &retList
 }
 
-func (dao *DAO) SaveComic(c *Comic) (int, error) {
+func (dao *DAO) SaveComic(c *Comic) int {
 	//insert into commic
-	res := dao.DB.MustExec(CREATE_COMIC, c.Name, c.Nsfw, c.SeriesId, c.CoverImageBase64, c.NumPages, c.FilePath)
-	id, err := res.LastInsertId()
-	return int(id), err
+	var newID int
+	dao.DB.Get(&newID, "select nextval('comic_id_seq')")
+	dao.DB.MustExec(CREATE_COMIC, newID, c.Name, c.Nsfw, c.SeriesId, c.CoverImageBase64, c.NumPages, c.FilePath)
+	return newID
 }
 
 func (dao *DAO) CreateSeries(name, imageB64 string) (int, error) {
@@ -320,23 +327,23 @@ func (dao *DAO) UpdatJobStatus(job *GnolJob, newStatus int) {
 
 func (dao *DAO) GetUserForApiToken(gt string) (error, int) {
 	var uid int
-	err := dao.DB.Get(&uid, "select us.id from gnoluser us, apitoken at where us.id = at.user_id and at.token = ?", gt)
+	err := dao.DB.Get(&uid, "select us.id from gnoluser us, apitoken at where us.id = at.user_id and at.token = $1", gt)
 	if err != nil {
 		return err, -1
 	}
 	return nil, uid
 }
 
-func (dao *DAO) GetOrCreateAPItoken(id int) pq.StringArray {
+func (dao *DAO) GetOrCreateAPItoken(id int) []string {
 	var res []string
-	err := dao.DB.Select(&res, "select token from apitoken where user_id = ?", id)
+	err := dao.DB.Select(&res, "select token from apitoken where user_id = $1", id)
 	if err != nil {
 		panic(err)
 	}
 
 	if len(res) == 0 {
 		newToken := uuid.New().String()
-		dao.DB.MustExec("insert into apitoken (user_id,token) values (?,?);", id, newToken)
+		dao.DB.MustExec("insert into apitoken (user_id,token) values ($1,$2)", id, newToken)
 
 		return dao.GetOrCreateAPItoken(id)
 	}

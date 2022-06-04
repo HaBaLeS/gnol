@@ -10,7 +10,7 @@ type Comic struct {
 	FilePath         string `db:"file_path"`
 	Tags             []string
 	LastPage         int `db:"last_page"`
-	OwnerID          int `db:"ownerID"`
+	OwnerID          int `db:"ownerid"`
 }
 
 type Series struct {

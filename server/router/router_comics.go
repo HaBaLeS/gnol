@@ -22,7 +22,7 @@ func (ah *AppHandler) comicsList(ctx *gin.Context) {
 func (ah *AppHandler) deleteComic(ctx *gin.Context) {
 	comicID := ctx.Param("comicId")
 	us := getUserSession(ctx)
-	ah.dao.DB.MustExec("delete from user_to_comic where comic_id = ? and user_id = ?", comicID, us.UserID)
+	ah.dao.DB.MustExec("delete from user_to_comic where comic_id = $1 and user_id = $2", comicID, us.UserID)
 	ctx.JSON(200, command.NewRedirectCommand("/comics"))
 }
 
@@ -73,7 +73,7 @@ func (ah *AppHandler) updateComic(ctx *gin.Context) {
 		cr.nsfwbool = true
 	}
 	us := getUserSession(ctx)
-	ah.dao.DB.MustExec("update comic set series_id = ?, nsfw = ?, name = ? where id = ? and ownerID = ?", cr.SeriesID, cr.nsfwbool, cr.Name, cr.ComicID, us.UserID)
+	ah.dao.DB.MustExec("update comic set series_id = $1, nsfw = $2, name = $3 where id = $4 and ownerID = $5", cr.SeriesID, cr.nsfwbool, cr.Name, cr.ComicID, us.UserID)
 
 	//execute Updates
 	ctx.JSON(http.StatusCreated, command.NewRedirectCommand(fmt.Sprintf("/series/%d/", cr.SeriesID)))
@@ -84,7 +84,7 @@ func (ah *AppHandler) comicSetLastPage(ctx *gin.Context) {
 	comicID := ctx.Param("comicId")
 	lastpage := ctx.Param("lastpage")
 
-	ah.dao.DB.MustExec("update user_to_comic set last_page = ? where user_id = ? and comic_id = ?", lastpage, us.UserID, comicID)
+	ah.dao.DB.MustExec("update user_to_comic set last_page = $1 where user_id = $2 and comic_id = $3", lastpage, us.UserID, comicID)
 }
 
 func (ah *AppHandler) comicsPageImage(ctx *gin.Context) {
