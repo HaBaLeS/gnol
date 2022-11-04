@@ -2,10 +2,26 @@ version: "3.9"
 
 services:
   web:
-    image: "habales/gnol-light"
+    image: "reg.habales.de/gnol/gnol"
     ports:
-      - "9123:9123"
+      - "8666:9123"
+    depends_on:
+      - db
     volumes:
-      - /home/falko/projekte/falko/gnol-data/db/:/databasedir
-      - /home/falko/projekte/falko/gnol-data/cache/:/cache
-      - /home/falko/projekte/falko/gnol-data/files/:/files
+      - /home/falko/projekte/gnol/docker-compose-volumes/cache:/cache
+      - /home/falko/projekte/gnol/docker-compose-volumes/files:/files
+
+  db:
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=gnol
+      - POSTGRES_PASSWORD=geheim!!
+      - POSTGRES_DB=gnol
+    ports:
+      - '5432:5432'
+    volumes:
+      - gnol_db:/var/lib/postgresql/data
+
+volumes:
+  gnol_db: {}

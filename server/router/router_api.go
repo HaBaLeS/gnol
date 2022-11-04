@@ -59,3 +59,12 @@ func (ah *AppHandler) apiUploadComic(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusInternalServerError, "Unimplemented!!")
 }
+
+func (ah *AppHandler) apiSeries(ctx *gin.Context) {
+	var series []storage.Series
+	err := ah.dao.DB.Select(&series, "select * from series where name != '';")
+	if err != nil {
+		panic(err)
+	}
+	ctx.JSON(http.StatusOK, series)
+}

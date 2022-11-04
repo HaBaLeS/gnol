@@ -23,6 +23,13 @@ test:
 	go test ./...  -cover -coverprofile=c.out
 	go tool cover -html=c.out -o coverage.html
 
+
+container:
+	docker build . -t reg.habales.de/gnol/gnol:0.7.1
+
+push:
+	docker push reg.habales.de/gnol/gnol:0.7.1
+
 clean:
 	go clean
 	rm c.out coverage.html

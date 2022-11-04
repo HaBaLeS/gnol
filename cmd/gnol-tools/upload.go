@@ -11,19 +11,10 @@ func (s *Session) upload(args []string, options map[string]string) int {
 	if !s.processOptionsAndValidate(args, options) {
 		return -1
 	}
-
 	return s.uploadInternal()
 }
 
 func (s *Session) uploadInternal() int {
-	//	host := "gnol.habales.de"
-	//	port := 443
-	//	protocol := "https"
-	//	path := "api/upload"
-	//	secret := "8baf2620-a419-4e97-bd3c-6de387a0d897"
-
-	//	url := fmt.Sprintf("%s://%s:%d/%s", protocol, host, port, path)
-	//	fmt.Printf("Posting to: %s\n", url)
 	uplf, err := os.Open(s.InputFile)
 	if err != nil {
 		panic(err)
