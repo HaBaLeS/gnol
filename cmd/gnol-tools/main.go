@@ -51,6 +51,8 @@ type Session struct {
 	To           int
 	IssueName    string
 	DirectUpload bool
+	GnolHost     string
+	ApiToken     string
 }
 
 func NewSession() *Session {
@@ -81,6 +83,8 @@ func main() {
 	inPdfArg := cli.NewArg("inpdf", "Input PDF")
 	inDirArg := cli.NewArg("indir", "Input Folder")
 	verbose := cli.NewOption("verbose", "Verbose Logging").WithType(cli.TypeBool).WithChar('v')
+	gnolHost := cli.NewOption("gnolhost", "GnolHost and Path").WithChar('h')
+	apiToken := cli.NewOption("apitoken", "API-Token to use").WithChar('k')
 	tags := cli.NewOption("tags", "Comma separated list of Tags for Metadata").WithType(cli.TypeString).WithChar('t')
 	nsfw := cli.NewOption("nsfw", "Mark Graphic Novel as NSFW").WithType(cli.TypeBool).WithChar('x')
 	coverImage := cli.NewOption("coverpage", "Select page to use a cover. Starting from 1").WithType(cli.TypeInt).WithChar('c')
@@ -126,17 +130,72 @@ func main() {
 		WithOption(upload).
 		WithAction(s.repack)
 
+	list := cli.NewCommand("list", "Gnol List Command. See subcomands for details").
+		WithCommand(cli.NewCommand("series", "list existing series").WithAction(listSeries)).
+		WithCommand(cli.NewCommand("comics", "list comics for series").WithArg(cli.NewArg("series", "ID of Series")).WithAction(listComicsForSeries))
+
 	app := cli.New("CLI utils for GNOL").
 		WithCommand(pdf2cbz).
 		WithCommand(folder2cbz).
 		WithCommand(uploadcmd).
 		WithCommand(repack).
-		WithOption(verbose)
+		WithCommand(list).
+		WithOption(verbose).
+		WithOption(gnolHost).
+		WithOption(apiToken)
 
 	os.Exit(app.Run(os.Args, os.Stdout))
 }
 
+func listSeries(args []string, options map[string]string) int {
+	fmt.Printf("Series: XXXX")
+	return 0
+}
+
+func listComicsForSeries(args []string, options map[string]string) int {
+	fmt.Printf("Comics: XXXX")
+	return 0
+}
+
 func (s *Session) processOptionsAndValidate(args []string, options map[string]string) bool {
+	//XDG Compatible https://farbenmeer.de/blog/the-power-of-the-xdg-base-directory-specification
+	confDir := os.Getenv("XDG_CONFIG_HOME")
+	if confDir == "" {
+		hd, err := os.UserHomeDir()
+		if err != nil {
+			log.Fatalf("error reading UserHomeDir: %v", err) //fixme choose one logger
+		}
+		confDir = path.Join(hd, ".config")
+	}
+	cf := path.Join(confDir, "gnol", "config.json")
+	configJson, err := os.Open(cf)
+	defer configJson.Close()
+	if err != nil {
+		fmt.Printf("ConfigFile not found: %s: %v\n", cf, err) //fixme choose one logger
+		if err := os.MkdirAll(path.Join(confDir, "gnol"), os.ModePerm); err != nil {
+			log.Fatalf("Could not Create config Dir: %v", err)
+		}
+		if configJson, err := os.Create(cf); err != nil {
+			log.Fatalf("Could not Create config File: %v", err)
+		} else {
+			json.NewEncoder(configJson).Encode(&Session{})
+			configJson.Close()
+		}
+
+	} else {
+		err := json.NewDecoder(configJson).Decode(s)
+		if err != nil {
+			log.Panicf("Could not parse %s: %v", cf, err) //fixme proper logger
+		}
+	}
+
+	if options["apitoken"] != "" {
+		s.ApiToken = options["apitoken"]
+	}
+
+	if options["gnolhost"] != "" {
+		s.GnolHost = options["gnolhost"]
+	}
 
 	s.InputFile = args[0]
 

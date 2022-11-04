@@ -16,25 +16,25 @@ func (s *Session) upload(args []string, options map[string]string) int {
 }
 
 func (s *Session) uploadInternal() int {
-	host := "gnol.habales.de"
-	port := 443
-	protocol := "https"
-	path := "api/upload"
-	secret := "8baf2620-a419-4e97-bd3c-6de387a0d897"
+	//	host := "gnol.habales.de"
+	//	port := 443
+	//	protocol := "https"
+	//	path := "api/upload"
+	//	secret := "8baf2620-a419-4e97-bd3c-6de387a0d897"
 
-	url := fmt.Sprintf("%s://%s:%d/%s", protocol, host, port, path)
-	fmt.Printf("Posting to: %s\n", url)
+	//	url := fmt.Sprintf("%s://%s:%d/%s", protocol, host, port, path)
+	//	fmt.Printf("Posting to: %s\n", url)
 	uplf, err := os.Open(s.InputFile)
 	if err != nil {
 		panic(err)
 	}
 
 	client := http.DefaultClient
-	rq, err := http.NewRequest("POST", url, uplf)
+	rq, err := http.NewRequest("POST", s.GnolHost, uplf)
 	if err != nil {
 		panic(err)
 	}
-	rq.Header.Add("gnol-token", secret)
+	rq.Header.Add("gnol-token", s.ApiToken)
 
 	resp, err := client.Do(rq)
 	if err != nil {
