@@ -171,7 +171,7 @@ func NewDAO(cfg *util.ToolConfig) *DAO {
 
 func (dao *DAO) init() {
 
-	urlExample := "postgres://gnol:geheim@192.168.1.30:5432/gnol?sslmode=disable"
+	urlExample := "postgres://gnol:geheim!!@db:5432/gnol?sslmode=disable"
 	connConfig, err := pgx.ParseConfig(urlExample)
 	if err != nil {
 		panic(err)

@@ -1,4 +1,4 @@
-//Package router holds all controllers implementing basic Business logic for the routes
+// Package router holds all controllers implementing basic Business logic for the routes
 package router
 
 import (
@@ -21,7 +21,7 @@ import (
 	"strings"
 )
 
-//AppHandler combines Router with other submodules Implementations, like DOA, Config, Cache
+// AppHandler combines Router with other submodules Implementations, like DOA, Config, Cache
 type AppHandler struct {
 	Router    *gin.Engine
 	config    *util.ToolConfig
@@ -32,7 +32,7 @@ type AppHandler struct {
 	web       *webauthn.WebAuthn
 }
 
-//NewHandler Create a new AppHandler for the Server
+// NewHandler Create a new AppHandler for the Server
 func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobRunner, dao *storage.DAO) *AppHandler {
 	ah := &AppHandler{
 		Router: gin.Default(), //Fixme, don't use defaults
@@ -57,8 +57,8 @@ func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobR
 	return ah
 }
 
-//Routes defines all routes for /user and below.
-//this path cares about UserManagement
+// Routes defines all routes for /user and below.
+// this path cares about UserManagement
 func (ah *AppHandler) Routes() {
 
 	gob.Register(gnolsession.UserSession{})
@@ -148,6 +148,7 @@ func (ah *AppHandler) Routes() {
 	{
 		api.Use(ah.requireAPIToken)
 		api.GET("/list", ah.apiListComics)
+		api.GET("/series", ah.apiSeries)
 		api.POST("/upload", ah.apiUploadComic)
 	}
 

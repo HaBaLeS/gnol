@@ -97,25 +97,6 @@ func getSuffixFromContentType(contentType string) string {
 	}
 }
 
-/*
-func (gnolsession *Session) OpenDataBase(filepath string) error {
-	db, err := bolt.Open(filepath, 0666, nil)
-	if err != nil {
-		return err
-	}
-
-	//Enhance Session with Database Tngs
-	gnolsession.db = db
-	gnolsession.FileName = filepath
-	gnolsession.mainbucket = []byte(gnolsession.Workdir)
-
-	err = db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists(gnolsession.mainbucket)
-		return err
-	})
-	return err
-}*/
-
 func (session *Session) LeechJobForURL(leechurl string) *LeechJob {
 	url, px := url.Parse(leechurl)
 	if px != nil {
@@ -125,42 +106,9 @@ func (session *Session) LeechJobForURL(leechurl string) *LeechJob {
 		Created: time.Now(),
 		DataUrl: url,
 	}
-	//id := retVal.ID()
-	/*err := gnolsession.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket(gnolsession.mainbucket)
-		data := b.Get(id)
-		if data != nil {
-			return unmarshalJson(data, retVal)
-		} else {
-			b.Put(id, marshallJson(retVal))
-		}
-		return nil
-	})
-	if err != nil {
-		panic(err)
-	}*/
 	retVal.session = session
 	return retVal
 }
-
-/*
-func (gnolsession *Session) HTMLDataForJob(job *LeechJob) []byte {
-	var data []byte
-	err := gnolsession.db.View(func(tx *bolt.Tx) error {
-		data = tx.Bucket(gnolsession.mainbucket).Get(job.PageID())
-		return nil
-	})
-	if err != nil {
-		panic(err)
-	}
-	return data
-}*/
-
-/*func (gnolsession *Session) CloseDB() {
-	if err := gnolsession.db.Close(); err != nil {
-		panic(err)
-	}
-}*/
 
 func (session *Session) WriteMetaFile() {
 	f, err := os.Create(path.Join("work", session.Workdir, "gnol.json"))

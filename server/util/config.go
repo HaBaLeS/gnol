@@ -9,39 +9,39 @@ import (
 	"strings"
 )
 
-//ToolConfig defines the central configuration in gnol. It uses a init style config files
-//you the struct ToolConfig describes all possible values
+// ToolConfig defines the central configuration in gnol. It uses a init style config files
+// you the struct ToolConfig describes all possible values
 type ToolConfig struct {
-	WebAuthnHostname string
+	WebAuthnHostname  string
 	WebAuthnOriginURL string
-	Hostname  string
-	ListenPort     int
-	LocalResources bool
+	Hostname          string
+	ListenPort        int
+	LocalResources    bool
 	//LogPath
 	//LogLevel
 	DataDirectory string
 	TempDirectory string
-	Database      string
-	ForceRescan   bool
+	//Database      string
+	ForceRescan bool
 	//CacheSize
 }
 
-//ReadConfig reads a configuration from a file. Configuration is ini stlye KEY=Value
-//Comments start with #
-//There is no support for mandatory fields
-//Errors reported via fmt.Print
+// ReadConfig reads a configuration from a file. Configuration is ini stlye KEY=Value
+// Comments start with #
+// There is no support for mandatory fields
+// Errors reported via fmt.Print
 func ReadConfig(filename string) (*ToolConfig, error) {
 	//FIXME all printf should be logs
 	ret := &ToolConfig{
 		WebAuthnOriginURL: "https://localhost:8666",
-		WebAuthnHostname: "localhost",
-		Hostname:  "localhost",
-		ListenPort:     8666,
-		LocalResources: false,
-		DataDirectory:  ".",
-		TempDirectory:  "/tmp/",
-		ForceRescan:    false,
-		Database: "gnol_sqlite.db",
+		WebAuthnHostname:  "localhost",
+		Hostname:          "localhost",
+		ListenPort:        8666,
+		LocalResources:    false,
+		DataDirectory:     ".",
+		TempDirectory:     "/tmp/",
+		ForceRescan:       false,
+		//Database:          "gnol_sqlite.db",
 	}
 	of := reflect.ValueOf(ret).Elem()
 	file, e := os.Open(filename)
