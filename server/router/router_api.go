@@ -42,7 +42,13 @@ func (ah *AppHandler) apiUploadComic(ctx *gin.Context) {
 	uidi, _ := ctx.Get(API_USER_ID)
 	uid := uidi.(int)
 
-	fmt.Printf("Safeing file for uid: %d", uid)
+	/*sidString := ctx.DefaultQuery("series", "0")
+	sid, err := strconv.Atoi(sidString)
+	if err != nil {
+		panic(err)
+	}*/
+
+	fmt.Printf("Storing file for uid: %d", uid)
 
 	fn := path.Join(ah.config.DataDirectory, uuid.New().String())
 
@@ -57,7 +63,7 @@ func (ah *AppHandler) apiUploadComic(ctx *gin.Context) {
 	fmt.Printf("%d bytes written\n", num)
 	ah.bgJobs.CreateNewArchiveJob(fn, uid)
 
-	ctx.JSON(http.StatusInternalServerError, "Unimplemented!!")
+	ctx.JSON(http.StatusOK, "Thx for uploading")
 }
 
 func (ah *AppHandler) apiSeries(ctx *gin.Context) {

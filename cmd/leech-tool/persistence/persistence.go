@@ -1,15 +1,12 @@
 package persistence
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/HaBaLeS/gnol/cmd/leech-tool/modules"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
-	"strings"
 	"time"
 )
 
@@ -44,56 +41,11 @@ type LeechJob struct {
 	PageData        []byte
 }
 
-/*
-func (lj *LeechJob) ID() []byte {
-	return []byte(fmt.Sprintf("lu_%s", lj.DataUrl.String()))
-}
-func (lj *LeechJob) PageID() []byte {
-	return []byte(fmt.Sprintf("page_%s", lj.DataUrl.String()))
-}*/
-
-/*func (lj *LeechJob) WritePageData(data []byte) error {
-	return lj.gnolsession.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket(lj.gnolsession.mainbucket)
-		b.Put(lj.PageID(), data)
-		return nil
-	})
-} */
-
 func (lj *LeechJob) WriteImageData(data []byte) {
-	os.MkdirAll(path.Join("work", lj.session.Workdir), os.ModePerm)
-	sfx := getSuffixFromContentType(lj.DataContentType)
-	fn := path.Join("work", lj.session.Workdir, fmt.Sprintf("%04d.%s", lj.PageNum, sfx))
-	err := ioutil.WriteFile(fn, data, os.ModePerm)
+	os.MkdirAll(path.Join("leech-data", lj.session.Workdir), os.ModePerm)
+	err := ioutil.WriteFile(lj.ImageLocalPath, data, os.ModePerm)
 	if err != nil {
 		panic(err)
-	}
-	lj.ImageLocalPath = fn
-}
-
-/*
-func (lj *LeechJob) Save() {
-	err := lj.gnolsession.db.Update(func(tx *bolt.Tx) error {
-		tx.Bucket(lj.gnolsession.mainbucket).Put(lj.ID(), marshallJson(lj))
-		return nil
-	})
-	if err != nil {
-		panic(err)
-	}
-}*/
-
-func getSuffixFromContentType(contentType string) string {
-	fmt.Printf("ContentType: %s\n", contentType)
-	mime := strings.Split(contentType, ";")[0]
-	switch mime {
-	case "text/html":
-		return "html"
-	case "image/jpeg":
-		return "jpg"
-	case "image/png":
-		return "png"
-	default:
-		return "unknown"
 	}
 }
 
@@ -111,7 +63,7 @@ func (session *Session) LeechJobForURL(leechurl string) *LeechJob {
 }
 
 func (session *Session) WriteMetaFile() {
-	f, err := os.Create(path.Join("work", session.Workdir, "gnol.json"))
+	f, err := os.Create(path.Join("leech-data", session.Workdir, "gnol.json"))
 	if err != nil {
 		panic(err)
 	}
@@ -121,19 +73,4 @@ func (session *Session) WriteMetaFile() {
 		panic(err)
 	}
 
-}
-
-func marshallJson(val *LeechJob) []byte {
-	w := bytes.NewBuffer(make([]byte, 0))
-	enc := json.NewEncoder(w)
-	err := enc.Encode(val)
-	if err != nil {
-		panic(err)
-	}
-	return w.Bytes()
-}
-
-func unmarshalJson(data []byte, obj interface{}) error {
-	dec := json.NewDecoder(bytes.NewBuffer(data))
-	return dec.Decode(obj)
 }

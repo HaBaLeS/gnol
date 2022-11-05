@@ -45,7 +45,7 @@ func (s *Session) packInternal() int {
 			dec := json.NewDecoder(f)
 			dex := dec.Decode(s.MetaData)
 			if dex != nil {
-				s.Error("Error decoding exisiting json", dex)
+				s.Error("Error decoding existing json", dex)
 			}
 		}
 	}

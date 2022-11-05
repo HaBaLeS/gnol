@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -21,9 +22,10 @@ func (e *Engine) Leech() {
 	leechJob.PageNum = 0
 	next := e.Session.Start
 	for next != "" {
+		current := next
 		fmt.Printf("Processing Page #%04d %s", e.Session.Count, next)
 
-		n, err := url.Parse(next)
+		n, err := url.Parse(current)
 		panicIfErr(err)
 		lj := e.Session.LeechJobForURL(n.String())
 		lj.PageNum = e.Session.Count
@@ -37,19 +39,17 @@ func (e *Engine) Leech() {
 		if e.Session.StopOnURl != "" && next == e.Session.StopOnURl {
 			break
 		}
+		if current == next {
+			fmt.Print("URL Did not change. Stopping\n\n")
+			break
+		}
 		fmt.Print("\n")
 	}
 }
 
 func (e *Engine) processComicPage(job *persistence.LeechJob) string {
 
-	data := job.PageData
-	if data == nil {
-		data = network.DownloadForJob(job)
-	} else {
-		fmt.Print(" [C] ")
-	}
-
+	data := network.DownloadForJob(job)
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(data))
 	if err != nil {
 		log.Fatal(err)
@@ -67,6 +67,8 @@ func (e *Engine) processComicPage(job *persistence.LeechJob) string {
 func (e *Engine) processComicImage(job *persistence.LeechJob) {
 	dl := true
 	if job.ImageUrl != "" {
+		sfx := path.Ext(job.ImageUrl)
+		job.ImageLocalPath = path.Join("leech-data", e.Session.Workdir, fmt.Sprintf("%04d%s", job.PageNum, sfx))
 		fi, err := os.Stat(job.ImageLocalPath)
 		if err != nil || fi.Size() < 10*1024 {
 			dl = true
@@ -81,7 +83,6 @@ func (e *Engine) processComicImage(job *persistence.LeechJob) {
 		job.WriteImageData(data)
 	}
 
-	//job.Save()
 }
 
 func panicIfErr(err interface{}) {

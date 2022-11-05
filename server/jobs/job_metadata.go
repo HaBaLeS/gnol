@@ -9,18 +9,14 @@ import (
 	"strings"
 )
 
-//CreateNewArchiveJob create a prepared Job form processing a new CBR/CBZ/RAR/ZIP file
+// CreateNewArchiveJob create a prepared Job form processing a new CBR/CBZ/RAR/ZIP file
 func (j *JobRunner) CreateNewArchiveJob(archive string, userID int) {
 	bgjob := &storage.GnolJob{
-		JobType: ScanMeta,
-		Data:    archive,
-		//DisplayName: "Scan Metadata",
+		JobType:   ScanMeta,
+		Data:      archive,
 		JobStatus: NotStarted,
-		//ExtraData:   make(map[string]string, 10),
-		//BaseEntity:  storage.CreateBaseEntity(bucketJobOpen),
-		UserID: userID,
+		UserID:    userID,
 	}
-
 	j.save(bgjob)
 }
 

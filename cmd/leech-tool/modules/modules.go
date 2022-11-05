@@ -7,14 +7,10 @@ type PageLeechModule interface {
 	FindCurrentImage(doc *goquery.Document) string
 }
 
-//------ //
-
 type IROModule struct {
-
 }
 
-
-func (m *IROModule) FindCurrentImage(doc *goquery.Document) string{
+func (m *IROModule) FindCurrentImage(doc *goquery.Document) string {
 	image := ""
 	doc.Find("div#comic").Each(func(i int, selection *goquery.Selection) {
 		selection.Find("img").Each(func(i int, selection *goquery.Selection) {
@@ -24,7 +20,7 @@ func (m *IROModule) FindCurrentImage(doc *goquery.Document) string{
 	return image
 }
 
-func (m *IROModule) FindNextPage(doc *goquery.Document) string{
+func (m *IROModule) FindNextPage(doc *goquery.Document) string {
 	next := ""
 	doc.Find("span.nav-next").Each(func(i int, selection *goquery.Selection) {
 		selection.Find("a").Each(func(i int, selection *goquery.Selection) {
@@ -37,11 +33,9 @@ func (m *IROModule) FindNextPage(doc *goquery.Document) string{
 // ----- //
 
 type OglafModule struct {
-
 }
 
-
-func (m *OglafModule) FindCurrentImage(doc *goquery.Document) string{
+func (m *OglafModule) FindCurrentImage(doc *goquery.Document) string {
 	image := ""
 	doc.Find("img#strip").Each(func(i int, selection *goquery.Selection) {
 		image, _ = selection.Attr("src")
@@ -49,7 +43,7 @@ func (m *OglafModule) FindCurrentImage(doc *goquery.Document) string{
 	return image
 }
 
-func (m *OglafModule) FindNextPage(doc *goquery.Document) string{
+func (m *OglafModule) FindNextPage(doc *goquery.Document) string {
 	next := ""
 	doc.Find("a.next").Each(func(i int, selection *goquery.Selection) {
 		next, _ = selection.Attr("href")
@@ -60,11 +54,9 @@ func (m *OglafModule) FindNextPage(doc *goquery.Document) string{
 // ---- //
 
 type Chester5000Module struct {
-
 }
 
-
-func (m *Chester5000Module) FindCurrentImage(doc *goquery.Document) string{
+func (m *Chester5000Module) FindCurrentImage(doc *goquery.Document) string {
 	image := ""
 	doc.Find("div#comic img").Each(func(i int, selection *goquery.Selection) {
 		image, _ = selection.Attr("src")
@@ -72,7 +64,7 @@ func (m *Chester5000Module) FindCurrentImage(doc *goquery.Document) string{
 	return image
 }
 
-func (m *Chester5000Module) FindNextPage(doc *goquery.Document) string{
+func (m *Chester5000Module) FindNextPage(doc *goquery.Document) string {
 	next := ""
 	doc.Find("a[rel~=\"next\"]").Each(func(i int, selection *goquery.Selection) {
 		next, _ = selection.Attr("href")
@@ -80,18 +72,16 @@ func (m *Chester5000Module) FindNextPage(doc *goquery.Document) string{
 	return next
 }
 
-
 // ---- //
 
 type Generic struct {
-	NextSelector string
+	NextSelector  string
 	ImageSelector string
-	StopOnURl string
-	stop bool
+	StopOnURl     string
+	stop          bool
 }
 
-
-func (m *Generic) FindCurrentImage(doc *goquery.Document) string{
+func (m *Generic) FindCurrentImage(doc *goquery.Document) string {
 	image := ""
 	doc.Find(m.ImageSelector).Each(func(i int, selection *goquery.Selection) {
 		image, _ = selection.Attr("src")
@@ -99,7 +89,7 @@ func (m *Generic) FindCurrentImage(doc *goquery.Document) string{
 	return image
 }
 
-func (m *Generic) FindNextPage(doc *goquery.Document) string{
+func (m *Generic) FindNextPage(doc *goquery.Document) string {
 	next := ""
 	if m.stop {
 		return next
@@ -109,4 +99,3 @@ func (m *Generic) FindNextPage(doc *goquery.Document) string{
 	})
 	return next
 }
-
