@@ -10,7 +10,7 @@ import (
 
 func main() {
 
-	sessions := readSessionsJson("work/babes_of_dongaria.json")
+	sessions := readSessionsJson("leech-data/sessions.json")
 	for _, s := range sessions {
 		s.Plm = &modules.Generic{
 			NextSelector:  s.NextSelector,
