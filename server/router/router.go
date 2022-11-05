@@ -4,6 +4,8 @@ package router
 import (
 	"encoding/gob"
 	"fmt"
+	"github.com/HaBaLeS/gnol/data/static"
+	template2 "github.com/HaBaLeS/gnol/data/template"
 	"github.com/HaBaLeS/gnol/server/cache"
 	"github.com/HaBaLeS/gnol/server/gnolsession"
 	"github.com/HaBaLeS/gnol/server/jobs"
@@ -79,7 +81,8 @@ func (ah *AppHandler) Routes() {
 		filesDir := filepath.Join(workDir, "data/static/")
 		ah.Router.StaticFS("/static", http.Dir(filesDir))
 	} else {
-		ah.Router.StaticFS("/static", util.StaticAssets)
+		ah.Router.StaticFS("/static", http.FS(static.Embedded))
+
 	}
 
 	//Define users
@@ -218,7 +221,7 @@ func (ah *AppHandler) initTemplates() {
 			panic(err)
 		}
 	} else {
-		ah.templates, err = vfstemplate.ParseGlob(util.StaticAssets, ah.templates, "template/*.gohtml")
+		ah.templates, err = vfstemplate.ParseGlob(http.FS(template2.Embedded), ah.templates, "*.gohtml")
 	}
 
 }

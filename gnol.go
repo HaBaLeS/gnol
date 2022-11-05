@@ -14,8 +14,6 @@ import (
 	"time"
 )
 
-//go:generate go run -tags=dev gen.go
-
 func main() {
 	cfgPath := flag.String("c", "default.cfg", "Config File to use")
 	flag.Parse()
@@ -24,19 +22,19 @@ func main() {
 	gnol.Start()
 }
 
-//Application is the central struct connecting all submodules into one Application
-//this struct supports the access between the modules.
+// Application is the central struct connecting all submodules into one Application
+// this struct supports the access between the modules.
 type Application struct {
 	Config     *util.ToolConfig
 	HTTPServer *http.Server
 	Handler    *router.AppHandler
-	dao			*storage.DAO
+	dao        *storage.DAO
 	Logger     *logger.Logger
 	Cache      *cache.ImageCache
 	BGJobs     *jobs.JobRunner
 }
 
-//NewServer creates a new gnol Application
+// NewServer creates a new gnol Application
 func NewServer(cfgPath string) *Application {
 	log, err := logger.NewLogger()
 	if err != nil {
@@ -56,7 +54,7 @@ func NewServer(cfgPath string) *Application {
 	return a
 }
 
-//Start gnol, serve HTTP
+// Start gnol, serve HTTP
 func (a *Application) Start() {
 
 	a.dao = storage.NewDAO(a.Config)
@@ -81,7 +79,7 @@ func (a *Application) Start() {
 	}
 }
 
-//Shutdown try's to end all modules gracefully where needed
+// Shutdown try's to end all modules gracefully where needed
 func (a *Application) Shutdown() {
 	a.BGJobs.StopMonitor()
 	if a.HTTPServer != nil {
