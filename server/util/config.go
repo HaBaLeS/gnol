@@ -17,13 +17,14 @@ type ToolConfig struct {
 	Hostname          string
 	ListenPort        int
 	LocalResources    bool
-	//LogPath
-	//LogLevel
-	DataDirectory string
-	TempDirectory string
-	//Database      string
-	ForceRescan bool
-	//CacheSize
+	DataDirectory     string
+	TempDirectory     string
+	ForceRescan       bool
+	PostgresHost      string
+	PostgresUser      string
+	PostgresPass      string
+	PostgresDB        string
+	PostgresPort      int
 }
 
 // ReadConfig reads a configuration from a file. Configuration is ini stlye KEY=Value
@@ -41,7 +42,6 @@ func ReadConfig(filename string) (*ToolConfig, error) {
 		DataDirectory:     ".",
 		TempDirectory:     "/tmp/",
 		ForceRescan:       false,
-		//Database:          "gnol_sqlite.db",
 	}
 	of := reflect.ValueOf(ret).Elem()
 	file, e := os.Open(filename)

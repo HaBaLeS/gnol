@@ -22,7 +22,6 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/teris-io/cli v1.0.1
 	golang.org/x/crypto v0.1.0
-
 )
 
 require (

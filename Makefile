@@ -7,7 +7,11 @@ all: build check test
 
 release: check test build
 
-build: generate
+build-server:
+	mkdir -p bin
+	go build  -ldflags '$(LD_FLAG)' -v  -o bin/gnol
+
+build:
 	mkdir -p bin
 	go build  -ldflags '$(LD_FLAG)' -v  -o bin/gnol
 	go build  -ldflags '$(LD_FLAG)' -v  -o bin/gnol-tools ./cmd/gnol-tools
@@ -16,10 +20,6 @@ build: generate
 install:
 	go install -ldflags '$(LD_FLAG)' -v  ./cmd/gnol-tools
 	go install -ldflags '$(LD_FLAG)' -v  ./cmd/leech-tool
-
-
-generate:
-	go generate
 
 check:
 	echo "Skipping checks fix makefile please"
@@ -33,10 +33,10 @@ test:
 
 
 container:
-	docker build . -t reg.habales.de/gnol/gnol:0.7.1
+	docker build . -t reg.habales.de/gnol/gnol:$(VERSION)
 
 push:
-	docker push reg.habales.de/gnol/gnol:0.7.1
+	docker push reg.habales.de/gnol/gnol:$(VERSION)
 
 clean:
 	go clean
