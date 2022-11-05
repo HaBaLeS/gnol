@@ -40,10 +40,10 @@ type CbzMetaData struct {
 type Session struct {
 	TempDir      string
 	Verbose      bool
-	Logger       *log.Logger
+	Logger       *log.Logger `json:"-"`
 	InputFile    string
 	OutputFile   string
-	MetaData     *CbzMetaData
+	MetaData     *CbzMetaData `json:"-"`
 	HasErrors    bool
 	DryRun       bool
 	ListOrder    bool
@@ -102,6 +102,7 @@ func main() {
 		WithOption(tags).
 		WithOption(nsfw).
 		WithOption(coverImage).
+		WithOption(name).
 		WithAction(s.convert)
 
 	folder2cbz := cli.NewCommand("folder2cbz", "Pack folder of images to CBZ with support for GNOL Metadata. Files will be converted to JPEG and Downsized").
@@ -112,6 +113,7 @@ func main() {
 		WithOption(coverImage).
 		WithOption(listOrder).
 		WithOption(upload).
+		WithOption(name).
 		WithAction(s.packfolder)
 
 	uploadcmd := cli.NewCommand("upload", "Upload CBZ/CBR to a Gnol instance").
@@ -134,12 +136,15 @@ func main() {
 		WithCommand(cli.NewCommand("series", "list existing series").WithAction(listSeries)).
 		WithCommand(cli.NewCommand("comics", "list comics for series").WithArg(cli.NewArg("series", "ID of Series")).WithAction(listComicsForSeries))
 
+	version := cli.NewCommand("version", "Print Version number")
+
 	app := cli.New("CLI utils for GNOL").
 		WithCommand(pdf2cbz).
 		WithCommand(folder2cbz).
 		WithCommand(uploadcmd).
 		WithCommand(repack).
 		WithCommand(list).
+		WithCommand(version).
 		WithOption(verbose).
 		WithOption(gnolHost).
 		WithOption(apiToken)
