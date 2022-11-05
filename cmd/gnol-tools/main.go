@@ -55,6 +55,9 @@ type Session struct {
 	ApiToken     string
 }
 
+var VersionNum = "undefined"
+var BuildDate = "undefined"
+
 func NewSession() *Session {
 	td, err := ioutil.TempDir(os.TempDir(), "gnol_utils")
 	if err != nil {
@@ -136,7 +139,10 @@ func main() {
 		WithCommand(cli.NewCommand("series", "list existing series").WithAction(listSeries)).
 		WithCommand(cli.NewCommand("comics", "list comics for series").WithArg(cli.NewArg("series", "ID of Series")).WithAction(listComicsForSeries))
 
-	version := cli.NewCommand("version", "Print Version number")
+	version := cli.NewCommand("version", "Print Version number").WithAction(func(args []string, options map[string]string) int {
+		fmt.Printf("gnol-tools %s from %s\n", VersionNum, BuildDate)
+		return 0
+	})
 
 	app := cli.New("CLI utils for GNOL").
 		WithCommand(pdf2cbz).
