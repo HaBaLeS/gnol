@@ -7,7 +7,7 @@
 FROM golang:1.19-alpine AS build
 RUN apk update
 RUN apk upgrade
-RUN apk add --update gcc g++
+RUN apk add --update gcc g++ make mupdf-dev build-base libc6-compat alpine-sdk
 
 WORKDIR /gnol-build
 
@@ -16,13 +16,10 @@ COPY go.sum ./
 COPY *.go ./
 COPY data ./data/
 COPY server ./server
+COPY cmd ./cmd
+COPY Makefile ./
 
-RUN go mod download
-RUN go mod tidy -compat=1.17
-RUN go get github.com/shurcooL/vfsgen
-
-RUN go generate
-RUN go build
+RUN make build-server
 
 ###
 ### RUN
@@ -47,10 +44,7 @@ RUN adduser \
     "$USER"
 USER $USER:$USER
 
-
-
-COPY --from=build /gnol-build/gnol ./
-COPY data data
+COPY --from=build /gnol-build/bin/* ./
 COPY container.cfg ./
 
 

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
@@ -171,9 +172,8 @@ func NewDAO(cfg *util.ToolConfig) *DAO {
 
 func (dao *DAO) init() {
 
-	//urlExample := "postgres://gnol:geheim!!@db:5432/gnol?sslmode=disable"
-	urlExample := "postgres://gnol:geheim@192.168.1.30:5432/gnol?sslmode=disable"
-	connConfig, err := pgx.ParseConfig(urlExample)
+	url := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", dao.cfg.PostgresUser, dao.cfg.PostgresPass, dao.cfg.PostgresHost, dao.cfg.PostgresPort, dao.cfg.PostgresDB)
+	connConfig, err := pgx.ParseConfig(url)
 	if err != nil {
 		panic(err)
 	}

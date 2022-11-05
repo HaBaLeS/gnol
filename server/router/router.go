@@ -14,7 +14,6 @@ import (
 	"github.com/duo-labs/webauthn/webauthn"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/shurcooL/httpfs/html/vfstemplate"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -221,7 +220,10 @@ func (ah *AppHandler) initTemplates() {
 			panic(err)
 		}
 	} else {
-		ah.templates, err = vfstemplate.ParseGlob(http.FS(template2.Embedded), ah.templates, "*.gohtml")
+		ah.templates, err = ah.templates.ParseFS(template2.Embedded, "*.gohtml")
+		if err != nil {
+			panic(err)
+		}
 	}
 
 }
