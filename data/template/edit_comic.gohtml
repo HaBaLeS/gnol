@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Hello Bulma!</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.2/css/bulma.min.css">
+    <script type="text/javascript"  src="https://code.jquery.com/jquery-3.6.0.js"></script>
+    <script type="text/javascript" src="/static/js/command.js"></script>
     <script>
 
 
@@ -17,7 +19,7 @@
             console.log("The transfer failed.");
         }
 
-        function deleteComic(comicID){
+        function deleteComic(comicID) {
             var oReq = new XMLHttpRequest();
             oReq.addEventListener("loadend", processCommand);
             oReq.addEventListener("error", processError);
@@ -27,15 +29,20 @@
             return false //prevent default
         }
 
-        function processResponse(resp){
-            if(resp.ReturnCode == 200) {
-                switch (resp.Command){
-                    case 'redirect':
-                        window.location.href=resp.Payload.Target;
-                        break;
-                    //TODO other commands
-                }
-            }
+        function sendForm() {
+
+            $.ajax({
+                //url: '',
+                type: 'post',
+                dataType: 'json',
+                data: $('form#editForm').serialize(),
+                success: function (response) {
+                    processResponse(response)
+                },
+                error(resp) {
+                    console.log('Upload error\n' + resp);
+                },
+            });
         }
 
     </script>
@@ -47,10 +54,10 @@
 <section class="section">
     <div class="container">
         <h1>Edit Comic</h1>
-        <form action="" method="POST">
+        <form id="editForm">
             <div class="field">
-                <input type="hidden" name="comicID" value="{{.D.Issue.Id}}" >
-                <label class="label">Name</label> <input type="text" name="name" value="{{.D.Issue.Name}}" />
+                <input type="hidden" name="comicID" value="{{.D.Issue.Id}}">
+                <label class="label">Name</label> <input type="text" name="name" value="{{.D.Issue.Name}}"/>
                 <label class="label">nsfw</label> <input type="checkbox" name="nsfw" {{ if .D.Issue.Nsfw}} checked {{end}} />
                 <label class="label">Series</label>
                 <div>
@@ -60,20 +67,21 @@
                             {{if eq $val.Id  $sid}}
                                 <option value="{{$val.Id}}" selected>{{$val.Name}}</option>
                             {{else}}
-                                <option value="{{$val.Id}}" >{{$val.Name}}</option>
+                                <option value="{{$val.Id}}">{{$val.Name}}</option>
                             {{end}}
 
                         {{end}}
                     </select>
                 </div>
                 <div>
-                    <button onclick="">Update Comic</button>
+                    <button onclick="sendForm(); return false;">Update Comic</button>
                 </div>
-            </form>
-            <div>
-                <button onclick="return deleteComic({{.D.Issue.Id}});">Delete Comic</button>
             </div>
+        </form>
+        <div>
+            <button onclick="return deleteComic({{.D.Issue.Id}});">Delete Comic</button>
         </div>
+    </div>
     </div>
 </section>
 </body>

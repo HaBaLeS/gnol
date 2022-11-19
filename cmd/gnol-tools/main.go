@@ -135,9 +135,9 @@ func main() {
 		WithOption(upload).
 		WithAction(s.repack)
 
-	list := cli.NewCommand("list", "Gnol List Command. See subcomands for details").
-		WithCommand(cli.NewCommand("series", "list existing series").WithAction(listSeries)).
-		WithCommand(cli.NewCommand("comics", "list comics for series").WithArg(cli.NewArg("series", "ID of Series")).WithAction(listComicsForSeries))
+	series := cli.NewCommand("series", "Gnol Series management Command. See subcomands for details").
+		WithCommand(cli.NewCommand("list", "list existing series").WithAction(listSeries)).
+		WithCommand(cli.NewCommand("create", "create a new series").WithArg(cli.NewArg("name", "Name for Series")).WithAction(createSeries))
 
 	version := cli.NewCommand("version", "Print Version number").WithAction(func(args []string, options map[string]string) int {
 		fmt.Printf("gnol-tools %s from %s\n", VersionNum, BuildDate)
@@ -149,7 +149,7 @@ func main() {
 		WithCommand(folder2cbz).
 		WithCommand(uploadcmd).
 		WithCommand(repack).
-		WithCommand(list).
+		WithCommand(series).
 		WithCommand(version).
 		WithOption(verbose).
 		WithOption(gnolHost).
@@ -163,7 +163,7 @@ func listSeries(args []string, options map[string]string) int {
 	return 0
 }
 
-func listComicsForSeries(args []string, options map[string]string) int {
+func createSeries(args []string, options map[string]string) int {
 	fmt.Printf("Comics: XXXX")
 	return 0
 }

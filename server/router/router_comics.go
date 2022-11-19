@@ -22,8 +22,9 @@ func (ah *AppHandler) comicsList(ctx *gin.Context) {
 func (ah *AppHandler) deleteComic(ctx *gin.Context) {
 	comicID := ctx.Param("comicId")
 	us := getUserSession(ctx)
+	comic := ah.dao.ComicById(comicID)
 	ah.dao.DB.MustExec("delete from user_to_comic where comic_id = $1 and user_id = $2", comicID, us.UserID)
-	ctx.JSON(200, command.NewRedirectCommand("/comics"))
+	ctx.JSON(200, command.NewRedirectCommand(fmt.Sprintf("/series/%d", comic.SeriesId)))
 }
 
 func (ah *AppHandler) comicsLoad(ctx *gin.Context) {
@@ -73,10 +74,11 @@ func (ah *AppHandler) updateComic(ctx *gin.Context) {
 		cr.nsfwbool = true
 	}
 	us := getUserSession(ctx)
+	old := ah.dao.ComicById(string(cr.ComicID))
 	ah.dao.DB.MustExec("update comic set series_id = $1, nsfw = $2, name = $3 where id = $4 and ownerID = $5", cr.SeriesID, cr.nsfwbool, cr.Name, cr.ComicID, us.UserID)
 
 	//execute Updates
-	ctx.JSON(http.StatusCreated, command.NewRedirectCommand(fmt.Sprintf("/series/%d/", cr.SeriesID)))
+	ctx.JSON(http.StatusCreated, command.NewRedirectCommand(fmt.Sprintf("/series/%d/", old.SeriesId)))
 }
 
 func (ah *AppHandler) comicSetLastPage(ctx *gin.Context) {

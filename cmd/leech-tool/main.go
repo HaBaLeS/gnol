@@ -2,16 +2,25 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/HaBaLeS/gnol/cmd/leech-tool/engine"
 	"github.com/HaBaLeS/gnol/cmd/leech-tool/modules"
 	"github.com/HaBaLeS/gnol/cmd/leech-tool/persistence"
 	"os"
+	"time"
 )
 
 func main() {
 
-	sessions := readSessionsJson("leech-data/sessions.json")
+	sessions := readSessionsJson("leech-data/iro.json")
 	for _, s := range sessions {
+		sf := s.LoadScrapeStatusFile()
+		if sf != nil {
+			if sf.LastScrapeTime.Add(time.Hour * 24).After(time.Now()) {
+				fmt.Printf("Skipping %s , last scrate was within 24h\n", s.Name)
+				continue
+			}
+		}
 		s.Plm = &modules.Generic{
 			NextSelector:  s.NextSelector,
 			ImageSelector: s.ImageSelector,
@@ -21,6 +30,7 @@ func main() {
 			Session: s,
 		}
 		e.Leech()
+		s.WriteScrapeStatusFile()
 		s.WriteMetaFile()
 	}
 }
