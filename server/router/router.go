@@ -152,6 +152,11 @@ func (ah *AppHandler) Routes() {
 		api.GET("/list", ah.apiListComics)
 		api.GET("/series", ah.apiSeries)
 		api.POST("/upload", ah.apiUploadComic)
+		/*
+			get /api/series/list
+			post /api/series/create
+			post /api/series/update
+		*/
 	}
 
 	ah.Router.NoRoute(func(ctx *gin.Context) {

@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   web:
-    image: "reg.habales.de/gnol/gnol:0.8.1"
+    image: "reg.habales.de/gnol/gnol:0.8.4"
     ports:
       - "8666:9123"
     depends_on:
@@ -10,6 +10,7 @@ services:
     volumes:
       - /home/falko/projekte/gnol/docker-compose-volumes/cache:/cache
       - /home/falko/projekte/gnol/docker-compose-volumes/files:/files
+
 
   db:
     image: postgres:14.1-alpine
@@ -20,8 +21,8 @@ services:
       - POSTGRES_DB=gnol
     ports:
       - '5432:5432'
-    volumes:
-      - gnol_db:/var/lib/postgresql/data
+#    volumes:
+#      - gnol_db:/var/lib/postgresql/data
 
-volumes:
-  gnol_db: {}
+#volumes:
+#  gnol_db: {}

@@ -3,12 +3,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Hello Bulma!</title>
+    <title>Create Gnol Series</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.2/css/bulma.min.css">
     <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
     <script type="text/javascript"  src="https://code.jquery.com/jquery-3.6.0.js"></script>
 
     <script src="/static/js/cropper.js"></script>
+    <script type="text/javascript" src="/static/js/command.js"></script>
     <link rel="stylesheet" href="/static/css/cropper.css">
 
 </head>
@@ -23,13 +24,13 @@
                 <div class="field">
                     <label class="label">Name</label>
                     <div class="control">
-                        <input class="input" type="text" name="series_name" placeholder="Text input">
+                        <input class="input" type="text" name="series_name" placeholder="Series Title">
                     </div>
                     <div><input type="file" onchange="previewFile()"></div>
                     <div>
                         <img style="display: block; max-width: 100%" id="series_cover" src="https://i.picsum.photos/id/25/200/300.jpg?hmac=ScdLbPfGd_kI3MUHvJUb12Fsg1meDQEaHY_mM613BVM">
                     </div>
-                    <div><button  onclick="exportImage()">Export</button> </div>
+                    <div><button  onclick="exportImage(); return false;">Create</button> </div>
                 </div>
             </form>
     </div>
@@ -43,13 +44,11 @@
     });
 
     function previewFile() {
-        const preview = document.querySelector('#series_cover');
+       // const preview = document.querySelector('#series_cover');
         const file = document.querySelector('input[type=file]').files[0];
         const reader = new FileReader();
 
         reader.addEventListener("load", function () {
-            // convert image file to base64 string
-            //preview.src = reader.result;
             cropper.replace(reader.result,false);
             cropper.reset();
 
@@ -65,8 +64,11 @@
         var form = document.forms['create_series_form'];
         sn = form.elements.series_name.value;
 
-        const b64Image = cropper.getCroppedCanvas().toDataURL("image/jpeg", 0.8);
-        console.log();
+        const canv = cropper.getCroppedCanvas()
+        if (canv == null) {
+            return;
+        }
+        b64Image = canv.toDataURL("image/jpeg", 0.8);
 
         const formData = new FormData();
         formData.append('name', sn);
@@ -78,11 +80,12 @@
             data: formData,
             processData: false,
             contentType: false,
-            success() {
+            success(resp) {
+                processResponse(resp)
                 console.log('Upload success');
             },
-            error() {
-                console.log('Upload error');
+            error(resp) {
+                console.log('Upload error\n' + resp);
             },
         });
 
