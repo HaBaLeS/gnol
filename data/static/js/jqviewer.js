@@ -246,8 +246,26 @@ function enableFullScreen(){
     } else if (elem.msRequestFullscreen) { /* IE/Edge */
         elem.msRequestFullscreen();
     }
+    document.getElementById("toggleFullScreen").hidden=true
+    document.getElementById("toggleExitFullScreen").hidden=false
 }
 
+
+function exitFullScreen(){
+    /* When the openFullscreen() function is executed, open the video in fullscreen.
+    Note that we must include prefixes for different browsers, as they don't support the requestFullscreen method yet */
+    if (document.exitFullscreen) {
+        document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+    } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+    }
+    document.getElementById("toggleFullScreen").hidden=false
+    document.getElementById("toggleExitFullScreen").hidden=true
+}
 
 
 

@@ -11,7 +11,7 @@ func (ah *AppHandler) comicsInSeriesList(ctx *gin.Context) {
 	sID := ctx.Param("seriesID")
 	us.ComicList = ah.dao.ComicsForUserInSeries(us.UserID, sID)
 
-	ah.renderTemplate("index.gohtml", ctx, nil)
+	ah.renderTemplate("comic_list.gohtml", ctx, nil)
 }
 
 func (ah *AppHandler) seriesList(ctx *gin.Context) {
@@ -29,7 +29,7 @@ func (ah *AppHandler) createSeries(ctx *gin.Context) {
 		return
 	}
 	imgB64, _ := ctx.GetPostForm("previewImage")
-	//FIXME this is a hacke ... i cant render the image if this is prefixed, as the template engine rejects it!
+	//FIXME this is a hack ... i cant render the image if this is prefixed, as the template engine rejects it!
 	//fix would be to store full string and make the template render correctly
 	imgB64 = strings.ReplaceAll(imgB64, "data:image/png;base64,", "")
 	imgB64 = strings.ReplaceAll(imgB64, "data:image/jpeg;base64,", "")
