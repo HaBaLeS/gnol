@@ -38,21 +38,22 @@ type CbzMetaData struct {
 }
 
 type Session struct {
-	TempDir      string
-	Verbose      bool
-	Logger       *log.Logger `json:"-"`
-	InputFile    string
-	OutputFile   string
-	MetaData     *CbzMetaData `json:"-"`
-	HasErrors    bool
-	DryRun       bool
-	ListOrder    bool
-	From         int
-	To           int
-	IssueName    string
-	DirectUpload bool
-	GnolHost     string
-	ApiToken     string
+	TempDir    string
+	Verbose    bool
+	Logger     *log.Logger `json:"-"`
+	InputFile  string
+	OutputFile string
+	MetaData   *CbzMetaData `json:"-"`
+	HasErrors  bool
+	DryRun     bool
+	ListOrder  bool
+	From       int
+	To         int
+	//IssueName     string
+	DirectUpload  bool
+	GnolHost      string
+	ApiToken      string
+	MonitorFolder string
 }
 
 var VersionNum = "undefined"
@@ -135,7 +136,7 @@ func main() {
 		WithOption(upload).
 		WithAction(s.repack)
 
-	series := cli.NewCommand("series", "Gnol Series management Command. See subcomands for details").
+	series := cli.NewCommand("series", "Gnol Series management Command. See subcommands for details").
 		WithCommand(cli.NewCommand("list", "list existing series").WithAction(listSeries)).
 		WithCommand(cli.NewCommand("create", "create a new series").WithArg(cli.NewArg("name", "Name for Series")).WithAction(createSeries))
 
@@ -144,6 +145,8 @@ func main() {
 		return 0
 	})
 
+	monitor := cli.NewCommand("monitor", "Monitor folder and auto-process files in it").WithArg(inDirArg).WithAction(s.monitor)
+
 	app := cli.New("CLI utils for GNOL").
 		WithCommand(pdf2cbz).
 		WithCommand(folder2cbz).
@@ -151,6 +154,7 @@ func main() {
 		WithCommand(repack).
 		WithCommand(series).
 		WithCommand(version).
+		WithCommand(monitor).
 		WithOption(verbose).
 		WithOption(gnolHost).
 		WithOption(apiToken)
@@ -250,7 +254,9 @@ func (s *Session) processOptionsAndValidate(args []string, options map[string]st
 	if options["name"] != "" {
 		s.MetaData.Name = options["name"]
 	} else {
-		s.MetaData.Name = path.Base(s.InputFile)
+		if s.MetaData.Name == "" {
+			s.MetaData.Name = path.Base(s.InputFile)
+		}
 	}
 
 	if options["out_cbz"] != "" {

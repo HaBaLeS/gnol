@@ -61,6 +61,9 @@ func (j *JobRunner) scanMetaData(job *storage.GnolJob) error {
 		return err
 	}
 	for _, tag := range c.Tags {
+		if tag == "" {
+			continue
+		}
 		added := false
 		for _, kt := range knownTags {
 			if strings.ToLower(tag) == kt {
