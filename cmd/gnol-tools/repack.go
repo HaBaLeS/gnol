@@ -65,8 +65,8 @@ func (s *Session) repack(args []string, options map[string]string) int {
 		if i >= s.From && i <= s.To {
 			if s.Verbose {
 				fmt.Printf("[%d]\t%s\n", i, v)
-				files[v] = v
 			}
+			files[v] = v
 		}
 	}
 
