@@ -68,9 +68,7 @@ func (ah *AppHandler) Routes() {
 	ah.Router.Use(sessions.Sessions("gnolsession", store))
 	ah.Router.Use(userSessionMiddleware)
 
-	ah.Router.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusTemporaryRedirect, "/series")
-	})
+	ah.Router.GET("/", redirect("/series"))
 
 	//Handle static Resources
 	if ah.config.LocalResources {
@@ -125,7 +123,7 @@ func (ah *AppHandler) Routes() {
 	cm := ah.Router.Group("/comics")
 	{
 		cm.Use(requireAuth)
-		cm.GET("/", ah.comicsList)
+		cm.GET("/", redirect("/series"))
 		cm.GET("/:comicId", ah.comicsLoad)
 		cm.GET("/:comicId/edit", ah.comicsEdit)
 		cm.POST("/:comicId/edit", ah.updateComic)
@@ -165,6 +163,12 @@ func (ah *AppHandler) Routes() {
 		}
 		ctx.Redirect(http.StatusTemporaryRedirect, "/series")
 	})
+}
+
+func redirect(location string) gin.HandlerFunc {
+	return func(context *gin.Context) {
+		context.Redirect(http.StatusTemporaryRedirect, location)
+	}
 }
 
 func requireAuth(ctx *gin.Context) {
