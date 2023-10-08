@@ -11,7 +11,6 @@ import (
 	"github.com/HaBaLeS/gnol/server/jobs"
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/util"
-	"github.com/duo-labs/webauthn/webauthn"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"html/template"
@@ -30,7 +29,7 @@ type AppHandler struct {
 	cache     *cache.ImageCache
 	bgJobs    *jobs.JobRunner
 	templates *template.Template
-	web       *webauthn.WebAuthn
+	//web       *webauthn.WebAuthn
 }
 
 // NewHandler Create a new AppHandler for the Server
@@ -43,7 +42,7 @@ func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobR
 		dao:    dao,
 	}
 
-	web, err := webauthn.New(&webauthn.Config{
+	/*web, err := webauthn.New(&webauthn.Config{
 		RPDisplayName: "GNOL Online",               // Display Name for your site
 		RPID:          config.WebAuthnHostname,     // Generally the FQDN for your site
 		RPOrigin:      config.WebAuthnOriginURL,    // The origin URL for WebAuthn requests
@@ -52,7 +51,7 @@ func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobR
 	if err != nil {
 		fmt.Println(err)
 	}
-	ah.web = web
+	ah.web = web*/
 
 	ah.initTemplates()
 	return ah
@@ -101,14 +100,14 @@ func (ah *AppHandler) Routes() {
 		stng.GET("/api-token", ah.APIToken)
 	}
 
-	wn := ah.Router.Group("/webauthn")
+	/*wn := ah.Router.Group("/webauthn")
 	{
 		wn.GET("/", ah.webAuthnIndex)
 		wn.GET("/:userID", ah.BeginRegistration)
 		wn.POST("/add", ah.FinishRegistration)
 		wn.GET("/assertion/:userID", ah.BeginLogin)
 		wn.POST("/assertion", ah.FinishLogin)
-	}
+	}*/
 
 	//Define Uploads
 	up := ah.Router.Group("/upload")

@@ -2,7 +2,6 @@ package storage
 
 import (
 	"bytes"
-	"github.com/duo-labs/webauthn/webauthn"
 	"github.com/rs/xid"
 	"golang.org/x/crypto/argon2"
 )
@@ -47,7 +46,7 @@ func (dao *DAO) AddUser(name, password string) bool {
 
 func (dao *DAO) AddWebAuthnUser(user *User) bool {
 
-	creds := user.creds[0]
+	/*creds := user.creds[0]
 
 	tx := dao.DB.MustBegin()
 	res, err := tx.Exec("INSERT INTO gnoluser (name, password_hash, salt, webauthn) VALUES ($1, $2, $3, $4)", user.Name, "", "", true)
@@ -67,11 +66,12 @@ func (dao *DAO) AddWebAuthnUser(user *User) bool {
 	}
 	user.Id = int(uid)
 
-	return true
+	return true*/
+	return false
 }
 
 func (dao *DAO) GetWebAuthnUser(username string) *User {
-	user := new(User)
+	/*user := new(User)
 	err := dao.DB.Get(user, "select * from gnoluser where name =$1 and webauthn = true", username)
 	if err != nil {
 		return nil
@@ -90,7 +90,9 @@ func (dao *DAO) GetWebAuthnUser(username string) *User {
 	c.Authenticator = a
 	user.creds = make([]webauthn.Credential, 0)
 	user.creds = append(user.creds, c)
-	return user
+
+	*/
+	return nil
 }
 
 func hashPassword(pass string) ([]byte, []byte) {
@@ -113,7 +115,7 @@ type User struct {
 	PasswordHash []byte `db:"password_hash"`
 	Salt         []byte
 	WebAuthn     bool `db:"webauthn"`
-	creds        []webauthn.Credential
+	//creds        []webauthn.Credential
 }
 
 func (user *User) WebAuthnID() []byte {
@@ -132,7 +134,7 @@ func (user *User) WebAuthnIcon() string {
 	return "https://pics.com/avatar.png"
 }
 
-func (user *User) WebAuthnCredentials() []webauthn.Credential {
+/*func (user *User) WebAuthnCredentials() []webauthn.Credential {
 	if user.creds == nil {
 		user.creds = []webauthn.Credential{}
 	}
@@ -142,4 +144,4 @@ func (user *User) WebAuthnCredentials() []webauthn.Credential {
 func (user *User) AddCredential(credential webauthn.Credential) {
 	user.WebAuthnCredentials() //make sure the array exists
 	user.creds = append(user.creds, credential)
-}
+}*/

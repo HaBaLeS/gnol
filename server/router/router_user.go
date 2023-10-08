@@ -2,9 +2,6 @@ package router
 
 import (
 	"fmt"
-	"github.com/HaBaLeS/gnol/server/command"
-	"github.com/HaBaLeS/gnol/server/storage"
-	"github.com/duo-labs/webauthn/protocol"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -90,14 +87,15 @@ func (ah *AppHandler) loginUser(ctx *gin.Context) {
 	ctx.Redirect(303, "/series")
 }
 
-//renderIndex
+// renderIndex
 func (ah *AppHandler) webAuthnIndex(ctx *gin.Context) {
 	ah.renderTemplate("webauthn.gohtml", ctx, nil)
 }
 
-//GET -> USer + params
-//called first
+// GET -> USer + params
+// called first
 // check if user exists
+/*
 func (ah *AppHandler) BeginRegistration(ctx *gin.Context) {
 
 	username := ctx.Param("userID")
@@ -151,8 +149,8 @@ func (ah *AppHandler) FinishRegistration(ctx *gin.Context) {
 
 }
 
-//Start of auth
-//Check for user in DB
+// Start of auth
+// Check for user in DB
 func (ah *AppHandler) BeginLogin(ctx *gin.Context) {
 	//user := datastore.GetUser() // Find the user
 	user := ah.dao.GetWebAuthnUser(ctx.Param("userID"))
@@ -200,3 +198,4 @@ func (ah *AppHandler) FinishLogin(ctx *gin.Context) {
 	//JSONResponse(w, "Login Success", http.StatusOK)
 	ctx.JSON(200, command.NewRedirectCommand("/series"))
 }
+*/
