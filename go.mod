@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/HaBaLeS/go-logger v1.3.1
 	github.com/PuerkitoBio/goquery v1.8.1
-	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gen2brain/go-fitz v1.23.1
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.9.1
@@ -63,7 +62,7 @@ require (
 	github.com/ulikunitz/xz v0.5.9 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	golang.org/x/arch v0.3.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
