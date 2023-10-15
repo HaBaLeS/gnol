@@ -11,6 +11,7 @@ type Comic struct {
 	Tags             []string
 	LastPage         int `db:"last_page"`
 	OwnerID          int `db:"ownerid"`
+	OrderNum         int `db:"ordernum"`
 }
 
 type Series struct {

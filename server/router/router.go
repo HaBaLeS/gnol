@@ -111,7 +111,10 @@ func (ah *AppHandler) Routes() {
 	up := ah.Router.Group("/upload")
 	{
 		up.Use(requireAuth)
-		up.GET("/archive", ah.serveTemplate("upload_archive.gohtml", nil))
+		up.GET("/archive", func(context *gin.Context) {
+			sl := ah.dao.AllSeries()
+			ah.renderTemplate("upload_archive.gohtml", context, sl)
+		})
 		up.GET("/pdf", ah.serveTemplate("upload_pdf.gohtml", nil))
 		up.GET("/url", ah.serveTemplate("upload_url.gohtml", nil))
 		up.POST("/archive", ah.uploadArchive)
@@ -214,7 +217,7 @@ func (ah *AppHandler) initTemplates() {
 	var allFiles []string
 	var err error
 	ah.templates = template.New("root")
-	ah.templates = ah.templates.Funcs(template.FuncMap{"mod": mod})
+	ah.templates = ah.templates.Funcs(template.FuncMap{"mod": mod, "inc": inc})
 	if ah.config.LocalResources {
 		fi, _ := ioutil.ReadDir("data/template/")
 		for _, file := range fi {
@@ -269,4 +272,8 @@ func renderError(e error, w http.ResponseWriter) {
 
 func mod(i, j int) bool {
 	return i%j == 0
+}
+
+func inc(i int) int {
+	return i + 1
 }

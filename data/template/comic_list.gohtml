@@ -27,7 +27,7 @@
                         </div>
                         <div class="card-content">
                             <div class="content">
-                                <p ><b>{{ $v.Name }}</b><br>Page: {{$v.LastPage}}/{{$v.NumPages}} </p>
+                                <p ><b>{{ $v.Name }}</b><br>Page: {{inc $v.LastPage}}/{{$v.NumPages}} </p>
                             </div>
                             {{ range $idxx, $v := .Tags }}
                                 <span class="button  is-small is-info is-light">{{.}}</span>

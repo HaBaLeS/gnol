@@ -14,12 +14,28 @@
 <section class="section">
     <div class="container">
         <h1>Upload CBZ/CBR</h1>
-        <form action="/upload/archive" enctype="multipart/form-data" method="post">
-            <input type="checkbox" name="public" value="public">
-            Available to Guests (No Copiright issues)<br>
-            <input type="file" name="arc"><br>
-            <button class="button is-link">Submit</button>
-        </form>
+        <div class="field">
+
+            <form action="/upload/archive" enctype="multipart/form-data" method="post">
+
+                <label class="label">CBZ File:</label><input type="file" name="arc"><br>
+                <label class="label">OrderNum</label><input type="number" name="ordernum" value="0"><br>
+                <label class="label">Series</label>
+                <div>
+                    <select name="seriesID">
+                        {{range $val := .D}}
+                            {{if eq $val.Id  0}}
+                                <option value="{{$val.Id}}" selected>{{$val.Name}}</option>
+                            {{else}}
+                                <option value="{{$val.Id}}">{{$val.Name}}</option>
+                            {{end}}
+                        {{end}}
+                    </select>
+                </div>
+                <br>
+                <button class="button is-link">Submit</button>
+            </form>
+        </div>
     </div>
 </section>
 

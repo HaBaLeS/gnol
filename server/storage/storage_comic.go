@@ -9,8 +9,7 @@ import (
 	"path"
 )
 
-
-func GetPageImage(config *util.ToolConfig, filepath string,comicIdent string, pageNum int) (string, error) {
+func GetPageImage(config *util.ToolConfig, filepath string, comicIdent string, pageNum int) (string, error) {
 
 	comicDir := path.Join(config.TempDirectory, comicIdent)
 	fileID := fmt.Sprintf("page-%d", pageNum)
@@ -18,7 +17,7 @@ func GetPageImage(config *util.ToolConfig, filepath string,comicIdent string, pa
 
 	//TODO add a config parameter to enforce jpeg instead of preserving the original
 	cnt := 0
-	comic, err  := os.Open(filepath)
+	comic, err := os.Open(filepath)
 	if err != nil {
 		panic(err)
 	}

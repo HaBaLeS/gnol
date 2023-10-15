@@ -64,6 +64,7 @@ func (ah *AppHandler) updateComic(ctx *gin.Context) {
 		Nsfw     string `form:"nsfw"`
 		nsfwbool bool
 		SeriesID int `form:"seriesID"`
+		OrderNum int `form:"orderNum"`
 	}
 	cr := &ChangeReq{}
 	berr := ctx.ShouldBind(cr)
@@ -75,8 +76,8 @@ func (ah *AppHandler) updateComic(ctx *gin.Context) {
 		cr.nsfwbool = true
 	}
 	us := getUserSession(ctx)
-	old := ah.dao.ComicById(string(cr.ComicID))
-	ah.dao.DB.MustExec("update comic set series_id = $1, nsfw = $2, name = $3 where id = $4 and ownerID = $5", cr.SeriesID, cr.nsfwbool, cr.Name, cr.ComicID, us.UserID)
+	old := ah.dao.ComicById(strconv.Itoa(cr.ComicID))
+	ah.dao.DB.MustExec("update comic set series_id = $1, nsfw = $2, name = $3, orderNum = $6 where id = $4 and ownerID = $5", cr.SeriesID, cr.nsfwbool, cr.Name, cr.ComicID, us.UserID, cr.OrderNum)
 
 	//execute Updates
 	ctx.JSON(http.StatusCreated, command.NewRedirectCommand(fmt.Sprintf("/series/%d/", old.SeriesId)))
