@@ -9,20 +9,37 @@ import (
 	"strings"
 )
 
+type JobMeta struct {
+	Filename string `json:"filename"`
+	SeriesId int    `json:"seriesId"`
+	OrderNum int    `json:"orderNum"`
+}
+
 // CreateNewArchiveJob create a prepared Job form processing a new CBR/CBZ/RAR/ZIP file
-func (j *JobRunner) CreateNewArchiveJob(archive string, userID int) {
+func (j *JobRunner) CreateNewArchiveJob(jobMeta *JobMeta, userID int) error {
+	data, err := json.Marshal(jobMeta)
+	if err != nil {
+		return err
+	}
 	bgjob := &storage.GnolJob{
 		JobType:   ScanMeta,
-		Data:      archive,
+		Data:      string(data),
 		JobStatus: NotStarted,
 		UserID:    userID,
 	}
 	j.save(bgjob)
+	return nil
 }
 
-func (j *JobRunner) scanMetaData(job *storage.GnolJob) error {
+func (j *JobRunner) scanMetaData(jdesc *storage.GnolJob) error {
 
-	f, err := os.Open(job.Data)
+	jm := &JobMeta{}
+	err := json.Unmarshal([]byte(jdesc.Data), jm)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Open(jm.Filename)
 	if err != nil {
 		return err
 	}
@@ -33,11 +50,10 @@ func (j *JobRunner) scanMetaData(job *storage.GnolJob) error {
 
 	e, ok := eIface.(archiver.Walker)
 	if !ok {
-		return fmt.Errorf("format specified by source filename is not an extractor format: %s (%T)", job.Data, eIface)
+		return fmt.Errorf("format specified by source filename is not an extractor format: %s (%T)", jm.Filename, eIface)
 	}
-
 	c := &storage.Comic{}
-	err = e.Walk(job.Data, func(f archiver.File) error {
+	err = e.Walk(jm.Filename, func(f archiver.File) error {
 		if f.Name() == "gnol.json" {
 			dec := json.NewDecoder(f)
 			err := dec.Decode(c)
@@ -45,10 +61,13 @@ func (j *JobRunner) scanMetaData(job *storage.GnolJob) error {
 		}
 		return nil
 	})
+	c.OrderNum = jm.OrderNum //fixme only overwrite if certein conditions are meet
+	c.SeriesId = jm.SeriesId //fixme only overwrite if certein conditions are meet
+
 	if err != nil {
 		return err
 	}
-	c.FilePath = job.Data
+	c.FilePath = jm.Filename
 	id := j.dao.SaveComic(c)
 	if err != nil {
 		return err
@@ -79,6 +98,6 @@ func (j *JobRunner) scanMetaData(job *storage.GnolJob) error {
 		}
 	}
 
-	err = j.dao.AddComicToUser(id, job.UserID)
+	err = j.dao.AddComicToUser(id, jdesc.UserID)
 	return err
 }

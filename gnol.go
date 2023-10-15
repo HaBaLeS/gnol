@@ -65,7 +65,7 @@ func (a *Application) Start() {
 	a.BGJobs = jobs.NewJobRunner(a.dao, a.Config)
 	a.BGJobs.StartMonitor()
 
-	//TODO move router in server
+	//TODO.md move router in server
 	a.Handler = router.NewHandler(a.Config, a.Cache, a.BGJobs, a.dao)
 	a.Handler.Routes()
 

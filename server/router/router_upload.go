@@ -2,10 +2,12 @@ package router
 
 import (
 	"fmt"
+	"github.com/HaBaLeS/gnol/server/jobs"
 	"github.com/gin-gonic/gin"
 	"io"
 	"os"
 	"path"
+	"strconv"
 )
 
 func (ah *AppHandler) uploadArchive(ctx *gin.Context) {
@@ -14,8 +16,9 @@ func (ah *AppHandler) uploadArchive(ctx *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	fh := form.File["arc"][0]
-
+	fh := form.File["arc"][0]                            //fixme this will crash for sure when api is misused!
+	order, _ := strconv.Atoi(form.Value["ordernum"][0])  //fixme this will crash for sure when api is misused!
+	series, _ := strconv.Atoi(form.Value["seriesID"][0]) //fixme this will crash for sure when api is misused!
 	outName := path.Join(ah.config.DataDirectory, fh.Filename)
 	out, err := os.Create(outName)
 	if err != nil {
@@ -27,8 +30,14 @@ func (ah *AppHandler) uploadArchive(ctx *gin.Context) {
 		panic(fmt.Sprintf("Error copying to: %s\n %v", outName, cpe))
 	}
 
+	jd := &jobs.JobMeta{
+		Filename: outName,
+		OrderNum: order,
+		SeriesId: series,
+	}
+
 	us := getUserSession(ctx)
-	ah.bgJobs.CreateNewArchiveJob(outName, us.UserID)
+	ah.bgJobs.CreateNewArchiveJob(jd, us.UserID)
 
 	ah.renderTemplate("upload.gohtml", ctx, nil)
 }

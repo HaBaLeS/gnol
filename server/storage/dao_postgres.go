@@ -29,6 +29,7 @@ select  c.*, utc.last_page from comic as c
 select  c.*, utc.last_page from comic as c
     join user_to_comic utc on c.id = utc.comic_id
     where utc.user_id = $1 and series_id = $2 and c.id not in (select comic_id from tag_to_comic where tag_id in ($3))
+	order by c.ordernum asc
 `
 
 	ADD_USER_2_COMIC = "insert into user_to_comic (user_id, comic_id) values ($1, $2)"
@@ -156,6 +157,8 @@ var schema_6 = "alter table user_to_comic add column last_page integer default 0
 
 var schema_8 = "alter table comic add column ownerID integer default 1;"
 
+var schema_9 = "alter table comic add column ordernum INTEGER default 100;"
+
 type DAO struct {
 	log *log.Logger
 	DB  *sqlx.DB
@@ -230,6 +233,11 @@ func (dao *DAO) init() {
 	if version < 8 {
 		db.MustExec(schema_8)
 		db.MustExec(UPDATE_VERSION, 8)
+	}
+
+	if version < 9 {
+		db.MustExec(schema_9)
+		db.MustExec(UPDATE_VERSION, 9)
 	}
 
 }

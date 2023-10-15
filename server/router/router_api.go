@@ -2,6 +2,7 @@ package router
 
 import (
 	"fmt"
+	"github.com/HaBaLeS/gnol/server/jobs"
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -61,7 +62,10 @@ func (ah *AppHandler) apiUploadComic(ctx *gin.Context) {
 		panic(err)
 	}
 	fmt.Printf("%d bytes written\n", num)
-	ah.bgJobs.CreateNewArchiveJob(fn, uid)
+	jd := &jobs.JobMeta{
+		Filename: fn,
+	}
+	ah.bgJobs.CreateNewArchiveJob(jd, uid)
 
 	ctx.JSON(http.StatusOK, "Thx for uploading")
 }

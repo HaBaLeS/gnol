@@ -83,7 +83,7 @@ func (s *Session) packInternal() int {
 		}
 		oz := img.Bounds()
 		img = resize.Thumbnail(2560, 1440, img, resize.MitchellNetravali)
-		s.Log("Resized: (%d,%d) -> (%d,%d)", oz.Dx(), oz.Dy(), img.Bounds().Dx(), img.Bounds().Dy()) //TODO make resizing optional
+		s.Log("Resized: (%d,%d) -> (%d,%d)", oz.Dx(), oz.Dy(), img.Bounds().Dx(), img.Bounds().Dy()) //TODO.md make resizing optional
 		err = s.StoreAsJpg(idx, img)
 		if err != nil {
 			s.Error("Could not store resized Image %s", v)
