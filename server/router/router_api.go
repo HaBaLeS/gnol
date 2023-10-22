@@ -10,12 +10,19 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 )
 
-const API_USER_ID = "api-user-id"
+const (
+	API_GNOL_TOKEN = "gnol-token"
+	API_USER_ID    = "api-user-id"
+	API_SERIES_ID  = "series-id"
+	API_NSFW       = "nsfw"
+	API_ODER_NUM   = "order-num"
+)
 
 func (ah *AppHandler) requireAPIToken(ctx *gin.Context) {
-	gt := ctx.GetHeader("gnol-token")
+	gt := ctx.GetHeader(API_GNOL_TOKEN)
 	if "" == gt {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, "missing header 'gnol-token'")
 	}
@@ -40,14 +47,25 @@ func (ah *AppHandler) apiListComics(ctx *gin.Context) {
 }
 
 func (ah *AppHandler) apiUploadComic(ctx *gin.Context) {
-	uidi, _ := ctx.Get(API_USER_ID)
-	uid := uidi.(int)
+	uid := 0
+	seriesId := 0
+	nsfw := false
+	orderNum := 100
 
-	/*sidString := ctx.DefaultQuery("series", "0")
-	sid, err := strconv.Atoi(sidString)
-	if err != nil {
-		panic(err)
-	}*/
+	if uidi, exist := ctx.Get(API_USER_ID); !exist {
+		panic("Missing patrameter api-user-id")
+	} else {
+		uid = uidi.(int)
+	}
+	if val := ctx.Query(API_SERIES_ID); val != "" {
+		seriesId, _ = strconv.Atoi(val)
+	}
+	if val := ctx.Query(API_NSFW); val != "" {
+		nsfw = true
+	}
+	if val := ctx.Query(API_ODER_NUM); val != "" {
+		orderNum, _ = strconv.Atoi(val)
+	}
 
 	fmt.Printf("Storing file for uid: %d", uid)
 
@@ -64,6 +82,9 @@ func (ah *AppHandler) apiUploadComic(ctx *gin.Context) {
 	fmt.Printf("%d bytes written\n", num)
 	jd := &jobs.JobMeta{
 		Filename: fn,
+		SeriesId: seriesId,
+		OrderNum: orderNum,
+		Nsfw:     nsfw,
 	}
 	ah.bgJobs.CreateNewArchiveJob(jd, uid)
 

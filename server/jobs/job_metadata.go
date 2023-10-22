@@ -13,6 +13,7 @@ type JobMeta struct {
 	Filename string `json:"filename"`
 	SeriesId int    `json:"seriesId"`
 	OrderNum int    `json:"orderNum"`
+	Nsfw     bool   `json:"nsfw"`
 }
 
 // CreateNewArchiveJob create a prepared Job form processing a new CBR/CBZ/RAR/ZIP file
@@ -61,8 +62,19 @@ func (j *JobRunner) scanMetaData(jdesc *storage.GnolJob) error {
 		}
 		return nil
 	})
-	c.OrderNum = jm.OrderNum //fixme only overwrite if certein conditions are meet
+
+	if c.OrderNum == 0 {
+		c.OrderNum = jm.OrderNum //fixme only overwrite if certein conditions are meet
+		if c.OrderNum == 0 {
+			c.OrderNum = 100
+		}
+	}
+
 	c.SeriesId = jm.SeriesId //fixme only overwrite if certein conditions are meet
+	if jm.Nsfw {
+		c.Nsfw = true
+		c.Tags = append(c.Tags, "nsfw")
+	}
 
 	if err != nil {
 		return err

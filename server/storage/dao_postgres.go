@@ -39,7 +39,7 @@ select  c.*, utc.last_page from comic as c
 	OLDEST_OPEN_JOB   = "select * from gnoljobs where job_status = 0 order by id asc limit 1"
 	UPDATE_JOB_STATUS = "update gnoljobs set job_status = $1 where id = $2"
 
-	CREATE_COMIC  = "insert into comic (id, name, nsfw, series_id, cover_image_base64, num_pages, file_path) values ($1, $2, $3, $4, $5, $6, $7)"
+	CREATE_COMIC  = "insert into comic (id, name, nsfw, series_id, cover_image_base64, num_pages, file_path, ordernum ) values ($1, $2, $3, $4, $5, $6, $7, $8)"
 	CREATE_SERIES = "insert into series (name, cover_image_base64) values ($1,$2)"
 	CREATE_JOB    = "insert into gnoljobs (user_id, job_type, input_data) values ($1,$2,$3);"
 )
@@ -291,7 +291,7 @@ func (dao *DAO) SaveComic(c *Comic) int {
 	//insert into commic
 	var newID int
 	dao.DB.Get(&newID, "select nextval('comic_id_seq')")
-	dao.DB.MustExec(CREATE_COMIC, newID, c.Name, c.Nsfw, c.SeriesId, c.CoverImageBase64, c.NumPages, c.FilePath)
+	dao.DB.MustExec(CREATE_COMIC, newID, c.Name, c.Nsfw, c.SeriesId, c.CoverImageBase64, c.NumPages, c.FilePath, c.OrderNum)
 	return newID
 }
 
