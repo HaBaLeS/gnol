@@ -54,6 +54,8 @@ type Session struct {
 	GnolHost      string
 	ApiToken      string
 	MonitorFolder string
+	OrderNum      string
+	SeriesId      string
 }
 
 var VersionNum = "undefined"
@@ -77,8 +79,15 @@ func NewSession() *Session {
 		From:         0,
 		To:           math.MaxInt64,
 		DirectUpload: false,
+		SeriesId:     "0",
+		OrderNum:     "100",
 	}
 }
+
+const (
+	SERIES_ID = "seriesId"
+	ORDER_NUM = "orderNum"
+)
 
 func main() {
 	s := NewSession()
@@ -99,6 +108,10 @@ func main() {
 	to := cli.NewOption("to", "LastPage Default 0").WithType(cli.TypeInt)
 	name := cli.NewOption("name", "Name of Issue/Novel").WithType(cli.TypeString).WithChar('n')
 	upload := cli.NewOption("upload", "Directly upload CBZ after creation").WithType(cli.TypeBool).WithChar('u')
+	seriesId := cli.NewOption(SERIES_ID, "Specify which series the file belongs to").WithType(cli.TypeNumber).WithChar('s')
+	orderNum := cli.NewOption(ORDER_NUM, "Specify a ordering number for sorting within a Series").WithType(cli.TypeNumber).WithChar('o')
+
+	//FIXME move keys to constants
 
 	pdf2cbz := cli.NewCommand("pdf2cbz", "PDF to CBZ/CBR converter with support for GNOL Metadata").
 		WithArg(inPdfArg).
@@ -122,6 +135,9 @@ func main() {
 
 	uploadcmd := cli.NewCommand("upload", "Upload CBZ/CBR to a Gnol instance").
 		WithArg(inFile).
+		WithOption(nsfw).
+		WithOption(seriesId).
+		WithOption(orderNum).
 		WithAction(s.upload)
 
 	repack := cli.NewCommand("repack", "Repackage a CBZ/CBR. Remove compression, Images Downsized if neccesary and add/update of GNOL Metadata").
@@ -231,6 +247,13 @@ func (s *Session) processOptionsAndValidate(args []string, options map[string]st
 		for _, t := range strings.Split(options["tags"], ",") {
 			s.MetaData.Tags = append(s.MetaData.Tags, strings.TrimSpace(t))
 		}
+	}
+
+	if options[SERIES_ID] != "" {
+		s.SeriesId = options[SERIES_ID]
+	}
+	if options[ORDER_NUM] != "" {
+		s.OrderNum = options[ORDER_NUM]
 	}
 
 	if options["from"] != "" {

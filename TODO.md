@@ -7,7 +7,7 @@
   - [x] make it possible to edit this number
 - [x] after editing a comic return to the same series instead of series 0
 
-## Release a version 0.11.2
+## Release a version 0.11.3
 
 - [x] Choose **Series** and **Ordernum** on upload
 
