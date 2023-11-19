@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/storage"
+	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/mholt/archiver/v3"
 	"os"
 	"strings"
@@ -111,5 +112,12 @@ func (j *JobRunner) scanMetaData(jdesc *storage.GnolJob) error {
 	}
 
 	err = j.dao.AddComicToUser(id, jdesc.UserID)
+
+	h, err := util.HashFile(c.FilePath)
+	if err != nil {
+		panic(err)
+	}
+	j.dao.DB.MustExec("update comic set sha256sum = $1 where id = $2", h, id)
+
 	return err
 }
