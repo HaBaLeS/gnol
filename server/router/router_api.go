@@ -2,6 +2,7 @@ package router
 
 import (
 	"fmt"
+	"github.com/HaBaLeS/gnol/server/dto"
 	"github.com/HaBaLeS/gnol/server/jobs"
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/gin-gonic/gin"
@@ -37,13 +38,14 @@ func (ah *AppHandler) requireAPIToken(ctx *gin.Context) {
 func (ah *AppHandler) apiListComics(ctx *gin.Context) {
 	uidi, _ := ctx.Get(API_USER_ID)
 	uid := uidi.(int)
+	query := "select c.id, c.name, c.series_id, s.name as \"sname\", c.nsfw, c.num_pages, c.sha256sum from comic c, series s where c.series_id = s.id and c.ownerid = $1 order by c.id;"
 
-	var comix []storage.Comic
-	err := ah.dao.DB.Select(&comix, storage.ALL_COMICS_FOR_USER, uid, storage.NO_TAG_FILTER)
+	var resList = []dto.ComicEntry{}
+	err := ah.dao.DB.Select(&resList, query, uid)
 	if err != nil {
 		panic(err)
 	}
-	ctx.JSON(http.StatusOK, comix)
+	ctx.JSON(http.StatusOK, resList)
 }
 
 func (ah *AppHandler) apiUploadComic(ctx *gin.Context) {
@@ -93,9 +95,22 @@ func (ah *AppHandler) apiUploadComic(ctx *gin.Context) {
 
 func (ah *AppHandler) apiSeries(ctx *gin.Context) {
 	var series []storage.Series
-	err := ah.dao.DB.Select(&series, "select * from series where name != '';")
+	err := ah.dao.DB.Select(&series, "select Id, Name from series order by Id;")
 	if err != nil {
 		panic(err)
 	}
 	ctx.JSON(http.StatusOK, series)
+}
+
+func (ah *AppHandler) apiCheckHash(ctx *gin.Context) {
+	uidi, _ := ctx.Get(API_USER_ID)
+	hash := ctx.Param("hash")
+	var retVal dto.ComicEntry
+	query := "select c.id, c.name, c.series_id, s.name as \"sname\", c.nsfw, c.num_pages, c.sha256sum from comic c, series s where c.series_id = s.id and c.ownerid = $1 and c.sha256sum = $2;"
+	err := ah.dao.DB.Get(&retVal, query, uidi, hash)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, "no file with that hash for user")
+	} else {
+		ctx.JSON(http.StatusOK, retVal)
+	}
 }

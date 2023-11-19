@@ -1,5 +1,7 @@
 package storage
 
+import "database/sql"
+
 type Comic struct {
 	Id               int
 	Name             string
@@ -9,9 +11,10 @@ type Comic struct {
 	NumPages         int    `db:"num_pages"`
 	FilePath         string `db:"file_path"`
 	Tags             []string
-	LastPage         int `db:"last_page"`
-	OwnerID          int `db:"ownerid"`
-	OrderNum         int `db:"ordernum"`
+	LastPage         int            `db:"last_page"`
+	OwnerID          int            `db:"ownerid"`
+	OrderNum         int            `db:"ordernum"`
+	Sha256sum        sql.NullString `db:"sha256sum"`
 }
 
 type Series struct {

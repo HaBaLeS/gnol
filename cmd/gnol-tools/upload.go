@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/HaBaLeS/gnol/server/dto"
 	"github.com/HaBaLeS/gnol/server/router"
+	"github.com/HaBaLeS/gnol/server/util"
 	"io"
 	"net/http"
 	"os"
@@ -28,6 +31,12 @@ func (rdr *UplProgessReader) Read(p []byte) (n int, err error) {
 }
 
 func (s *Session) uploadInternal() int {
+
+	if exist, obj := s.checkIfFileExists(); exist {
+		s.Logger.Printf("File exists on Server not uploading it!! %v", obj)
+		return 0
+	}
+
 	inFile, err := os.Open(s.InputFile)
 
 	pr := &UplProgessReader{
@@ -77,4 +86,35 @@ func (s *Session) uploadInternal() int {
 	fmt.Printf("Resp: %s", resp.Body)
 
 	return 0
+}
+
+func (s *Session) checkIfFileExists() (bool, *dto.ComicEntry) {
+	hash, err := util.HashFile(s.InputFile)
+	if err != nil {
+		panic(err) //file must exist at that point
+	}
+
+	url := fmt.Sprintf("%s/%s/%s", s.GnolHost, "checkhash", hash)
+	s.Logger.Printf("SQuery API: %s", url)
+	client := http.DefaultClient
+	rq, err := http.NewRequest("GET", url, nil)
+	rq.Header.Add(router.API_GNOL_TOKEN, s.ApiToken)
+	if err != nil {
+		panic(err)
+	}
+	resp, err := client.Do(rq)
+	if err != nil {
+		panic(err)
+	}
+
+	if resp.StatusCode == http.StatusNotFound {
+		return false, nil
+	}
+
+	dto := &dto.ComicEntry{}
+	dec := json.NewDecoder(resp.Body)
+	if err := dec.Decode(dto); err != nil {
+		panic(err)
+	}
+	return true, dto
 }

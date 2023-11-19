@@ -69,6 +69,8 @@ func (a *Application) Start() {
 	a.Handler = router.NewHandler(a.Config, a.Cache, a.BGJobs, a.dao)
 	a.Handler.Routes()
 
+	go hashTheFiles(a)
+
 	a.HTTPServer = &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", a.Config.Hostname, a.Config.ListenPort),
 		Handler: a.Handler.Router,
@@ -77,6 +79,26 @@ func (a *Application) Start() {
 	if err != http.ErrServerClosed {
 		panic(err)
 	}
+}
+
+func hashTheFiles(a *Application) {
+	a.Logger.InfoF("Starting Hashing")
+	var list []storage.Comic
+	err := a.dao.DB.Select(&list, "select * from comic where sha256sum = ''")
+	if err != nil {
+		panic(err)
+	}
+
+	for _, v := range list {
+		a.Logger.InfoF("Hashing: %s", v.Name)
+		h, err := util.HashFile(v.FilePath)
+		if err != nil {
+			panic(err)
+		}
+		a.dao.DB.MustExec("update comic set sha256sum = $1 where id = $2", h, v.Id)
+	}
+	a.Logger.InfoF("Done Hashing")
+
 }
 
 // Shutdown try's to end all modules gracefully where needed
