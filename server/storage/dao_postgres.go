@@ -159,6 +159,8 @@ var schema_8 = "alter table comic add column ownerID integer default 1;"
 
 var schema_9 = "alter table comic add column ordernum INTEGER default 100;"
 
+var schema_10 = "alter table comic add column sha256sum text default '';"
+
 type DAO struct {
 	log *log.Logger
 	DB  *sqlx.DB
@@ -238,6 +240,11 @@ func (dao *DAO) init() {
 	if version < 9 {
 		db.MustExec(schema_9)
 		db.MustExec(UPDATE_VERSION, 9)
+	}
+
+	if version < 10 {
+		db.MustExec(schema_10)
+		db.MustExec(UPDATE_VERSION, 10)
 	}
 
 }

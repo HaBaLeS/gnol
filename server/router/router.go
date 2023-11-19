@@ -144,6 +144,7 @@ func (ah *AppHandler) Routes() {
 		srs.GET("/:seriesID", ah.comicsInSeriesList)
 		srs.GET("/create", ah.serveTemplate("series_create.gohtml", nil))
 		srs.POST("/create", ah.createSeries)
+
 	}
 
 	api := ah.Router.Group("/api")
@@ -151,6 +152,7 @@ func (ah *AppHandler) Routes() {
 		api.Use(ah.requireAPIToken)
 		api.GET("/list", ah.apiListComics)
 		api.GET("/series", ah.apiSeries)
+		api.GET("/checkhash/:hash", ah.apiCheckHash)
 		api.POST("/upload", ah.apiUploadComic)
 		/*
 			get /api/series/list
