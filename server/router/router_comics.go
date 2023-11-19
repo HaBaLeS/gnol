@@ -12,14 +12,6 @@ import (
 	"strconv"
 )
 
-/**
-func (ah *AppHandler) comicsList(ctx *gin.Context) {
-	us := getUserSession(ctx)
-	us.ComicList = ah.dao.ComicsForUser(us.UserID)
-
-	ah.renderTemplate("comic_list.gohtml", ctx, nil)
-}*/
-
 func (ah *AppHandler) deleteComic(ctx *gin.Context) {
 	comicID := ctx.Param("comicId")
 	us := getUserSession(ctx)
