@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/HaBaLeS/gnol/data/static"
 	template2 "github.com/HaBaLeS/gnol/data/template"
+	"github.com/HaBaLeS/gnol/docs"
 	"github.com/HaBaLeS/gnol/server/cache"
 	"github.com/HaBaLeS/gnol/server/gnolsession"
 	"github.com/HaBaLeS/gnol/server/jobs"
@@ -13,6 +14,8 @@ import (
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -60,6 +63,10 @@ func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobR
 // Routes defines all routes for /user and below.
 // this path cares about UserManagement
 func (ah *AppHandler) Routes() {
+
+	docs.SwaggerInfo.BasePath = "/api"
+	docs.SwaggerInfo.Host = "localhost:8666"
+	ah.Router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	gob.Register(gnolsession.UserSession{})
 

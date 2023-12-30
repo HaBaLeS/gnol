@@ -35,6 +35,14 @@ func (ah *AppHandler) requireAPIToken(ctx *gin.Context) {
 	ctx.Next()
 }
 
+// @Summary Get list of dto.ComicEntry in gnol
+// @Schemes
+// @Description tbd
+// @Tags Comic Management
+// @Produce json
+// @Success 200 {object} []dto.ComicEntry
+// @Router  /list [get]
+// @Security ApiKeyAuth
 func (ah *AppHandler) apiListComics(ctx *gin.Context) {
 	uidi, _ := ctx.Get(API_USER_ID)
 	uid := uidi.(int)
@@ -48,6 +56,17 @@ func (ah *AppHandler) apiListComics(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resList)
 }
 
+// @Summary Upload a cbz file
+// @Schemes
+// @Description tbd
+// @Tags Upload
+// @Produce json
+// @Param   series-id      query     integer     false  "string valid"
+// @Param   nsfw      query     string     false  "string valid"
+// @Param   order-num      query     string     false  "string valid"
+// @Success 200 {string} string
+// @Router  /upload [post]
+// @Security ApiKeyAuth
 func (ah *AppHandler) apiUploadComic(ctx *gin.Context) {
 	uid := 0
 	seriesId := 0
@@ -93,6 +112,14 @@ func (ah *AppHandler) apiUploadComic(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, "Thx for uploading")
 }
 
+// @Summary Get list of dto.Series in gnol
+// @Schemes
+// @Description tbd
+// @Tags Series Mangement
+// @Produce json
+// @Success 200 {object} []storage.Series
+// @Router  /series [get]
+// @Security ApiKeyAuth
 func (ah *AppHandler) apiSeries(ctx *gin.Context) {
 	var series []storage.Series
 	err := ah.dao.DB.Select(&series, "select Id, Name from series order by Id;")
@@ -102,6 +129,15 @@ func (ah *AppHandler) apiSeries(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, series)
 }
 
+// @Summary Get dto.ComicEntry for hash
+// @Schemes
+// @Description Check if a comic with the given cbz hash
+// @Param   hash      path     string     false  "string valid"
+// @Tags Upload
+// @Produce json
+// @Success 200 {object} dto.ComicEntry
+// @Router  /checkhash/:hash [get]
+// @Security ApiKeyAuth
 func (ah *AppHandler) apiCheckHash(ctx *gin.Context) {
 	uidi, _ := ctx.Get(API_USER_ID)
 	hash := ctx.Param("hash")
