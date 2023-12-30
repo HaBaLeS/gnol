@@ -4,7 +4,7 @@
 ####
 #### BUILD
 ####
-FROM golang:1.19-alpine AS build
+FROM golang:1.21-alpine AS build
 RUN apk update
 RUN apk upgrade
 RUN apk add --update gcc g++ make mupdf-dev build-base libc6-compat alpine-sdk
@@ -14,6 +14,7 @@ WORKDIR /gnol-build
 COPY go.mod ./
 COPY go.sum ./
 COPY *.go ./
+COPY docs ./docs/
 COPY data ./data/
 COPY server ./server
 COPY cmd ./cmd
