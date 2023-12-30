@@ -1,0 +1,121 @@
+definitions:
+  dto.ComicEntry:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      nsfw:
+        type: boolean
+      num_pages:
+        type: integer
+      series_id:
+        type: integer
+      sha256sum:
+        type: string
+      sname:
+        type: string
+    type: object
+  storage.Series:
+    properties:
+      comicsInSeries:
+        type: integer
+      coverImageBase64:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /checkhash/:hash:
+    get:
+      description: Check if a comic with the given cbz hash
+      parameters:
+      - description: string valid
+        in: path
+        name: hash
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ComicEntry'
+      security:
+      - ApiKeyAuth: []
+      summary: Get dto.ComicEntry for hash
+      tags:
+      - Upload
+  /list:
+    get:
+      description: tbd
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ComicEntry'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: Get list of dto.ComicEntry in gnol
+      tags:
+      - Comic Management
+  /series:
+    get:
+      description: tbd
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/storage.Series'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: Get list of dto.Series in gnol
+      tags:
+      - Series Mangement
+  /upload:
+    post:
+      description: tbd
+      parameters:
+      - description: string valid
+        in: query
+        name: series-id
+        type: integer
+      - description: string valid
+        in: query
+        name: nsfw
+        type: string
+      - description: string valid
+        in: query
+        name: order-num
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Upload a cbz file
+      tags:
+      - Upload
+securityDefinitions:
+  ApiKeyAuth:
+    description: your auth key for the API
+    in: header
+    name: gnol-token
+    type: apiKey
+swagger: "2.0"

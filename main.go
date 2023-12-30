@@ -10,6 +10,7 @@ import (
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/HaBaLeS/go-logger"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
 )
@@ -18,8 +19,17 @@ func main() {
 	cfgPath := flag.String("c", "default.cfg", "Config File to use")
 	flag.Parse()
 
+	go startSwagger()
+
 	gnol := NewServer(*cfgPath)
 	gnol.Start()
+}
+
+func startSwagger() {
+	r := gin.Default()
+
+	r.Run(":8080")
+
 }
 
 // Application is the central struct connecting all submodules into one Application
@@ -55,6 +65,10 @@ func NewServer(cfgPath string) *Application {
 }
 
 // Start gnol, serve HTTP
+// @securityDefinitions.apikey	ApiKeyAuth
+// @in							header
+// @name						gnol-token
+// @description				your auth key for the API
 func (a *Application) Start() {
 
 	a.dao = storage.NewDAO(a.Config)
