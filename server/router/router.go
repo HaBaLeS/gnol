@@ -13,6 +13,7 @@ import (
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -23,6 +24,14 @@ import (
 	"path/filepath"
 	"strings"
 )
+
+type RenderContext struct {
+	D          interface{}
+	Issue      *storage.Comic
+	ComicList  []*storage.Comic
+	SeriesList []*storage.Series
+	USess      *gnolsession.UserSession
+}
 
 // AppHandler combines Router with other submodules Implementations, like DOA, Config, Cache
 type AppHandler struct {
@@ -71,7 +80,8 @@ func (ah *AppHandler) Routes() {
 	gob.Register(gnolsession.UserSession{})
 
 	//Define global middleware
-	store := gnolsession.NewGnolSessionStore()
+	//store := gnolsession.NewGnolSessionStore() <-- Only session store make sense here!!
+	store := cookie.NewStore([]byte("secret"))
 	ah.Router.Use(sessions.Sessions("gnolsession", store))
 	ah.Router.Use(userSessionMiddleware)
 
@@ -118,9 +128,11 @@ func (ah *AppHandler) Routes() {
 	up := ah.Router.Group("/upload")
 	{
 		up.Use(requireAuth)
+
 		up.GET("/archive", func(context *gin.Context) {
-			sl := ah.dao.AllSeries()
-			ah.renderTemplate("upload_archive.gohtml", context, sl)
+			panic("Not implementeded spectial Render Func!")
+			//sl := ah.dao.AllSeries()
+			//ah.renderTemplate("upload_archive.gohtml", context, sl)
 		})
 		up.GET("/pdf", ah.serveTemplate("upload_pdf.gohtml", nil))
 		up.GET("/url", ah.serveTemplate("upload_url.gohtml", nil))
@@ -148,10 +160,11 @@ func (ah *AppHandler) Routes() {
 	{
 		srs.Use(requireAuth)
 		srs.GET("/", ah.seriesList)
-		srs.GET("/:seriesID", ah.comicsInSeriesList)
+		srs.GET("/:seriesId", ah.comicsInSeriesList)
 		srs.GET("/create", ah.serveTemplate("series_create.gohtml", nil))
 		srs.POST("/create", ah.createSeries)
-
+		srs.GET("/:seriesId/edit", ah.seriesEdit)    //Render Edit Page
+		srs.POST("/:seriesId/edit", ah.updateSeries) //FIXME this should share stuff witl API!!
 	}
 
 	api := ah.Router.Group("/api")
@@ -161,6 +174,7 @@ func (ah *AppHandler) Routes() {
 		api.GET("/series", ah.apiSeries)
 		api.GET("/checkhash/:hash", ah.apiCheckHash)
 		api.POST("/upload", ah.apiUploadComic)
+
 		/*
 			get /api/series/list
 			post /api/series/create
@@ -186,9 +200,11 @@ func redirect(location string) gin.HandlerFunc {
 func requireAuth(ctx *gin.Context) {
 	ssn := sessions.Default(ctx)
 	gnoluser := ssn.Get("user-session")
-	if gnoluser != nil && gnoluser.(*gnolsession.UserSession).IsLoggedIn() {
-		ctx.Next()
-		return
+	if gnoluser != nil {
+		gn := gnoluser.(gnolsession.UserSession)
+		if gn.IsLoggedIn() {
+			return
+		}
 	}
 	ctx.Redirect(http.StatusTemporaryRedirect, "/users/login")
 	ctx.Abort()
@@ -200,7 +216,8 @@ func userSessionMiddleware(ctx *gin.Context) {
 	if session.Get("user-session") == nil {
 		fmt.Println("newSession")
 		us = gnolsession.NewUserSession()
-		session.Set("user-session", us)
+		session.Set("user-session", *us)
+
 	}
 	ctx.Next()
 
@@ -212,14 +229,17 @@ func userSessionMiddleware(ctx *gin.Context) {
 
 func getUserSession(ctx *gin.Context) *gnolsession.UserSession {
 	s := sessions.Default(ctx)
-	us := s.Get("user-session").(*gnolsession.UserSession)
-	return us
+	ifc := s.Get("user-session")
+	us := ifc.(gnolsession.UserSession)
+	return &us
 }
 
 func updateUSerSession(ctx *gin.Context, us *gnolsession.UserSession) {
 	s := sessions.Default(ctx)
 	s.Set("user-session", us)
-	s.Save()
+	if e := s.Save(); e != nil {
+		panic(e)
+	}
 }
 
 func (ah *AppHandler) initTemplates() {
@@ -257,14 +277,12 @@ func (ah *AppHandler) getTemplate(name string) (*template.Template, error) {
 	return tpl, nil
 }
 
-func (ah *AppHandler) renderTemplate(templateName string, ctx *gin.Context, pageData interface{}) {
+func (ah *AppHandler) renderTemplate(templateName string, ctx *gin.Context, renderCtx interface{}) {
 	tpl, tlerr := ah.getTemplate(templateName)
 	if tlerr != nil {
 		renderError(tlerr, ctx.Writer)
 	}
-	us := getUserSession(ctx)
-	us.D = pageData
-	re := tpl.Execute(ctx.Writer, us)
+	re := tpl.Execute(ctx.Writer, renderCtx)
 	if re != nil {
 		panic(re)
 	}

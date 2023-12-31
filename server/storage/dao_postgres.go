@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	SERIES_FOR_USER     = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 group by s.id"
+	SERIES_FOR_USER     = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 and s.nsfw = false group by s.id order by s.ordernum asc"
 	ALL_COMICS_FOR_USER = `
 select  c.*, utc.last_page from comic as c
     join user_to_comic utc on c.id = utc.comic_id
@@ -161,6 +161,15 @@ var schema_9 = "alter table comic add column ordernum INTEGER default 100;"
 
 var schema_10 = "alter table comic add column sha256sum text default '';"
 
+var schema_11 = `
+alter table series add nsfw boolean default false, add ordernum integer default 100 ;
+create table tag_to_series(
+    comic_id integer,
+    tag_id integer,
+    UNIQUE(tag_id, comic_id)
+);
+`
+
 type DAO struct {
 	log *log.Logger
 	DB  *sqlx.DB
@@ -247,6 +256,11 @@ func (dao *DAO) init() {
 		db.MustExec(UPDATE_VERSION, 10)
 	}
 
+	if version < 11 {
+		db.MustExec(schema_11)
+		db.MustExec(UPDATE_VERSION, 11)
+	}
+
 }
 
 func (dao *DAO) ComicsForUser(id int) []*Comic {
@@ -286,12 +300,12 @@ func (dao *DAO) ComicsForUserInSeries(id int, seriesID string) []*Comic {
 	return retList
 }
 
-func (dao *DAO) SeriesForUser(id int) *[]Series {
-	retList := make([]Series, 0)
+func (dao *DAO) SeriesForUser(id int) []*Series {
+	retList := make([]*Series, 0)
 	if err := dao.DB.Select(&retList, SERIES_FOR_USER, id); err != nil {
 		dao.log.Printf("SQL Errror, %v", err)
 	}
-	return &retList
+	return retList
 }
 
 func (dao *DAO) SaveComic(c *Comic) int {
@@ -366,8 +380,8 @@ func (dao *DAO) GetOrCreateAPItoken(id int) []string {
 	return res
 }
 
-func (dao *DAO) AllSeries() []Series {
-	retList := make([]Series, 0)
+func (dao *DAO) AllSeries() []*Series {
+	retList := make([]*Series, 0)
 	err := dao.DB.Select(&retList, "select id, name from series order by name")
 	if err != nil {
 		panic(err)

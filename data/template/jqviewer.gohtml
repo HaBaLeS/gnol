@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Read: {{.D.Name}}</title>
+    <title>Read: {{.Issue.Name}}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/my.css"/>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -63,7 +63,7 @@
         </a>
     </li>
     <li >
-        <a href="/series/{{.D.SeriesId}}">
+        <a href="/series/{{.Issue.SeriesId}}">
             <i class="fa fa-angle-left my-float"></i>
         </a>
     </li>
@@ -93,7 +93,7 @@
 
 
 <script>
-   loadComic({{.D.Id}},{{.D.NumPages}},{{.D.LastPage}},false);
+   loadComic({{.Issue.Id}},{{.Issue.NumPages}},{{.Issue.LastPage}},false);
 </script>
 
 </body>
