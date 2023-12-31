@@ -26,11 +26,18 @@ import (
 )
 
 type RenderContext struct {
-	D          interface{}
 	Issue      *storage.Comic
+	Series     *storage.Series
 	ComicList  []*storage.Comic
 	SeriesList []*storage.Series
 	USess      *gnolsession.UserSession
+	Flash      string
+}
+
+func NewRenderContext(ctx *gin.Context) *RenderContext {
+	return &RenderContext{
+		USess: getUserSession(ctx),
+	}
 }
 
 // AppHandler combines Router with other submodules Implementations, like DOA, Config, Cache

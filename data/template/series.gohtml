@@ -62,10 +62,13 @@
                             <div class="content">
                                 <p ><b>{{ $v.Name }}</b><br>Comics: {{$v.ComicsInSeries}} </p>
                             </div>
+                            <div class="content">
+                                <p><a href="/series/{{$v.Id}}/edit">Pen</a> </p>
+                            </div>
+
                         </div>
                         <footer class="card-footer">
                             <a href="/series/{{$v.Id}}" class="card-footer-item">Open</a>
-
                         </footer>
                     </div>
                 </div>

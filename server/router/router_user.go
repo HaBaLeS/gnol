@@ -75,7 +75,9 @@ func (ah *AppHandler) loginUser(ctx *gin.Context) {
 	pass := ctx.PostForm("pass")
 	user := ah.dao.AuthUser(name, pass)
 	if user == nil {
-		ah.renderTemplate("login_user.gohtml", ctx, "Login Failed")
+		rc := NewRenderContext(ctx)
+		rc.Flash = "Login Failed"
+		ah.renderTemplate("login_user.gohtml", ctx, rc)
 		return
 	}
 	us := getUserSession(ctx)

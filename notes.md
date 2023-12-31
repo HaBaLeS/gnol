@@ -16,7 +16,7 @@
 # General
 
 - [ ] additional metadata with comic.xml
-
+- [ ] FIXME Auth without encrypted cookie! Use SessionID and server side Session in DB
 
 # Workflows
 

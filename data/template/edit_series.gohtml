@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hello Bulma!</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.2/css/bulma.min.css">
+    <script type="text/javascript"  src="https://code.jquery.com/jquery-3.6.0.js"></script>
+    <script type="text/javascript" src="/static/js/command.js"></script>
+    <script>
+
+
+        function processCommand(evt) {
+            console.log("The transfer is complete.");
+            processResponse(evt.target.response)
+        }
+
+        function processError(evt) {
+            console.log("The transfer failed.");
+        }
+
+        function deleteComic(comicID) {
+            var oReq = new XMLHttpRequest();
+            oReq.addEventListener("loadend", processCommand);
+            oReq.addEventListener("error", processError);
+            oReq.open("DELETE", "/comics/delete/" + comicID);
+            oReq.responseType = "json";
+            oReq.send();
+            return false //prevent default
+        }
+
+        function sendForm() {
+
+            $.ajax({
+                //url: '',
+                type: 'post',
+                dataType: 'json',
+                data: $('form#editForm').serialize(),
+                success: function (response) {
+                    processResponse(response)
+                },
+                error(resp) {
+                    console.log('Upload error\n' + resp);
+                },
+            });
+        }
+
+    </script>
+</head>
+<body>
+{{ template "banner"}}
+{{ template "navbar" .}}
+
+<section class="section">
+    <div class="container">
+        <h1>Edit Series</h1>
+        <form id="editForm">
+            <div class="field">
+                <input type="hidden" name="seriesId" value="{{.Series.Id}}">
+                <label class="label">Name</label><input type="text" name="name" value="{{.Series.Name}}"/>
+                <label class="label">nsfw</label> <input type="checkbox" name="nsfw" {{ if .Series.Nsfw}} checked {{end}} />
+                <label class="label">OrderNumber</label> <input type="number" name="orderNum" value="{{.Series.OrderNum}}"/>
+                <label class="label">Series</label>
+                <div>
+                    <button onclick="sendForm(); return false;">Update Series</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    </div>
+</section>
+</body>
+</html>
+

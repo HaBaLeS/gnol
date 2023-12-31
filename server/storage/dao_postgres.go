@@ -169,6 +169,7 @@ create table tag_to_series(
     UNIQUE(tag_id, comic_id)
 );
 `
+var schema_12 = "alter table series add ownerid int default 1;"
 
 type DAO struct {
 	log *log.Logger
@@ -261,6 +262,11 @@ func (dao *DAO) init() {
 		db.MustExec(UPDATE_VERSION, 11)
 	}
 
+	if version < 12 {
+		db.MustExec(schema_12)
+		db.MustExec(UPDATE_VERSION, 12)
+	}
+
 }
 
 func (dao *DAO) ComicsForUser(id int) []*Comic {
@@ -306,6 +312,15 @@ func (dao *DAO) SeriesForUser(id int) []*Series {
 		dao.log.Printf("SQL Errror, %v", err)
 	}
 	return retList
+}
+
+func (dao *DAO) SeriesById(seriesId string, userId int) *Series {
+	retSerie := &Series{}
+	err := dao.DB.Get(retSerie, "select * from series s where s.id = $1 and s.ownerid  = $2", seriesId, userId)
+	if err != nil {
+		panic(err)
+	}
+	return retSerie
 }
 
 func (dao *DAO) SaveComic(c *Comic) int {

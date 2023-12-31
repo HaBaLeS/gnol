@@ -24,6 +24,7 @@ type Series struct {
 	ComicsInSeries   int    `db:"comics_in_series"`
 	Nsfw             bool   `db:"nsfw"`
 	OrderNum         int    `db:"ordernum"`
+	OwnerID          int    `db:"ownerid"`
 }
 
 type GnolJob struct {
