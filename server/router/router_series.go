@@ -38,9 +38,28 @@ func (ah *AppHandler) createSeries(ctx *gin.Context) {
 }
 
 func (ah *AppHandler) updateSeries(ctx *gin.Context) {
-	//Persist changes
+	rc := NewRenderContext(ctx)
+	type ChangeReq struct {
+		SeriesId string `form:"seriesId"`
+		Name     string `form:"name"`
+		Nsfw     string `form:"nsfw"`
+		OrderNum int    `form:"orderNum"`
+		nsfwbool bool
+	}
+	cr := &ChangeReq{}
+	if err := ctx.ShouldBind(cr); err != nil {
+		panic(err)
+	}
+
+	if cr.Nsfw == "on" {
+		cr.nsfwbool = true
+	}
+	ah.dao.DB.MustExec("update series s set name=$3, orderNum=$4, nsfw=$5 where s.id = $1 and s.ownerid = $2", cr.SeriesId, rc.USess.UserID, cr.Name, cr.OrderNum, cr.nsfwbool)
 }
 
 func (ah *AppHandler) seriesEdit(ctx *gin.Context) {
-	//forward to edit page
+	rc := NewRenderContext(ctx)
+	sID := ctx.Param("seriesId")
+	rc.Series = ah.dao.SeriesById(sID, rc.USess.UserID)
+	ah.renderTemplate("edit_series.gohtml", ctx, rc)
 }
