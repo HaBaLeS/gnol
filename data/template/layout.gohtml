@@ -27,10 +27,13 @@
                     <a class="navbar-item" href="/series">
                         Series
                     </a>
+                    <a class="navbar-item" href="/series">
+                        Series NSFW
+                    </a>
 
 
 
-                    {{ if .USess.IsLoggedIn}}
+                    {{ if .Session}}
                     <div class="navbar-item has-dropdown is-hoverable">
                         <a class="navbar-link">
                             Manage Series & Comics
@@ -55,11 +58,11 @@
                     {{end}}
                 </div>
             </div>
-            {{ if .USess.IsLoggedIn}}
+            {{ if .Session}}
             <div class="navbar-end">
                 <div class="navbar-item has-dropdown is-hoverable">
                     <a class="navbar-link">
-                        <span class="has-text-weight-semibold">{{.USess.UserName}}</span>
+                        <span class="has-text-weight-semibold">{{.Session.UserId}}</span>
                     </a>
 
                     <div class="navbar-dropdown">

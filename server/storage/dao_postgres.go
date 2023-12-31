@@ -171,6 +171,15 @@ create table tag_to_series(
 `
 var schema_12 = "alter table series add ownerid int default 1;"
 
+var schema_13 = `
+drop table if exists gnol_session;
+create table gnol_session (
+	session_id text,
+	valid_until timestamp,
+	user_id int
+);
+`
+
 type DAO struct {
 	log *log.Logger
 	DB  *sqlx.DB
@@ -265,6 +274,11 @@ func (dao *DAO) init() {
 	if version < 12 {
 		db.MustExec(schema_12)
 		db.MustExec(UPDATE_VERSION, 12)
+	}
+
+	if version < 13 {
+		db.MustExec(schema_13)
+		db.MustExec(UPDATE_VERSION, 13)
 	}
 
 }

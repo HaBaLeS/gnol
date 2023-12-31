@@ -36,8 +36,8 @@ func (ah *AppHandler) uploadArchive(ctx *gin.Context) {
 		SeriesId: series,
 	}
 
-	us := getUserSession(ctx)
-	ah.bgJobs.CreateNewArchiveJob(jd, us.UserID)
+	us := getGnolContext(ctx).Session
+	ah.bgJobs.CreateNewArchiveJob(jd, us.UserId)
 
 	ah.renderTemplate("upload.gohtml", ctx, nil)
 }
@@ -45,9 +45,9 @@ func (ah *AppHandler) uploadArchive(ctx *gin.Context) {
 func (ah *AppHandler) uploadUrl(ctx *gin.Context) {
 
 	url := ctx.PostForm("comicurl")
-	us := getUserSession(ctx)
+	us := getGnolContext(ctx).Session
 
-	ah.bgJobs.CreateNewURLJob(url, us.UserID)
+	ah.bgJobs.CreateNewURLJob(url, us.UserId)
 	ah.renderTemplate("upload.gohtml", ctx, nil)
 }
 
@@ -66,8 +66,8 @@ func (ah *AppHandler) uploadPdf(ctx *gin.Context) {
 		panic(cpe)
 	}
 
-	us := getUserSession(ctx)
-	ah.bgJobs.CreatePFCConversionJob(outName, us.UserID)
+	us := getGnolContext(ctx).Session
+	ah.bgJobs.CreatePFCConversionJob(outName, us.UserId)
 
 	ah.renderTemplate("upload.gohtml", ctx, nil)
 }

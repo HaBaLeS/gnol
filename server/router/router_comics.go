@@ -14,9 +14,9 @@ import (
 
 func (ah *AppHandler) deleteComic(ctx *gin.Context) {
 	comicID := ctx.Param("comicId")
-	us := getUserSession(ctx)
+	uid := getGnolContext(ctx).Session.UserId
 	comic := ah.dao.ComicById(comicID)
-	ah.dao.DB.MustExec("delete from user_to_comic where comic_id = $1 and user_id = $2", comicID, us.UserID)
+	ah.dao.DB.MustExec("delete from user_to_comic where comic_id = $1 and user_id = $2", comicID, uid)
 	ctx.JSON(200, command.NewRedirectCommand(fmt.Sprintf("/series/%d", comic.SeriesId)))
 }
 
@@ -35,19 +35,17 @@ func (ah *AppHandler) comicsLoad(ctx *gin.Context) {
 		renderError(fmt.Errorf("comic with id %s not found", comicID), ctx.Writer)
 		return
 	}
-	rc := &RenderContext{
-		USess: getUserSession(ctx),
-		Issue: comic,
-	}
-	ah.renderTemplate("jqviewer.gohtml", ctx, rc)
+
+	gctx := getGnolContext(ctx)
+	ah.renderTemplate("jqviewer.gohtml", ctx, gctx)
 }
 
 func (ah *AppHandler) comicsEdit(ctx *gin.Context) {
-	rc := &RenderContext{USess: getUserSession(ctx)}
+	gctx := getGnolContext(ctx)
 	comicID := ctx.Param("comicId")
-	rc.Issue = ah.dao.ComicById(comicID)
-	rc.SeriesList = ah.dao.AllSeries()
-	ah.renderTemplate("edit_comic.gohtml", ctx, rc)
+	gctx.Issue = ah.dao.ComicById(comicID)
+	gctx.SeriesList = ah.dao.AllSeries()
+	ah.renderTemplate("edit_comic.gohtml", ctx, gctx)
 }
 
 func (ah *AppHandler) updateComic(ctx *gin.Context) {
@@ -68,20 +66,20 @@ func (ah *AppHandler) updateComic(ctx *gin.Context) {
 	if cr.Nsfw == "on" {
 		cr.nsfwbool = true
 	}
-	us := getUserSession(ctx)
+	us := getGnolContext(ctx).Session
 	old := ah.dao.ComicById(strconv.Itoa(cr.ComicID))
-	ah.dao.DB.MustExec("update comic set series_id = $1, nsfw = $2, name = $3, orderNum = $6 where id = $4 and ownerID = $5", cr.SeriesID, cr.nsfwbool, cr.Name, cr.ComicID, us.UserID, cr.OrderNum)
+	ah.dao.DB.MustExec("update comic set series_id = $1, nsfw = $2, name = $3, orderNum = $6 where id = $4 and ownerID = $5", cr.SeriesID, cr.nsfwbool, cr.Name, cr.ComicID, us.UserId, cr.OrderNum)
 
 	//execute Updates
 	ctx.JSON(http.StatusCreated, command.NewRedirectCommand(fmt.Sprintf("/series/%d/", old.SeriesId)))
 }
 
 func (ah *AppHandler) comicSetLastPage(ctx *gin.Context) {
-	us := getUserSession(ctx)
+	us := getGnolContext(ctx).Session
 	comicID := ctx.Param("comicId")
 	lastpage := ctx.Param("lastpage")
 
-	ah.dao.DB.MustExec("update user_to_comic set last_page = $1 where user_id = $2 and comic_id = $3", lastpage, us.UserID, comicID)
+	ah.dao.DB.MustExec("update user_to_comic set last_page = $1 where user_id = $2 and comic_id = $3", lastpage, us.UserId, comicID)
 }
 
 func (ah *AppHandler) comicsPageImage(ctx *gin.Context) {

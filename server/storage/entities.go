@@ -1,6 +1,9 @@
 package storage
 
-import "database/sql"
+import (
+	"database/sql"
+	"time"
+)
 
 type Comic struct {
 	Id               int
@@ -33,4 +36,10 @@ type GnolJob struct {
 	UserID    int    `db:"user_id"`
 	JobType   int    `db:"job_type"`
 	Data      string `db:"input_data"`
+}
+
+type GnolSession struct {
+	SessionId  string    `db:"session_id"`
+	ValidUntil time.Time `db:"valid_until"`
+	UserId     int       `db:"user_id"`
 }
