@@ -56,15 +56,15 @@
         <h1>Edit Comic</h1>
         <form id="editForm">
             <div class="field">
-                <input type="hidden" name="comicID" value="{{.D.Issue.Id}}">
-                <label class="label">Name</label> <input type="text" name="name" value="{{.D.Issue.Name}}"/>
-                <label class="label">nsfw</label> <input type="checkbox" name="nsfw" {{ if .D.Issue.Nsfw}} checked {{end}} />
-                <label class="label">OrderNumber</label> <input type="number" name="orderNum" value="{{.D.Issue.OrderNum}}"/>
+                <input type="hidden" name="comicID" value="{{.Issue.Id}}">
+                <label class="label">Name</label> <input type="text" name="name" value="{{.Issue.Name}}"/>
+                <label class="label">nsfw</label> <input type="checkbox" name="nsfw" {{ if .Issue.Nsfw}} checked {{end}} />
+                <label class="label">OrderNumber</label> <input type="number" name="orderNum" value="{{.Issue.OrderNum}}"/>
                 <label class="label">Series</label>
                 <div>
                     <select name="seriesID">
-                        {{ $sid := .D.Issue.SeriesId}}
-                        {{range $val := .D.SeriesList}}
+                        {{ $sid := .Issue.SeriesId}}
+                        {{range $val := .SeriesList}}
                             {{if eq $val.Id  $sid}}
                                 <option value="{{$val.Id}}" selected>{{$val.Name}}</option>
                             {{else}}
@@ -79,7 +79,7 @@
             </div>
         </form>
         <div>
-            <button onclick="return deleteComic({{.D.Issue.Id}});">Delete Comic</button>
+            <button onclick="return deleteComic({{.Issue.Id}});">Delete Comic</button>
         </div>
     </div>
     </div>

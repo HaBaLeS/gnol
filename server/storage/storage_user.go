@@ -6,12 +6,6 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
-var SELECT_WEBAUTN_CRED = "select " +
-	"wa.aagu_id, wa.signcount, wa.clonewarning, " +
-	"wc.id, wc.publicKey, wc.attestationType " +
-	"from webauthn_credential wc, webauthn_authenticator wa " +
-	"where wc.user_id = $1 and wc.authenticator_id = wa.id"
-
 func (dao *DAO) AuthUser(name string, pass string) *User {
 	user := new(User)
 	err := dao.DB.Get(user, "select * from gnoluser where name = $1", name)
@@ -115,33 +109,4 @@ type User struct {
 	PasswordHash []byte `db:"password_hash"`
 	Salt         []byte
 	WebAuthn     bool `db:"webauthn"`
-	//creds        []webauthn.Credential
 }
-
-func (user *User) WebAuthnID() []byte {
-	return []byte(user.Name)
-}
-
-func (user *User) WebAuthnName() string {
-	return user.Name
-}
-
-func (user *User) WebAuthnDisplayName() string {
-	return user.Name
-}
-
-func (user *User) WebAuthnIcon() string {
-	return "https://pics.com/avatar.png"
-}
-
-/*func (user *User) WebAuthnCredentials() []webauthn.Credential {
-	if user.creds == nil {
-		user.creds = []webauthn.Credential{}
-	}
-	return user.creds
-}
-
-func (user *User) AddCredential(credential webauthn.Credential) {
-	user.WebAuthnCredentials() //make sure the array exists
-	user.creds = append(user.creds, credential)
-}*/

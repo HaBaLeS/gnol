@@ -8,16 +8,16 @@ import (
 
 func (ah *AppHandler) comicsInSeriesList(ctx *gin.Context) {
 	us := getUserSession(ctx)
-	sID := ctx.Param("seriesID")
-	us.ComicList = ah.dao.ComicsForUserInSeries(us.UserID, sID)
+	sID := ctx.Param("seriesId")
+	cl := ah.dao.ComicsForUserInSeries(us.UserID, sID)
 
-	ah.renderTemplate("comic_list.gohtml", ctx, nil)
+	ah.renderTemplate("comic_list.gohtml", ctx, &RenderContext{ComicList: cl, USess: us})
 }
 
 func (ah *AppHandler) seriesList(ctx *gin.Context) {
 	us := getUserSession(ctx)
-	us.SeriesList = ah.dao.SeriesForUser(us.UserID)
-	ah.renderTemplate("series.gohtml", ctx, nil)
+	sl := ah.dao.SeriesForUser(us.UserID)
+	ah.renderTemplate("series.gohtml", ctx, &RenderContext{SeriesList: sl, USess: us})
 
 }
 
@@ -35,4 +35,12 @@ func (ah *AppHandler) createSeries(ctx *gin.Context) {
 	imgB64 = strings.ReplaceAll(imgB64, "data:image/jpeg;base64,", "")
 	ah.dao.DB.MustExec("insert into series (name, cover_image_base64) values ($1,$2)", name, imgB64)
 	ctx.JSON(200, command.NewRedirectCommand("/comics"))
+}
+
+func (ah *AppHandler) updateSeries(ctx *gin.Context) {
+	//Persist changes
+}
+
+func (ah *AppHandler) seriesEdit(ctx *gin.Context) {
+	//forward to edit page
 }

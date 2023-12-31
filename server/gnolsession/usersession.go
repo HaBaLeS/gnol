@@ -1,7 +1,6 @@
 package gnolsession
 
 import (
-	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/rs/xid"
 )
 
@@ -10,12 +9,9 @@ type UserSession struct {
 	SessionID     string
 	UserName      string
 	UserID        int
-	ComicList     []*storage.Comic
-	SeriesList    *[]storage.Series
-	authenticated bool
-	D             interface{}
+	Authenticated bool
 	//WebAuthnSession *webauthn.SessionData //fixme add to registration Session
-	WebAuthnUser *storage.User //fixme add to registration Session
+	//WebAuthnUser *storage.User //fixme add to registration Session
 }
 
 // NewUserSession creates a gnolsession for Anon and stores it in the Session map
@@ -23,7 +19,7 @@ func NewUserSession() *UserSession {
 	us := &UserSession{
 		SessionID:     xid.New().String(),
 		UserName:      "Anon",
-		authenticated: false,
+		Authenticated: false,
 	}
 	return us
 }
@@ -35,13 +31,13 @@ func (us *UserSession) save() {
 
 // Invalidate removes UserSession from cache
 func (us *UserSession) Invalidate() {
-	us.authenticated = false
+	us.Authenticated = false
 }
 
 func (us *UserSession) IsLoggedIn() bool {
-	return us.authenticated
+	return us.Authenticated
 }
 
 func (us *UserSession) AuthSession() {
-	us.authenticated = true
+	us.Authenticated = true
 }

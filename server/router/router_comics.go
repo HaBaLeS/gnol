@@ -24,6 +24,7 @@ func (ah *AppHandler) comicsLoad(ctx *gin.Context) {
 	comicID := ctx.Param("comicId")
 	lastPage := ctx.Param("lastpage")
 	comicID, _ = url.QueryUnescape(comicID)
+
 	comic := ah.dao.ComicById(comicID)
 	if lastPage != "" {
 		lp, _ := strconv.Atoi(lastPage) //Fixme ignoring errors is bad
@@ -34,19 +35,19 @@ func (ah *AppHandler) comicsLoad(ctx *gin.Context) {
 		renderError(fmt.Errorf("comic with id %s not found", comicID), ctx.Writer)
 		return
 	}
-	ah.renderTemplate("jqviewer.gohtml", ctx, comic)
+	rc := &RenderContext{
+		USess: getUserSession(ctx),
+		Issue: comic,
+	}
+	ah.renderTemplate("jqviewer.gohtml", ctx, rc)
 }
 
 func (ah *AppHandler) comicsEdit(ctx *gin.Context) {
-	type ComicData struct {
-		Issue      *storage.Comic
-		SeriesList []storage.Series
-	}
-	cd := &ComicData{}
+	rc := &RenderContext{USess: getUserSession(ctx)}
 	comicID := ctx.Param("comicId")
-	cd.Issue = ah.dao.ComicById(comicID)
-	cd.SeriesList = ah.dao.AllSeries()
-	ah.renderTemplate("edit_comic.gohtml", ctx, cd)
+	rc.Issue = ah.dao.ComicById(comicID)
+	rc.SeriesList = ah.dao.AllSeries()
+	ah.renderTemplate("edit_comic.gohtml", ctx, rc)
 }
 
 func (ah *AppHandler) updateComic(ctx *gin.Context) {

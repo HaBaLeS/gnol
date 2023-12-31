@@ -22,6 +22,8 @@ type Series struct {
 	Name             string
 	CoverImageBase64 string `db:"cover_image_base64"`
 	ComicsInSeries   int    `db:"comics_in_series"`
+	Nsfw             bool   `db:"nsfw"`
+	OrderNum         int    `db:"ordernum"`
 }
 
 type GnolJob struct {

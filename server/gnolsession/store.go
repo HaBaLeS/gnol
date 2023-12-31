@@ -1,13 +1,6 @@
 package gnolsession
 
-import (
-	sessions2 "github.com/gin-contrib/sessions"
-	"github.com/gorilla/sessions"
-
-	"net/http"
-)
-
-type GnolSessionStore struct {
+/*type GnolSessionStore struct {
 	sessions.Store
 	session *sessions.Session
 }
@@ -41,3 +34,4 @@ func (gs GnolSessionStore) New(r *http.Request, name string) (*sessions.Session,
 func (gs GnolSessionStore) Save(r *http.Request, w http.ResponseWriter, s *sessions.Session) error {
 	return nil
 }
+*/

@@ -30,7 +30,7 @@
 
 
 
-                    {{ if .IsLoggedIn}}
+                    {{ if .USess.IsLoggedIn}}
                     <div class="navbar-item has-dropdown is-hoverable">
                         <a class="navbar-link">
                             Manage Series & Comics
@@ -55,11 +55,11 @@
                     {{end}}
                 </div>
             </div>
-            {{ if .IsLoggedIn}}
+            {{ if .USess.IsLoggedIn}}
             <div class="navbar-end">
                 <div class="navbar-item has-dropdown is-hoverable">
                     <a class="navbar-link">
-                        <span class="has-text-weight-semibold">{{.UserName}}</span>
+                        <span class="has-text-weight-semibold">{{.USess.UserName}}</span>
                     </a>
 
                     <div class="navbar-dropdown">
