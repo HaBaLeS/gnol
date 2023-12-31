@@ -5,7 +5,6 @@ go 1.21
 toolchain go1.21.4
 
 require (
-	github.com/HaBaLeS/go-logger v1.3.1
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gen2brain/go-fitz v1.23.1

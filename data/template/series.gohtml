@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>GNOL</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.2/css/bulma.min.css">
+    <link rel="stylesheet" href="/static/css/bulma.min.css">
     <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
     <script>
 
@@ -18,7 +18,7 @@
             console.log("The transfer failed.");
         }
 
-        function deleteComic(comicID){
+        function deleteComic(comicID) {
             var oReq = new XMLHttpRequest();
             oReq.addEventListener("loadend", processCommand);
             oReq.addEventListener("error", processError);
@@ -28,11 +28,11 @@
             return false //prevent default
         }
 
-        function processResponse(resp){
-            if(resp.ReturnCode == 200) {
-                switch (resp.Command){
+        function processResponse(resp) {
+            if (resp.ReturnCode == 200) {
+                switch (resp.Command) {
                     case 'redirect':
-                        window.location.href=resp.Payload.Target;
+                        window.location.href = resp.Payload.Target;
                         break;
                     //TODO other commands
                 }
@@ -47,25 +47,26 @@
 <section class="section">
     <div class="container">
         <div class="columns">
-{{ with .SeriesList }}
-    {{ range $idxx, $v := . }}
-            {{ if mod $idxx 4}} </div><div class="columns"> {{end}}
+            {{ with .SeriesList }}
+            {{ range $idxx, $v := . }}
+            {{ if mod $idxx 4}} </div>
+        <div class="columns"> {{end}}
             <div class="column is-3">
                 <div class="tile is-parent">
                     <div class="tile is-child card">
                         <div class="card-image">
                             <figure class="image is-fullwidth">
-                                <img src="data:image/png;base64,{{ $v.CoverImageBase64 }}" alt="Red dot" />
+                                <img src="data:image/png;base64,{{ $v.CoverImageBase64 }}" alt="Red dot"/>
                             </figure>
                         </div>
                         <div class="card-content">
                             <div class="content">
-                                <p ><b>{{ $v.Name }}</b><br>Comics: {{$v.ComicsInSeries}} </p>
+                                <p><b>{{ $v.Name }} <a href="/series/{{$v.Id}}/edit">
+                                        <span class="icon is-small">
+                                            <i class="fas fa-thin fa-pen"></i>
+                                        </span>
+                                        </a></b><br>Comics: {{$v.ComicsInSeries}} </p>
                             </div>
-                            <div class="content">
-                                <p><a href="/series/{{$v.Id}}/edit">Pen</a> </p>
-                            </div>
-
                         </div>
                         <footer class="card-footer">
                             <a href="/series/{{$v.Id}}" class="card-footer-item">Open</a>
@@ -73,9 +74,9 @@
                     </div>
                 </div>
             </div>
-    {{ end }}
-{{ end }}
-            </div>
+            {{ end }}
+            {{ end }}
+        </div>
     </div>
 </section>
 

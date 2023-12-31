@@ -3,21 +3,22 @@ package router
 import (
 	"github.com/HaBaLeS/gnol/server/command"
 	"github.com/gin-gonic/gin"
+	"net/http"
 	"strings"
 )
 
 func (ah *AppHandler) comicsInSeriesList(ctx *gin.Context) {
-	us := getUserSession(ctx)
+	gctx := getGnolContext(ctx)
 	sID := ctx.Param("seriesId")
-	cl := ah.dao.ComicsForUserInSeries(us.UserID, sID)
+	gctx.ComicList = ah.dao.ComicsForUserInSeries(gctx.Session.UserId, sID)
 
-	ah.renderTemplate("comic_list.gohtml", ctx, &RenderContext{ComicList: cl, USess: us})
+	ah.renderTemplate("comic_list.gohtml", ctx, gctx)
 }
 
 func (ah *AppHandler) seriesList(ctx *gin.Context) {
-	us := getUserSession(ctx)
-	sl := ah.dao.SeriesForUser(us.UserID)
-	ah.renderTemplate("series.gohtml", ctx, &RenderContext{SeriesList: sl, USess: us})
+	gctx := getGnolContext(ctx)
+	gctx.SeriesList = ah.dao.SeriesForUser(gctx.Session.UserId)
+	ah.renderTemplate("series.gohtml", ctx, gctx)
 
 }
 
@@ -38,7 +39,7 @@ func (ah *AppHandler) createSeries(ctx *gin.Context) {
 }
 
 func (ah *AppHandler) updateSeries(ctx *gin.Context) {
-	rc := NewRenderContext(ctx)
+	rc := getGnolContext(ctx)
 	type ChangeReq struct {
 		SeriesId string `form:"seriesId"`
 		Name     string `form:"name"`
@@ -54,12 +55,15 @@ func (ah *AppHandler) updateSeries(ctx *gin.Context) {
 	if cr.Nsfw == "on" {
 		cr.nsfwbool = true
 	}
-	ah.dao.DB.MustExec("update series s set name=$3, orderNum=$4, nsfw=$5 where s.id = $1 and s.ownerid = $2", cr.SeriesId, rc.USess.UserID, cr.Name, cr.OrderNum, cr.nsfwbool)
+	ah.dao.DB.MustExec("update series s set name=$3, orderNum=$4, nsfw=$5 where s.id = $1 and s.ownerid = $2", cr.SeriesId, rc.Session.UserId, cr.Name, cr.OrderNum, cr.nsfwbool)
+
+	//execute Updates
+	ctx.JSON(http.StatusCreated, command.NewRedirectCommand("/series/"))
 }
 
 func (ah *AppHandler) seriesEdit(ctx *gin.Context) {
-	rc := NewRenderContext(ctx)
+	rc := getGnolContext(ctx)
 	sID := ctx.Param("seriesId")
-	rc.Series = ah.dao.SeriesById(sID, rc.USess.UserID)
+	rc.Series = ah.dao.SeriesById(sID, rc.Session.UserId)
 	ah.renderTemplate("edit_series.gohtml", ctx, rc)
 }

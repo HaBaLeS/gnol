@@ -2,41 +2,41 @@
 package router
 
 import (
-	"encoding/gob"
 	"fmt"
 	"github.com/HaBaLeS/gnol/data/static"
 	template2 "github.com/HaBaLeS/gnol/data/template"
 	"github.com/HaBaLeS/gnol/docs"
 	"github.com/HaBaLeS/gnol/server/cache"
-	"github.com/HaBaLeS/gnol/server/gnolsession"
 	"github.com/HaBaLeS/gnol/server/jobs"
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/xid"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"html/template"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-type RenderContext struct {
+type GnolContext struct {
 	Issue      *storage.Comic
 	Series     *storage.Series
 	ComicList  []*storage.Comic
 	SeriesList []*storage.Series
-	USess      *gnolsession.UserSession
+	Session    *storage.GnolSession
 	Flash      string
 }
 
-func NewRenderContext(ctx *gin.Context) *RenderContext {
-	return &RenderContext{
-		USess: getUserSession(ctx),
+func NewGnolContext(gs *storage.GnolSession) *GnolContext {
+	return &GnolContext{
+		Session: gs,
 	}
 }
 
@@ -84,12 +84,9 @@ func (ah *AppHandler) Routes() {
 	docs.SwaggerInfo.Host = "localhost:8666"
 	ah.Router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	gob.Register(gnolsession.UserSession{})
-
 	//Define global middleware
-	//store := gnolsession.NewGnolSessionStore() <-- Only session store make sense here!!
 	store := cookie.NewStore([]byte("secret"))
-	ah.Router.Use(sessions.Sessions("gnolsession", store))
+	ah.Router.Use(sessions.Sessions("gnol-session-id", store))
 	ah.Router.Use(userSessionMiddleware)
 
 	ah.Router.GET("/", redirect("/series"))
@@ -113,12 +110,12 @@ func (ah *AppHandler) Routes() {
 		user.GET("/create", ah.serveTemplate("register.gohtml", nil))
 		user.GET("/login", ah.serveTemplate("login_user.gohtml", nil))
 		user.POST("/login", ah.loginUser)
-		user.GET("/logout", ah.logoutUser)
+		user.Use(ah.requireAuth).GET("/logout", ah.logoutUser)
 	}
 
 	stng := ah.Router.Group("/setting")
 	{
-		stng.Use(requireAuth)
+		stng.Use(ah.requireAuth)
 		stng.GET("/api-token", ah.APIToken)
 	}
 
@@ -134,7 +131,7 @@ func (ah *AppHandler) Routes() {
 	//Define Uploads
 	up := ah.Router.Group("/upload")
 	{
-		up.Use(requireAuth)
+		up.Use(ah.requireAuth)
 
 		up.GET("/archive", func(context *gin.Context) {
 			panic("Not implementeded spectial Render Func!")
@@ -151,7 +148,7 @@ func (ah *AppHandler) Routes() {
 	//Define Comic
 	cm := ah.Router.Group("/comics")
 	{
-		cm.Use(requireAuth)
+		cm.Use(ah.requireAuth)
 		cm.GET("/", redirect("/series"))
 		cm.GET("/:comicId", ah.comicsLoad)
 		cm.GET("/:comicId/edit", ah.comicsEdit)
@@ -165,7 +162,7 @@ func (ah *AppHandler) Routes() {
 	//Define Series
 	srs := ah.Router.Group("/series")
 	{
-		srs.Use(requireAuth)
+		srs.Use(ah.requireAuth)
 		srs.GET("/", ah.seriesList)
 		srs.GET("/:seriesId", ah.comicsInSeriesList)
 		srs.GET("/create", ah.serveTemplate("series_create.gohtml", nil))
@@ -204,47 +201,39 @@ func redirect(location string) gin.HandlerFunc {
 	}
 }
 
-func requireAuth(ctx *gin.Context) {
+func (ah *AppHandler) requireAuth(ctx *gin.Context) {
 	ssn := sessions.Default(ctx)
-	gnoluser := ssn.Get("user-session")
-	if gnoluser != nil {
-		gn := gnoluser.(gnolsession.UserSession)
-		if gn.IsLoggedIn() {
-			return
+	sid := ssn.Get("gnol-session-id")
+	if sid != nil {
+		gs := &storage.GnolSession{}
+
+		if err := ah.dao.DB.Get(gs, "select * from gnol_session gs where session_id = $1 and gs.valid_until > now()", sid); err == nil {
+			if gs != nil {
+				ctx.Set("gnol-context", NewGnolContext(gs))
+				return
+			}
+		} else {
+			log.Printf("Error while checking UserSession in DB: %v", err)
 		}
 	}
+
 	ctx.Redirect(http.StatusTemporaryRedirect, "/users/login")
 	ctx.Abort()
 }
 
+func getGnolContext(ctx *gin.Context) *GnolContext {
+	return ctx.MustGet("gnol-context").(*GnolContext)
+}
+
 func userSessionMiddleware(ctx *gin.Context) {
 	session := sessions.Default(ctx)
-	var us *gnolsession.UserSession
-	if session.Get("user-session") == nil {
-		fmt.Println("newSession")
-		us = gnolsession.NewUserSession()
-		session.Set("user-session", *us)
-
+	if session.Get("gnol-session-id") == nil {
+		sid := xid.New().String()
+		log.Printf("New Session %s", sid)
+		session.Set("gnol-session-id", sid)
 	}
 	ctx.Next()
-
 	if e := session.Save(); e != nil {
-		panic(e)
-	}
-
-}
-
-func getUserSession(ctx *gin.Context) *gnolsession.UserSession {
-	s := sessions.Default(ctx)
-	ifc := s.Get("user-session")
-	us := ifc.(gnolsession.UserSession)
-	return &us
-}
-
-func updateUSerSession(ctx *gin.Context, us *gnolsession.UserSession) {
-	s := sessions.Default(ctx)
-	s.Set("user-session", us)
-	if e := s.Save(); e != nil {
 		panic(e)
 	}
 }

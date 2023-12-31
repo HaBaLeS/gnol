@@ -2,8 +2,10 @@ package router
 
 import (
 	"fmt"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"time"
 )
 
 func (ah *AppHandler) serveTemplate(t string, data interface{}) gin.HandlerFunc {
@@ -17,8 +19,9 @@ func (ah *AppHandler) listUsers(ctx *gin.Context) {
 }
 
 func (ah *AppHandler) logoutUser(ctx *gin.Context) {
-	getUserSession(ctx).Invalidate()
-	ctx.Redirect(303, "/users/login")
+	us := getGnolContext(ctx).Session
+	ah.dao.DB.MustExec("delete from gnol_session where session_id = $1", us.SessionId)
+	ctx.Redirect(302, "/users/login")
 }
 
 func (ah *AppHandler) deleteUser(ctx *gin.Context) {
@@ -33,8 +36,8 @@ func (ah *AppHandler) getUser(ctx *gin.Context) {
 }
 
 func (ah *AppHandler) APIToken(ctx *gin.Context) {
-	id := getUserSession(ctx).UserID
-	token := ah.dao.GetOrCreateAPItoken(id)
+	us := getGnolContext(ctx).Session
+	token := ah.dao.GetOrCreateAPItoken(us.UserId)
 	ctx.JSON(http.StatusOK, token)
 }
 
@@ -64,9 +67,7 @@ func (ah *AppHandler) createUser(ctx *gin.Context) {
 		est = "Duplicate Username"
 		ah.renderTemplate("create_user.gohtml", ctx, est)
 	} else {
-		us := getUserSession(ctx)
-		us.UserName = name
-		ctx.Redirect(303, "/series")
+		ctx.Redirect(303, "/login")
 	}
 }
 
@@ -75,16 +76,15 @@ func (ah *AppHandler) loginUser(ctx *gin.Context) {
 	pass := ctx.PostForm("pass")
 	user := ah.dao.AuthUser(name, pass)
 	if user == nil {
-		rc := NewRenderContext(ctx)
+		rc := getGnolContext(ctx)
 		rc.Flash = "Login Failed"
 		ah.renderTemplate("login_user.gohtml", ctx, rc)
 		return
 	}
-	us := getUserSession(ctx)
-	us.AuthSession()
-	us.UserName = user.Name
-	us.UserID = user.Id
-	updateUSerSession(ctx, us)
+
+	sid := sessions.Default(ctx).Get("gnol-session-id")
+	ah.dao.DB.MustExec("delete from gnol_session where session_id = $1", sid)
+	ah.dao.DB.MustExec("insert into gnol_session values ($1,$2,$3)", sid, time.Now().Add(3600*time.Second), user.Id)
 
 	ctx.Redirect(303, "/series")
 }

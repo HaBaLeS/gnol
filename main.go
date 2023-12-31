@@ -9,8 +9,8 @@ import (
 	"github.com/HaBaLeS/gnol/server/router"
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/util"
-	"github.com/HaBaLeS/go-logger"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"time"
 )
@@ -39,28 +39,20 @@ type Application struct {
 	HTTPServer *http.Server
 	Handler    *router.AppHandler
 	dao        *storage.DAO
-	Logger     *logger.Logger
 	Cache      *cache.ImageCache
 	BGJobs     *jobs.JobRunner
 }
 
 // NewServer creates a new gnol Application
 func NewServer(cfgPath string) *Application {
-	log, err := logger.NewLogger()
-	if err != nil {
-		panic("Could not create Logger!")
-	}
 	cfg, err := util.ReadConfig(cfgPath)
 	if err != nil {
-		log.WarningF("%s not found using defaults", cfgPath)
+		log.Printf("%s not found using defaults", cfgPath)
 	}
-
 	a := &Application{
 		Config: cfg,
-		Logger: log,
 	}
-
-	log.InfoF("Using: http://%s:%d/users/login", a.Config.Hostname, a.Config.ListenPort)
+	log.Printf("Using: http://%s:%d/users/login", a.Config.Hostname, a.Config.ListenPort)
 	return a
 }
 

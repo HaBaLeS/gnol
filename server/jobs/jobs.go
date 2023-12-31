@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/util"
-	"github.com/HaBaLeS/go-logger"
+	"log"
 	"os"
 	"path"
 	"time"
 )
-
 
 var bucketJobOpen = []byte("jobs_open")
 var bucketJobDone = []byte("jobs_done")
@@ -27,33 +26,32 @@ const (
 	Done
 )
 
-
-//JOBS are defined by creating a name.job json in a special folder. jobs are processed one after the other by reading the directory where the jobs are and
-//taking one job, reading the description and processing it. MEta is updated while processing ... only 1 job at a time
+// JOBS are defined by creating a name.job json in a special folder. jobs are processed one after the other by reading the directory where the jobs are and
+// taking one job, reading the description and processing it. MEta is updated while processing ... only 1 job at a time
 type JobRunner struct {
 	running   bool
 	jobLocked bool
-	log       *logger.Logger
-	cfg		  *util.ToolConfig
+	log       *log.Logger
+	cfg       *util.ToolConfig
 	dao       *storage.DAO
 }
 
-//NewJobRunner Constructor
+// NewJobRunner Constructor
 func NewJobRunner(dao *storage.DAO, cfg *util.ToolConfig) *JobRunner { //fixme give config instead of job path
-	out, _ := os.Create(path.Join(cfg.TempDirectory,"jobs.log"))
-	lg, _ := logger.NewLogger("GnolJob", 0, logger.InfoLevel, out)
+	out, _ := os.Create(path.Join(cfg.TempDirectory, "jobs.log"))
+	lg := log.New(out, "gnol-job", log.LstdFlags)
 	return &JobRunner{
 		running:   false,
 		jobLocked: false,
 		log:       lg,
-		dao: dao,
-		cfg: cfg,
+		dao:       dao,
+		cfg:       cfg,
 	}
 }
 
-//StartMonitor creates a periodic job that watches the filesystem for Job Description files to process
+// StartMonitor creates a periodic job that watches the filesystem for Job Description files to process
 func (j *JobRunner) StartMonitor() {
-	j.log.Info("Starting Monitor")
+	j.log.Printf("Starting Monitor")
 	j.running = true
 	ticker := time.NewTicker(time.Second * 2) //every 10 sec
 	go func() {
@@ -63,20 +61,20 @@ func (j *JobRunner) StartMonitor() {
 			}
 			<-ticker.C
 			if !j.jobLocked {
-				j.log.Info("Running Job Detector")
+				j.log.Printf("Running Job Detector")
 				job := j.CheckForJobs()
 				if job != nil {
 					j.jobLocked = true
 					go j.processJob(job)
 				}
 			} else {
-				j.log.Info("Skipping run, Job is processing")
+				j.log.Printf("Skipping run, Job is processing")
 			}
 		}
 	}()
 }
 
-//checkForJobs scans folder for job metadata if there is at least one it is created and returned to be executed
+// checkForJobs scans folder for job metadata if there is at least one it is created and returned to be executed
 func (j *JobRunner) CheckForJobs() *storage.GnolJob {
 	job := j.FirstOpenJob()
 	if job != nil {
@@ -87,7 +85,7 @@ func (j *JobRunner) CheckForJobs() *storage.GnolJob {
 
 // Stop the periodic jobs checking
 func (j *JobRunner) StopMonitor() {
-	j.log.Info("Stop Job Monitor")
+	j.log.Printf("Stop Job Monitor")
 	j.running = false
 }
 
@@ -108,10 +106,10 @@ func (j *JobRunner) processJob(job *storage.GnolJob) {
 		}
 
 	default:
-		j.log.Errorf("Unsupported Job Type: %v", job.JobType)
+		j.log.Printf("Unsupported Job Type: %v", job.JobType)
 	}
 
-	if jobError != nil{
+	if jobError != nil {
 		fmt.Printf("Error in job: %s\n", jobError)
 		j.dao.UpdatJobStatus(job, Error)
 	} else {
