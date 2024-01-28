@@ -98,11 +98,24 @@ func (ah *AppHandler) shareComic(ctx *gin.Context) {
 }
 
 func (ah *AppHandler) shareSeries(ctx *gin.Context) {
-	//us := getGnolContext(ctx).Session
-	//comicID := ctx.Param("comicId")
-	//lastpage := ctx.Param("userId")
+	us := getGnolContext(ctx).Session
 
-	//ah.dao.DB.MustExec("update user_to_comic set last_page = $1 where user_id = $2 and comic_id = $3", lastpage, us.UserId, comicID)
+	seriesId := ctx.Param("seriesId")
+	targetUser := ctx.Param("userId")
+
+	_, ok := ah.dao.SeriesById(seriesId, us.UserId)
+	if !ok {
+		ctx.JSON(http.StatusForbidden, "Only Owner of comic can share it")
+	}
+	ids := make([]int, 0)
+	err := ah.dao.DB.Select(&ids, "select c.id  from comic c join user_to_comic utc on utc.comic_id = c.id where utc.user_id  = $1 and c.series_id = $2", us.UserId, seriesId)
+	if err != nil {
+		panic(err)
+	}
+	for _, id := range ids {
+		ah.dao.AddComicToUser(strconv.Itoa(id), targetUser)
+	}
+	ctx.JSON(http.StatusOK, command.NewGoBackCommand())
 }
 
 func (ah *AppHandler) comicSetLastPage(ctx *gin.Context) {

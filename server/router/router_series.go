@@ -72,10 +72,10 @@ func (ah *AppHandler) seriesEdit(ctx *gin.Context) {
 	var ok bool
 	rc.Series, ok = ah.dao.SeriesById(sID, rc.Session.UserId)
 	if ok {
+		rc.UserList = ah.dao.AllUsers()
 		ah.renderTemplate("edit_series.gohtml", ctx, rc)
 	} else {
 		rc.Flash = "error_not_the_owner_of_series"
 		ah.renderTemplate("error.gohtml", ctx, rc)
 	}
-
 }

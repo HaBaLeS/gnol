@@ -13,23 +13,18 @@ import (
 )
 
 const (
-	NO_TAG_FILTER   = -1
-	NSFW_TAG_FILTER = 1
-)
-
-const (
 	SERIES_FOR_USER      = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 and s.nsfw = false group by s.id order by s.ordernum asc"
 	SERIES_FOR_USER_NSFW = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 and s.nsfw = true group by s.id order by s.ordernum asc"
 	ALL_COMICS_FOR_USER  = `
 select  c.*, utc.last_page from comic as c
     join user_to_comic utc on c.id = utc.comic_id
-    where utc.user_id = $1 and c.id not in (select comic_id from tag_to_comic where tag_id in ($2))
+    where utc.user_id = $1
 `
 
 	COMICS_FOR_USER_IN_SERIES = `
 select  c.*, utc.last_page from comic as c
     join user_to_comic utc on c.id = utc.comic_id
-    where utc.user_id = $1 and series_id = $2 and c.id not in (select comic_id from tag_to_comic where tag_id in ($3))
+    where utc.user_id = $1 and series_id = $2 
 	order by c.ordernum asc
 `
 
@@ -286,7 +281,7 @@ func (dao *DAO) init() {
 
 func (dao *DAO) ComicsForUser(id int) []*Comic {
 	retList := make([]*Comic, 0)
-	if err := dao.DB.Select(&retList, ALL_COMICS_FOR_USER, id, NO_TAG_FILTER); err != nil {
+	if err := dao.DB.Select(&retList, ALL_COMICS_FOR_USER, id); err != nil {
 		dao.log.Printf("SQL Errror, %v", err)
 	}
 
@@ -305,11 +300,11 @@ func (dao *DAO) ComicsForUser(id int) []*Comic {
 func (dao *DAO) ComicsForUserInSeries(id int, seriesID string) []*Comic {
 
 	retList := make([]*Comic, 0)
-	if err := dao.DB.Select(&retList, COMICS_FOR_USER_IN_SERIES, id, seriesID, NO_TAG_FILTER); err != nil {
+	if err := dao.DB.Select(&retList, COMICS_FOR_USER_IN_SERIES, id, seriesID); err != nil {
 		dao.log.Printf("SQL Errror, %v", err)
 	}
 
-	//--  dont knwo if we should do that lazy or direct \o/
+	//--  dont know if we should do that lazy or direct \o/
 	for _, c := range retList {
 		q := "select tag as Tags from tags join tag_to_comic ttc on tags.Id = ttc.tag_id where ttc.comic_id =$1"
 		err := dao.DB.Select(&c.Tags, q, c.Id)
