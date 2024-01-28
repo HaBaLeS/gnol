@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Hello Bulma!</title>
     <link rel="stylesheet" href="/static/css/bulma.min.css">
-    <script type="text/javascript"  src="https://code.jquery.com/jquery-3.6.0.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.js"></script>
     <script type="text/javascript" src="/static/js/command.js"></script>
     <script>
 
@@ -45,6 +45,19 @@
             });
         }
 
+        function shareComic(comicId, targetUser) {
+            $.ajax({
+                url: '/share/comic/' + comicId + "/" + targetUser,
+                type: 'put',
+                success: function (response) {
+                    processResponse(response)
+                },
+                error(resp) {
+                    console.log('Sharing Error\n' + resp);
+                },
+            });
+        }
+
     </script>
 </head>
 <body>
@@ -53,35 +66,68 @@
 
 <section class="section">
     <div class="container">
-        <h1>Edit Comic</h1>
-        <form id="editForm">
-            <div class="field">
-                <input type="hidden" name="comicID" value="{{.Issue.Id}}">
-                <label class="label">Name</label> <input type="text" name="name" value="{{.Issue.Name}}"/>
-                <label class="label">nsfw</label> <input type="checkbox" name="nsfw" {{ if .Issue.Nsfw}} checked {{end}} />
-                <label class="label">OrderNumber</label> <input type="number" name="orderNum" value="{{.Issue.OrderNum}}"/>
-                <label class="label">Series</label>
-                <div>
-                    <select name="seriesID">
-                        {{ $sid := .Issue.SeriesId}}
-                        {{range $val := .SeriesList}}
-                            {{if eq $val.Id  $sid}}
-                                <option value="{{$val.Id}}" selected>{{$val.Name}}</option>
-                            {{else}}
-                                <option value="{{$val.Id}}">{{$val.Name}}</option>
+        <div class="block">
+            <h1 class="title">Edit Comic</h1>
+            <form id="editForm">
+                <div class="field">
+                    <input type="hidden" name="comicID" value="{{.Issue.Id}}">
+                    <label class="label">Name</label> <input type="text" name="name" value="{{.Issue.Name}}"/>
+                    <label class="label">nsfw</label> <input type="checkbox"
+                                                             name="nsfw" {{ if .Issue.Nsfw}} checked {{end}} />
+                    <label class="label">OrderNumber</label> <input type="number" name="orderNum"
+                                                                    value="{{.Issue.OrderNum}}"/>
+                    <label class="label">Series</label>
+                    <div>
+                        <select name="seriesID">
+                            {{ $sid := .Issue.SeriesId}}
+                            {{range $val := .SeriesList}}
+                                {{if eq $val.Id  $sid}}
+                                    <option value="{{$val.Id}}" selected>{{$val.Name}}</option>
+                                {{else}}
+                                    <option value="{{$val.Id}}">{{$val.Name}}</option>
+                                {{end}}
                             {{end}}
-                        {{end}}
-                    </select>
+                        </select>
+                    </div>
+                    <div>
+                        <button class="button is-primary is-light is-small is-responsive"
+                                onclick="sendForm(); return false;">Update Comic
+                        </button>
+                    </div>
                 </div>
-                <div>
-                    <button onclick="sendForm(); return false;">Update Comic</button>
-                </div>
-            </div>
-        </form>
-        <div>
-            <button onclick="return deleteComic({{.Issue.Id}});">Delete Comic</button>
+            </form>
         </div>
-    </div>
+        <div class="block">
+            <h1 class="title">Share Comic</h1>
+            <form id="shareForm">
+                <div class="field">
+                    <div>
+                        <select id="targetUserId">
+                            {{range $user := .UserList}}
+                                {{if ne $user.Id  $.Session.UserId}}
+                                <option value="{{$user.Id}}">{{$user.Name}}</option>
+                                {{end}}
+                            {{end}}
+                        </select>
+                    </div>
+                    <div>
+                        <button class="button is-primary is-light is-small is-responsive "
+                                onclick="shareComic({{.Issue.Id}},document.getElementById('targetUserId').value); return false;">Share With User
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+        </div>
+        <div class="block">
+            <h1 class="title">Remove Comic</h1>
+            <p>Remove comic from personal views. (Files are not deleted)</p>
+            <div>
+                <button class="button is-primary is-light is-small is-responsive"
+                        onclick="return deleteComic({{.Issue.Id}});">Delete Comic
+                </button>
+            </div>
+        </div>
     </div>
 </section>
 </body>

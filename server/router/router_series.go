@@ -19,7 +19,12 @@ func (ah *AppHandler) seriesList(ctx *gin.Context) {
 	gctx := getGnolContext(ctx)
 	gctx.SeriesList = ah.dao.SeriesForUser(gctx.Session.UserId)
 	ah.renderTemplate("series.gohtml", ctx, gctx)
+}
 
+func (ah *AppHandler) seriesListNSFW(ctx *gin.Context) {
+	gctx := getGnolContext(ctx)
+	gctx.SeriesList = ah.dao.NSFWSeriesForUser(gctx.Session.UserId)
+	ah.renderTemplate("series.gohtml", ctx, gctx)
 }
 
 func (ah *AppHandler) createSeries(ctx *gin.Context) {
@@ -64,6 +69,13 @@ func (ah *AppHandler) updateSeries(ctx *gin.Context) {
 func (ah *AppHandler) seriesEdit(ctx *gin.Context) {
 	rc := getGnolContext(ctx)
 	sID := ctx.Param("seriesId")
-	rc.Series = ah.dao.SeriesById(sID, rc.Session.UserId)
-	ah.renderTemplate("edit_series.gohtml", ctx, rc)
+	var ok bool
+	rc.Series, ok = ah.dao.SeriesById(sID, rc.Session.UserId)
+	if ok {
+		ah.renderTemplate("edit_series.gohtml", ctx, rc)
+	} else {
+		rc.Flash = "error_not_the_owner_of_series"
+		ah.renderTemplate("error.gohtml", ctx, rc)
+	}
+
 }

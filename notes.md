@@ -3,10 +3,10 @@
 - 
 
 # Series
-- [ ] Series Sorting
-- [ ] series nsfw flag
+- [x] Series Sorting
+- [x] series nsfw flag
 - [ ] series tags
-- [ ] Series Editor
+- [x] Series Editor
 - [ ] Change Cover
 
 # Comic
@@ -16,7 +16,7 @@
 # General
 
 - [ ] additional metadata with comic.xml
-- [ ] FIXME Auth without encrypted cookie! Use SessionID and server side Session in DB
+- [x] FIXME Auth without encrypted cookie! Use SessionID and server side Session in DB
 
 # Workflows
 

@@ -8,9 +8,15 @@ import (
 	"time"
 )
 
-func (ah *AppHandler) serveTemplate(t string, data interface{}) gin.HandlerFunc {
+func (ah *AppHandler) serveTemplate(t string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		ah.renderTemplate(t, ctx, data)
+		gctx, ok := ctx.Get("gnol-context")
+		if ok {
+			ah.renderTemplate(t, ctx, gctx.(*GnolContext))
+		} else {
+			ah.renderTemplate(t, ctx, nil)
+		}
+
 	}
 }
 
@@ -84,7 +90,7 @@ func (ah *AppHandler) loginUser(ctx *gin.Context) {
 
 	sid := sessions.Default(ctx).Get("gnol-session-id")
 	ah.dao.DB.MustExec("delete from gnol_session where session_id = $1", sid)
-	ah.dao.DB.MustExec("insert into gnol_session values ($1,$2,$3)", sid, time.Now().Add(3600*time.Second), user.Id)
+	ah.dao.DB.MustExec("insert into gnol_session values ($1,$2,$3)", sid, time.Now().Add(24*time.Hour), user.Id)
 
 	ctx.Redirect(303, "/series")
 }

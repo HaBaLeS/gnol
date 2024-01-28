@@ -7,6 +7,7 @@ const (
 	SUCCESS_MESSAGE             = "success_msg"
 	ERROR_MESSAGE               = "error_msg"
 	REDIRECT                    = "redirect"
+	GO_BACK                     = "go_back"
 )
 
 type StringPayload struct {
@@ -30,6 +31,14 @@ func NewRedirectCommand(target string) *JSONCommand {
 		Payload: &RedirectPayload{
 			Target: target,
 		},
+	}
+}
+
+func NewGoBackCommand() *JSONCommand {
+	return &JSONCommand{
+		ReturnCode: 200,
+		Command:    GO_BACK,
+		Payload:    "",
 	}
 }
 

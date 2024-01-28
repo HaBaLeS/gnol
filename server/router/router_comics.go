@@ -37,6 +37,7 @@ func (ah *AppHandler) comicsLoad(ctx *gin.Context) {
 	}
 
 	gctx := getGnolContext(ctx)
+	gctx.Issue = comic
 	ah.renderTemplate("jqviewer.gohtml", ctx, gctx)
 }
 
@@ -45,6 +46,7 @@ func (ah *AppHandler) comicsEdit(ctx *gin.Context) {
 	comicID := ctx.Param("comicId")
 	gctx.Issue = ah.dao.ComicById(comicID)
 	gctx.SeriesList = ah.dao.AllSeries()
+	gctx.UserList = ah.dao.AllUsers()
 	ah.renderTemplate("edit_comic.gohtml", ctx, gctx)
 }
 
@@ -68,10 +70,39 @@ func (ah *AppHandler) updateComic(ctx *gin.Context) {
 	}
 	us := getGnolContext(ctx).Session
 	old := ah.dao.ComicById(strconv.Itoa(cr.ComicID))
-	ah.dao.DB.MustExec("update comic set series_id = $1, nsfw = $2, name = $3, orderNum = $6 where id = $4 and ownerID = $5", cr.SeriesID, cr.nsfwbool, cr.Name, cr.ComicID, us.UserId, cr.OrderNum)
+	if us.UserId == old.OwnerID {
+		ah.dao.DB.MustExec("update comic set series_id = $1, nsfw = $2, name = $3, orderNum = $6 where id = $4 and ownerID = $5", cr.SeriesID, cr.nsfwbool, cr.Name, cr.ComicID, us.UserId, cr.OrderNum)
+	} else {
+		//TODO Log or panic error user is not allowed to do that
+	}
 
 	//execute Updates
 	ctx.JSON(http.StatusCreated, command.NewRedirectCommand(fmt.Sprintf("/series/%d/", old.SeriesId)))
+}
+
+func (ah *AppHandler) shareComic(ctx *gin.Context) {
+	us := getGnolContext(ctx).Session
+
+	comicId := ctx.Param("comicId")
+	targetUser := ctx.Param("userId")
+
+	//fixme add some validation code here ... unsure which pattern to use!
+	comic := ah.dao.ComicById(comicId)
+	if comic.OwnerID == us.UserId {
+		ah.dao.AddComicToUser(comicId, targetUser)
+		ctx.JSON(http.StatusOK, command.NewGoBackCommand())
+	} else {
+		ctx.JSON(http.StatusForbidden, "Only Owner of comic can share it")
+	}
+
+}
+
+func (ah *AppHandler) shareSeries(ctx *gin.Context) {
+	//us := getGnolContext(ctx).Session
+	//comicID := ctx.Param("comicId")
+	//lastpage := ctx.Param("userId")
+
+	//ah.dao.DB.MustExec("update user_to_comic set last_page = $1 where user_id = $2 and comic_id = $3", lastpage, us.UserId, comicID)
 }
 
 func (ah *AppHandler) comicSetLastPage(ctx *gin.Context) {
