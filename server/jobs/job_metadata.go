@@ -7,6 +7,7 @@ import (
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/mholt/archiver/v3"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -111,7 +112,7 @@ func (j *JobRunner) scanMetaData(jdesc *storage.GnolJob) error {
 		}
 	}
 
-	err = j.dao.AddComicToUser(id, jdesc.UserID)
+	err = j.dao.AddComicToUser(strconv.Itoa(id), strconv.Itoa(jdesc.UserID))
 
 	h, err := util.HashFile(c.FilePath)
 	if err != nil {

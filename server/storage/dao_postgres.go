@@ -18,8 +18,9 @@ const (
 )
 
 const (
-	SERIES_FOR_USER     = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 and s.nsfw = false group by s.id order by s.ordernum asc"
-	ALL_COMICS_FOR_USER = `
+	SERIES_FOR_USER      = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 and s.nsfw = false group by s.id order by s.ordernum asc"
+	SERIES_FOR_USER_NSFW = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 and s.nsfw = true group by s.id order by s.ordernum asc"
+	ALL_COMICS_FOR_USER  = `
 select  c.*, utc.last_page from comic as c
     join user_to_comic utc on c.id = utc.comic_id
     where utc.user_id = $1 and c.id not in (select comic_id from tag_to_comic where tag_id in ($2))
@@ -328,13 +329,22 @@ func (dao *DAO) SeriesForUser(id int) []*Series {
 	return retList
 }
 
-func (dao *DAO) SeriesById(seriesId string, userId int) *Series {
+func (dao *DAO) NSFWSeriesForUser(id int) []*Series {
+	retList := make([]*Series, 0)
+	if err := dao.DB.Select(&retList, SERIES_FOR_USER_NSFW, id); err != nil {
+		dao.log.Printf("SQL Errror, %v", err)
+	}
+	return retList
+}
+
+func (dao *DAO) SeriesById(seriesId string, userId int) (*Series, bool) {
 	retSerie := &Series{}
 	err := dao.DB.Get(retSerie, "select * from series s where s.id = $1 and s.ownerid  = $2", seriesId, userId)
 	if err != nil {
-		panic(err)
+		//You are not the owner!
+		return nil, false
 	}
-	return retSerie
+	return retSerie, true
 }
 
 func (dao *DAO) SaveComic(c *Comic) int {
@@ -352,7 +362,7 @@ func (dao *DAO) CreateSeries(name, imageB64 string) (int, error) {
 	return int(id), err
 }
 
-func (dao *DAO) AddComicToUser(comicID int, userID int) error {
+func (dao *DAO) AddComicToUser(comicID string, userID string) error {
 	_, err := dao.DB.Exec(ADD_USER_2_COMIC, userID, comicID)
 	return err
 }
@@ -416,6 +426,15 @@ func (dao *DAO) AllSeries() []*Series {
 		panic(err)
 	}
 
+	return retList
+}
+
+func (dao *DAO) AllUsers() []*User {
+	retList := make([]*User, 0)
+	err := dao.DB.Select(&retList, "select id, name  from gnoluser")
+	if err != nil {
+		panic(err)
+	}
 	return retList
 }
 

@@ -30,6 +30,7 @@ type GnolContext struct {
 	Series     *storage.Series
 	ComicList  []*storage.Comic
 	SeriesList []*storage.Series
+	UserList   []*storage.User
 	Session    *storage.GnolSession
 	Flash      string
 }
@@ -107,10 +108,15 @@ func (ah *AppHandler) Routes() {
 	{
 		user.GET("/", ah.listUsers)
 		user.POST("/", ah.createUser)
-		user.GET("/create", ah.serveTemplate("register.gohtml", nil))
-		user.GET("/login", ah.serveTemplate("login_user.gohtml", nil))
+		user.GET("/create", ah.serveTemplate("register.gohtml"))
+		user.GET("/login", ah.serveTemplate("login_user.gohtml"))
+
 		user.POST("/login", ah.loginUser)
-		user.Use(ah.requireAuth).GET("/logout", ah.logoutUser)
+
+		authUser := user.Use(ah.requireAuth)
+		authUser.GET("/logout", ah.logoutUser)
+		authUser.GET("/profile", ah.serveTemplate("user_profile.gohtml")) //FIXME add support for template folder structures. Currently only flat folder is supported in  initTemplates()
+
 	}
 
 	stng := ah.Router.Group("/setting")
@@ -138,8 +144,8 @@ func (ah *AppHandler) Routes() {
 			//sl := ah.dao.AllSeries()
 			//ah.renderTemplate("upload_archive.gohtml", context, sl)
 		})
-		up.GET("/pdf", ah.serveTemplate("upload_pdf.gohtml", nil))
-		up.GET("/url", ah.serveTemplate("upload_url.gohtml", nil))
+		up.GET("/pdf", ah.serveTemplate("upload_pdf.gohtml"))
+		up.GET("/url", ah.serveTemplate("upload_url.gohtml"))
 		up.POST("/archive", ah.uploadArchive)
 		up.POST("/url", ah.uploadUrl)
 		up.POST("/pdf", ah.uploadPdf)
@@ -159,16 +165,31 @@ func (ah *AppHandler) Routes() {
 		cm.DELETE("/delete/:comicId", ah.deleteComic)
 	}
 
+	//Define Comic
+	sh := ah.Router.Group("/share")
+	{
+		sh.Use(ah.requireAuth)
+		sh.PUT("/comic/:comicId/:userId", ah.shareComic)
+		sh.PUT("/series/:seriesId/:userId", ah.shareSeries)
+	}
+
 	//Define Series
 	srs := ah.Router.Group("/series")
 	{
 		srs.Use(ah.requireAuth)
 		srs.GET("/", ah.seriesList)
 		srs.GET("/:seriesId", ah.comicsInSeriesList)
-		srs.GET("/create", ah.serveTemplate("series_create.gohtml", nil))
+		srs.GET("/create", ah.serveTemplate("series_create.gohtml"))
 		srs.POST("/create", ah.createSeries)
 		srs.GET("/:seriesId/edit", ah.seriesEdit)    //Render Edit Page
 		srs.POST("/:seriesId/edit", ah.updateSeries) //FIXME this should share stuff witl API!!
+	}
+
+	//Define Series
+	srsNsfw := ah.Router.Group("/seriesNSFW")
+	{
+		srsNsfw.Use(ah.requireAuth)
+		srsNsfw.GET("/", ah.seriesListNSFW)
 	}
 
 	api := ah.Router.Group("/api")
