@@ -100,15 +100,28 @@ func (j *JobRunner) scanMetaData(jdesc *storage.GnolJob) error {
 		added := false
 		for _, kt := range knownTags {
 			if strings.ToLower(tag) == kt {
-				j.dao.DB.MustExec("insert into tag_to_comic (comic_id, tag_id) values ($1, (select Id from tags where lower(tag) = lower($2)))", id, kt)
+				_, err := j.dao.DB.Exec("insert into tag_to_comic (comic_id, tag_id) values ($1, (select Id from tags where lower(tag) = lower($2)))", id, kt)
+				if err != nil {
+					//return err
+					j.log.Printf("error writing Tag to comic: '%s' with error %v", kt, err)
+				}
 				added = true
 				break
 			}
 		}
 		if !added {
 			//Tag does not exist, lets add it
-			j.dao.DB.MustExec("insert into tags (Tag) values ($1)", tag)
-			j.dao.DB.MustExec("insert into tag_to_comic (comic_id, tag_id) values ($1, (select Id from tags where lower(tag) = lower($2)))", id, tag)
+			_, err := j.dao.DB.Exec("insert into tags (Tag) values ($1)", tag)
+			if err != nil {
+				//return err
+				j.log.Printf("error creating Tag: '%s' with error %v", tag, err)
+			}
+			_, err = j.dao.DB.Exec("insert into tag_to_comic (comic_id, tag_id) values ($1, (select Id from tags where lower(tag) = lower($2)))", id, tag)
+			if err != nil {
+				//return err
+				j.log.Printf("error writing Tag to comic: '%s' with error %v", tag, err)
+			}
+			knownTags = append(knownTags, tag)
 		}
 	}
 

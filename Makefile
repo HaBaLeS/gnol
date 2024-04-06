@@ -15,11 +15,9 @@ build:
 	mkdir -p bin
 	go build  -ldflags '$(LD_FLAG)' -v  -o bin/gnol
 	go build  -ldflags '$(LD_FLAG)' -v  -o bin/gnol-tools ./cmd/gnol-tools
-	go build  -ldflags '$(LD_FLAG)' -v  -o bin/leech-tool ./cmd/leech-tool
 
 install:
 	go install -ldflags '$(LD_FLAG)' -v  ./cmd/gnol-tools
-	go install -ldflags '$(LD_FLAG)' -v  ./cmd/leech-tool
 
 check:
 	echo "Skipping checks fix makefile please"
