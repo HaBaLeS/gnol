@@ -103,6 +103,7 @@ func main() {
 	coverImage := cli.NewOption("coverpage", "Select page to use a cover. Starting from 1").WithType(cli.TypeInt).WithChar('c')
 	outFile := cli.NewOption("out_cbz", "Output file").WithType(cli.TypeString).WithChar('o')
 	listOrder := cli.NewOption("listOrder", "preview order of file.(e.g. or cover selection) CBZ will not be created").WithChar('l').WithType(cli.TypeBool)
+	leechStart := cli.NewArg("comicurl", "First Page of a webcomic to leech")
 
 	from := cli.NewOption("from", "StartPage Default 0 ").WithType(cli.TypeInt)
 	to := cli.NewOption("to", "LastPage Default 0").WithType(cli.TypeInt)
@@ -161,6 +162,14 @@ func main() {
 		return 0
 	})
 
+	leech := cli.NewCommand("leech", "Pull a webcomic from supported site").
+		WithOption(nsfw).
+		WithOption(name).
+		WithOption(upload).
+		WithCommand(cli.NewCommand("list", "list supported webcomic or directorys").WithAction(s.leechlist)).
+		WithCommand(cli.NewCommand("pull", "Fresh Pull").WithAction(s.leechpull).WithArg(leechStart)).
+		WithCommand(cli.NewCommand("update", "Ask gnol for a resume point and resume from there. e.g. for weekly updates").WithAction(s.leechupdate).WithArg(leechStart))
+
 	monitor := cli.NewCommand("monitor", "Monitor folder and auto-process files in it").WithArg(inDirArg).WithAction(s.monitor)
 
 	app := cli.New("CLI utils for GNOL").
@@ -170,6 +179,7 @@ func main() {
 		WithCommand(repack).
 		WithCommand(series).
 		WithCommand(version).
+		WithCommand(leech).
 		WithCommand(monitor).
 		WithOption(verbose).
 		WithOption(gnolHost).
@@ -228,7 +238,9 @@ func (s *Session) processOptionsAndValidate(args []string, options map[string]st
 		s.GnolHost = options["gnolhost"]
 	}
 
-	s.InputFile = args[0]
+	if s.InputFile == "" {
+		s.InputFile = args[0]
+	}
 
 	if options["verbose"] != "" {
 		s.Verbose = true

@@ -26,6 +26,10 @@ func (s *Session) convert(args []string, options map[string]string) int {
 	defer doc.Close()
 	s.fillMetaData(doc)
 
+	if s.MetaData.Name == "" {
+		s.MetaData.Name = path.Base(s.InputFile)
+	}
+
 	zip := archiver.NewZip()
 	zip.CompressionLevel = flate.NoCompression //Disable compression
 

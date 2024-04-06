@@ -24,6 +24,7 @@ require (
 	github.com/swaggo/swag v1.16.2
 	github.com/teris-io/cli v1.0.1
 	golang.org/x/crypto v0.20.0
+	golang.org/x/image v0.15.0
 )
 
 require (
