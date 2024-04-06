@@ -11,7 +11,7 @@ require (
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.9.1
 	github.com/google/uuid v1.3.1
-	github.com/jackc/pgx/v4 v4.18.1
+	github.com/jackc/pgx/v4 v4.18.2
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/klauspost/compress v1.17.0
 	github.com/mholt/archiver/v3 v3.5.1
@@ -23,7 +23,7 @@ require (
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.2
 	github.com/teris-io/cli v1.0.1
-	golang.org/x/crypto v0.17.0
+	golang.org/x/crypto v0.20.0
 )
 
 require (
@@ -51,7 +51,7 @@ require (
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gorilla/sessions v1.2.1 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.14.0 // indirect
+	github.com/jackc/pgconn v1.14.3 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.3.3 // indirect
@@ -75,8 +75,8 @@ require (
 	github.com/ulikunitz/xz v0.5.9 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	golang.org/x/arch v0.6.0 // indirect
-	golang.org/x/net v0.18.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.15.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
