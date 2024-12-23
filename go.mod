@@ -23,7 +23,6 @@ require (
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.2
 	github.com/teris-io/cli v1.0.1
-
 	golang.org/x/crypto v0.31.0
 	golang.org/x/image v0.18.0
 )
