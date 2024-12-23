@@ -2,6 +2,7 @@ package router
 
 import (
 	"fmt"
+	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -81,14 +82,16 @@ func (ah *AppHandler) loginUser(ctx *gin.Context) {
 	name := ctx.PostForm("username")
 	pass := ctx.PostForm("pass")
 	user := ah.dao.AuthUser(name, pass)
+	sid := sessions.Default(ctx).Get("gnol-session-id")
+
 	if user == nil {
-		rc := getGnolContext(ctx)
+		gs := &storage.GnolSession{}
+		rc := NewGnolContext(gs)
 		rc.Flash = "Login Failed"
 		ah.renderTemplate("login_user.gohtml", ctx, rc)
 		return
 	}
 
-	sid := sessions.Default(ctx).Get("gnol-session-id")
 	ah.dao.DB.MustExec("delete from gnol_session where session_id = $1", sid)
 	ah.dao.DB.MustExec("insert into gnol_session values ($1,$2,$3)", sid, time.Now().Add(24*time.Hour), user.Id)
 
@@ -99,111 +102,3 @@ func (ah *AppHandler) loginUser(ctx *gin.Context) {
 func (ah *AppHandler) webAuthnIndex(ctx *gin.Context) {
 	ah.renderTemplate("webauthn.gohtml", ctx, nil)
 }
-
-// GET -> USer + params
-// called first
-// check if user exists
-/*
-func (ah *AppHandler) BeginRegistration(ctx *gin.Context) {
-
-	username := ctx.Param("userID")
-	tempUser := &storage.User{}
-	tempUser.Name = username
-	options, sessionData, err := ah.web.BeginRegistration(tempUser)
-
-	s := getUserSession(ctx)
-	s.WebAuthnSession = sessionData
-	s.WebAuthnUser = tempUser
-
-	if err != nil {
-		panic(err)
-	}
-
-	ctx.JSON(200, options)
-}
-
-func (ah *AppHandler) FinishRegistration(ctx *gin.Context) {
-	//user := datastore.GetUser() // Get the user
-	s := getUserSession(ctx)
-	user := s.WebAuthnUser
-
-	// Get the gnolsession data stored from the function above
-	// using gorilla/sessions it could look like this
-	parsedResponse, err := protocol.ParseCredentialCreationResponseBody(ctx.Request.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	sessionData := s.WebAuthnSession
-	cred, err := ah.web.CreateCredential(user, *sessionData, parsedResponse)
-	if err != nil {
-		panic(err)
-	}
-
-	// Handle validation or input errors
-	// If creation was successful, store the credential object
-	user.AddCredential(*cred)
-
-	//JSONResponse(w, "Registration Success", http.StatusOK) // Handle next steps
-
-	if ah.dao.AddWebAuthnUser(user) {
-		s.AuthSession()
-		s.UserName = user.Name
-		s.UserID = user.Id
-		ctx.JSON(200, command.NewRedirectCommand("/series"))
-	} else {
-		ctx.JSON(200, "Registration FAILED")
-	}
-
-}
-
-// Start of auth
-// Check for user in DB
-func (ah *AppHandler) BeginLogin(ctx *gin.Context) {
-	//user := datastore.GetUser() // Find the user
-	user := ah.dao.GetWebAuthnUser(ctx.Param("userID"))
-	options, sessionData, err := ah.web.BeginLogin(user)
-
-	if err != nil {
-		panic(err)
-	}
-
-	getUserSession(ctx).WebAuthnSession = sessionData
-	getUserSession(ctx).WebAuthnUser = user
-	// handle errors if present
-	// store the sessionData values
-	ctx.JSON(200, options)
-	//JSONResponse(w, options, http.StatusOK) // return the options generated
-
-	// options.publicKey contain our registration options
-}
-
-func (ah *AppHandler) FinishLogin(ctx *gin.Context) {
-	//user := datastore.GetUser() // Get the user
-	us := getUserSession(ctx)
-	user := us.WebAuthnUser
-	// Get the gnolsession data stored from the function above
-	// using gorilla/sessions it could look like this
-	//sessionData := store.Get(r, "login-gnolsession")
-	sessionData := getUserSession(ctx).WebAuthnSession
-
-	parsedResponse, err := protocol.ParseCredentialRequestResponseBody(ctx.Request.Body)
-	if err != nil {
-		panic(err)
-	}
-	credential, err := ah.web.ValidateLogin(user, *sessionData, parsedResponse)
-	if err != nil {
-		panic(err)
-	}
-
-	//FIXME update credentials ... check for clones
-	user.AddCredential(*credential)
-	us.AuthSession()
-	us.UserName = user.Name
-	us.UserID = user.Id
-	// Handle validation or input errors
-	// If login was successful, handle next steps
-	//JSONResponse(w, "Login Success", http.StatusOK)
-	ctx.JSON(200, command.NewRedirectCommand("/series"))
-}
-*/

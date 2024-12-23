@@ -7,6 +7,7 @@ import (
 
 func (s *Session) leechlist(args []string, options map[string]string) int {
 	fmt.Printf("h-leech-tool \n")
+	//https://ilikecomix.com/
 	return 0
 }
 

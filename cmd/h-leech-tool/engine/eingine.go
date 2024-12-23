@@ -15,13 +15,31 @@ import (
 
 var baseUrl = ""
 
-func Leech(site string) string {
+type ComicSite int
 
+const (
+	ILIKECOMIX ComicSite = iota
+	HDOTNAME
+)
+
+func Leech(site ComicSite, url string) string {
+
+	var sitehtml []byte
+	switch site {
+	case ILIKECOMIX:
+		sitehtml = getUrlData(url)
+	case HDOTNAME:
+		baseUrl = fmt.Sprintf("https://%s", url)
+		sitehtml = getUrlData(url)
+	}
+
+	//sitehtml := getUrlData(url)
 
 	//baseUrl = fmt.Sprintf("https://%s/g/%s/", site, comicid)
-	baseUrl = fmt.Sprintf("https://%s", site)
+	//baseUrl = fmt.Sprintf("https://%s", url)
 
-	otitle := extractName("dnf-comic-name")
+	otitle := extractName(sitehtml, "dnf-comic-name")
+
 	ctitle := cleanTitle(otitle)
 
 	pages := extractPageCount()
@@ -61,11 +79,36 @@ func Leech(site string) string {
 }
 
 func getUrlData(target string) []byte {
-	res, err := http.Get(target)
-	defer res.Body.Close()
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", target, nil)
+
+	//req.Header.Add(":authority", "ilikecomix.com")
+	//req.Header.Add(":method", "GET")
+	//req.Header.Add(":path", "/western-eroticism/komi-san-cant-fornicate-nudiedoodles/")
+	//req.Header.Add(":scheme", "https")
+	req.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
+	req.Header.Add("Accept-Encoding", "gzip, deflate, br, zstd")
+	req.Header.Add("Accept-Language", "de")
+	//req.Header.Add("Cache-Control", "max-age=0")
+	//req.Header.Add("Dnt", "1")
+	//req.Header.Add("Sec-Ch-Ua", "\"Google Chrome\";v=\"123\", \"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"123\"")
+	//req.Header.Add("Sec-Ch-Ua-Mobile", "?0")
+	//req.Header.Add("Sec-Ch-Ua-Platform", "\"Linux\"")
+	//req.Header.Add("Sec-Fetch-Dest", "document")
+	//req.Header.Add("Sec-Fetch-Mode", "navigate")
+	//req.Header.Add("Sec-Fetch-Site", "none")
+	//req.Header.Add("Sec-Fetch-User", "?1")
+	//req.Header.Add("Upgrade-Insecure-Requests", "1")
+	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; U; Linux armv7l like Android; en-us) AppleWebKit/531.2+ (KHTML, like Gecko) Version/5.0 Safari/533.2+ Kindle/3.0+")
+
 	if err != nil {
 		panic(err)
 	}
+	res, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer res.Body.Close()
 	if res.StatusCode != 200 {
 		panic(fmt.Errorf("wrong status: %s", res.Status))
 	}
@@ -89,9 +132,9 @@ func cleanTitle(title string) string {
 	return ct
 }
 
-func extractName(comicid string) string {
-	data := getUrlData(baseUrl)
-	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(data))
+func extractName(html []byte, comicid string) string {
+	//data := getUrlData(baseUrl)
+	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(html))
 	if err != nil {
 		panic(err)
 	}
