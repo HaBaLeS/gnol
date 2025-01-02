@@ -1,12 +1,12 @@
 package jobs
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/util"
-	"github.com/mholt/archiver/v3"
-	"os"
+	"github.com/mholt/archives"
+	"io/fs"
 	"strconv"
 	"strings"
 )
@@ -41,29 +41,28 @@ func (j *JobRunner) scanMetaData(jdesc *storage.GnolJob) error {
 	if err != nil {
 		return err
 	}
-
-	f, err := os.Open(jm.Filename)
-	if err != nil {
-		return err
-	}
-	eIface, err := archiver.ByHeader(f)
-	if err != nil {
-		return err
-	}
-
-	e, ok := eIface.(archiver.Walker)
-	if !ok {
-		return fmt.Errorf("format specified by source filename is not an extractor format: %s (%T)", jm.Filename, eIface)
-	}
 	c := &storage.Comic{}
-	err = e.Walk(jm.Filename, func(f archiver.File) error {
-		if f.Name() == "gnol.json" {
+
+	fsys, err := archives.FileSystem(context.Background(), jm.Filename, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	extractError := fs.WalkDir(fsys, ".", func(dirPath string, d fs.DirEntry, err error) error {
+		if d.Name() == "gnol.json" {
+			f, err := fsys.Open(dirPath)
+			if err != nil {
+				return err
+			}
 			dec := json.NewDecoder(f)
-			err := dec.Decode(c)
+			err = dec.Decode(c)
 			return err
 		}
 		return nil
 	})
+	if extractError != nil {
+		return extractError
+	}
 
 	if c.OrderNum == 0 {
 		c.OrderNum = jm.OrderNum //fixme only overwrite if certein conditions are meet
