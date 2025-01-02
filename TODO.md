@@ -29,3 +29,19 @@
 -  Remove unused upload/progress stuff
 - Edit Comic
   - [ ] change title image
+
+----------------
+
+Usecases:
+
+- NSFW User Settings
+- create series from Comic
+- change Series Cover
+- change Comic Cover
+- Genres (Comics, RPG Books, Book Scans, Magazines )
+- Filter
+- Search
+- Rating
+- active
+- Statisitics
+- Login Times

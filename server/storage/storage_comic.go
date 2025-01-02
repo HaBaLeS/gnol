@@ -1,10 +1,12 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"github.com/HaBaLeS/gnol/server/util"
-	"github.com/mholt/archiver/v3"
+	"github.com/mholt/archives"
 	"io"
+	"io/fs"
 	"os"
 	"path"
 )
@@ -17,24 +19,17 @@ func GetPageImage(config *util.ToolConfig, filepath string, comicIdent string, p
 
 	//TODO add a config parameter to enforce jpeg instead of preserving the original
 	cnt := 0
-	comic, err := os.Open(filepath)
+
+	fsys, err := archives.FileSystem(context.Background(), filepath, nil)
 	if err != nil {
 		panic(err)
 	}
-	arc, err := archiver.ByHeader(comic)
-	if err != nil {
-		panic(err)
-	}
-	wk, ok := arc.(archiver.Walker)
-	if !ok {
-		panic("Cannot Cast")
-	}
-	extractError := wk.Walk(filepath, func(f archiver.File) error {
-		if !isImageFile(f.Name()) {
+
+	extractError := fs.WalkDir(fsys, ".", func(dirPath string, d fs.DirEntry, err error) error {
+		if !isImageFile(d.Name()) {
 			return nil
 		}
 		if cnt == pageNum {
-
 			//Create dir if not exists
 			if _, err := os.Stat(comicDir); os.IsNotExist(err) {
 				os.Mkdir(comicDir, os.ModePerm)
@@ -43,9 +38,13 @@ func GetPageImage(config *util.ToolConfig, filepath string, comicIdent string, p
 			if cerr != nil {
 				panic(cerr)
 			}
+			ext := path.Ext(d.Name())
 
-			ext := path.Ext(f.Name())
-			newImg, convErr := util.LimitSize(f.ReadCloser, ext, 2560, 1440)
+			file, err := fsys.Open(dirPath)
+			if err != nil {
+				return err
+			}
+			newImg, convErr := util.LimitSize(file, ext, 2560, 1440)
 			if convErr != nil {
 				return convErr
 			}
