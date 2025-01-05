@@ -24,63 +24,63 @@
 
             <div id="navbarBasicExample" class="navbar-menu">
                 <div class="navbar-start">
-                    <a class="navbar-item" href="/series">
-                        Series
-                    </a>
-                    <a class="navbar-item" href="/seriesNSFW">
-                        Series NSFW
-                    </a>
-
-
-
                     {{ if .Session}}
-                    <div class="navbar-item has-dropdown is-hoverable">
-                        <a class="navbar-link">
-                            Manage Series & Comics
+                        <a class="navbar-item" href="/series">
+                            Series
                         </a>
 
-                        <div class="navbar-dropdown">
-                            <a class="navbar-item" href="/series/create">
-                                Create Series
+                        {{ if .UserInfo.Nsfw}}
+                        <a class="navbar-item" href="/seriesNSFW">
+                            Series NSFW
+                        </a>
+                            {{end}}
+                        <div class="navbar-item has-dropdown is-hoverable">
+                            <a class="navbar-link">
+                                Manage Series & Comics
                             </a>
 
-                            <a class="navbar-item" href="/upload/url">
-                                Fetch CBZ/CBR from URL
-                            </a>
-                            <a class="navbar-item" href="/upload/archive">
-                                Upload CBZ/CBR
-                            </a>
-                            <a class="navbar-item" href="/upload/pdf">
-                                Upload PDF
-                            </a>
+                            <div class="navbar-dropdown">
+                                <a class="navbar-item" href="/series/create">
+                                    Create Series
+                                </a>
+
+                                <a class="navbar-item" href="/upload/url">
+                                    Fetch CBZ/CBR from URL
+                                </a>
+                                <a class="navbar-item" href="/upload/archive">
+                                    Upload CBZ/CBR
+                                </a>
+                                <a class="navbar-item" href="/upload/pdf">
+                                    Upload PDF
+                                </a>
+                            </div>
                         </div>
-                    </div>
                     {{end}}
                 </div>
             </div>
             {{ if .Session}}
-            <div class="navbar-end">
-                <div class="navbar-item has-dropdown is-hoverable">
-                    <a class="navbar-link">
-                        <span class="has-text-weight-semibold">{{.Session.UserId}}</span>
-                    </a>
+                <div class="navbar-end">
+                    <div class="navbar-item has-dropdown is-hoverable">
+                        <a class="navbar-link">
+                            <span class="has-text-weight-semibold">{{.Session.UserId}}</span>
+                        </a>
 
-                    <div class="navbar-dropdown">
-                        <a class="navbar-item" href="/setting/api-token">
-                            API-Token
-                        </a>
-                        <a class="navbar-item" href="/users/logout">
-                            Logout
-                        </a>
-                        <a class="navbar-item" href="/users/profile">
-                            Profile
-                        </a>
-                        <a class="navbar-item" href="/admin">
-                            Admin (FIXME ME CHECK ACL)
-                        </a>
+                        <div class="navbar-dropdown">
+                            <a class="navbar-item" href="/setting/api-token">
+                                API-Token
+                            </a>
+                            <a class="navbar-item" href="/users/logout">
+                                Logout
+                            </a>
+                            <a class="navbar-item" href="/users/profile">
+                                Profile
+                            </a>
+                            <a class="navbar-item" href="/admin">
+                                Admin (FIXME ME CHECK ACL)
+                            </a>
+                        </div>
                     </div>
                 </div>
-            </div>
             {{else}}
                 <div class="navbar-end">
                     <a class="navbar-item" href="/users/create">

@@ -4,7 +4,7 @@
 ####
 #### BUILD
 ####
-FROM golang:1.21-alpine AS build
+FROM golang:1.23.4-alpine AS build
 RUN apk update
 RUN apk upgrade
 RUN apk add --update gcc g++ make mupdf-dev build-base libc6-compat alpine-sdk

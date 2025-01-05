@@ -6,6 +6,12 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
+func (dao *DAO) GetUser(userId int) (*User, error) {
+	user := new(User)
+	err := dao.DB.Get(user, "select * from gnoluser where id = $1", userId)
+	return user, err
+}
+
 func (dao *DAO) AuthUser(name string, pass string) *User {
 	user := new(User)
 	err := dao.DB.Get(user, "select * from gnoluser where name = $1", name)
@@ -109,4 +115,5 @@ type User struct {
 	PasswordHash []byte `db:"password_hash"`
 	Salt         []byte
 	WebAuthn     bool `db:"webauthn"`
+	Nsfw         bool
 }

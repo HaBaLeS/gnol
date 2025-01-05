@@ -33,6 +33,7 @@ type GnolContext struct {
 	UserList   []*storage.User
 	Session    *storage.GnolSession
 	Flash      string
+	UserInfo   *storage.User
 }
 
 func NewGnolContext(gs *storage.GnolSession) *GnolContext {
@@ -230,7 +231,13 @@ func (ah *AppHandler) requireAuth(ctx *gin.Context) {
 
 		if err := ah.dao.DB.Get(gs, "select * from gnol_session gs where session_id = $1 and gs.valid_until > now()", sid); err == nil {
 			if gs != nil {
-				ctx.Set("gnol-context", NewGnolContext(gs))
+				gnolContext := NewGnolContext(gs)
+				user, err := ah.dao.GetUser(gs.UserId)
+				gnolContext.UserInfo = user
+				if err != nil {
+					panic(err)
+				}
+				ctx.Set("gnol-context", gnolContext)
 				return
 			}
 		} else {

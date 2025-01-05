@@ -72,8 +72,10 @@
                 <div class="field">
                     <input type="hidden" name="comicID" value="{{.Issue.Id}}">
                     <label class="label">Name</label> <input type="text" name="name" value="{{.Issue.Name}}"/>
+                    {{ if .UserInfo.Nsfw}}
                     <label class="label">nsfw</label> <input type="checkbox"
                                                              name="nsfw" {{ if .Issue.Nsfw}} checked {{end}} />
+                    {{ end}}
                     <label class="label">OrderNumber</label> <input type="number" name="orderNum"
                                                                     value="{{.Issue.OrderNum}}"/>
                     <label class="label">Series</label>
