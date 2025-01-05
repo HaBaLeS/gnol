@@ -45,7 +45,9 @@ func (ah *AppHandler) comicsEdit(ctx *gin.Context) {
 	gctx := getGnolContext(ctx)
 	comicID := ctx.Param("comicId")
 	gctx.Issue = ah.dao.ComicById(comicID)
-	gctx.SeriesList = ah.dao.AllSeries()
+	nsfwUser := getGnolContext(ctx).UserInfo.Nsfw
+	gctx.SeriesList = ah.dao.AllSeries(nsfwUser)
+
 	gctx.UserList = ah.dao.AllUsers()
 	ah.renderTemplate("edit_comic.gohtml", ctx, gctx)
 }
