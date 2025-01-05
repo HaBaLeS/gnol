@@ -1,4 +1,4 @@
-package main
+package session
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	"os"
 )
 
-func (s *Session) upload(args []string, options map[string]string) int {
+func (s *Session) Upload(args []string, options map[string]string) int {
 	if !s.processOptionsAndValidate(args, options) {
 		return -1
 	}
@@ -33,7 +33,7 @@ func (rdr *UplProgessReader) Read(p []byte) (n int, err error) {
 func (s *Session) uploadInternal() int {
 
 	if exist, obj := s.checkIfFileExists(); exist {
-		s.Logger.Printf("%s exists on Server in Series: %s (%d)\n", obj.Name, obj.Sname, obj.Series_id)
+		s.Warn("%s exists on Server in Series: %s (%d)\n", obj.Name, obj.Sname, obj.Series_id)
 		return 0
 	}
 
@@ -75,7 +75,7 @@ func (s *Session) uploadInternal() int {
 	}
 
 	if resp.StatusCode != 200 {
-		s.Logger.Printf("Response StatusCode: %s\n", resp.Status)
+		s.Error("Response StatusCode: %s\n", resp.Status)
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			panic(err)
@@ -85,7 +85,7 @@ func (s *Session) uploadInternal() int {
 	}
 
 	data, _ := io.ReadAll(resp.Body)
-	s.Logger.Printf("Response: %s", data)
+	s.Log("Response: %s", data)
 
 	return 0
 }
@@ -97,7 +97,6 @@ func (s *Session) checkIfFileExists() (bool, *dto.ComicEntry) {
 	}
 
 	url := fmt.Sprintf("%s/%s/%s", s.GnolHost, "checkhash", hash)
-	//s.Logger.Printf("SQuery API: %s", url)
 	client := http.DefaultClient
 	rq, err := http.NewRequest("GET", url, nil)
 	rq.Header.Add(router.API_GNOL_TOKEN, s.ApiToken)
