@@ -1,9 +1,9 @@
-package main
+package session
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/nfnt/resize"
+	"github.com/HaBaLeS/gnol/server/util"
 	"io/fs"
 	"os"
 	"path"
@@ -17,7 +17,7 @@ var allowedTypes = map[string]struct{}{
 	".jpeg": {},
 }
 
-func (s *Session) packfolder(args []string, options map[string]string) int {
+func (s *Session) Packfolder(args []string, options map[string]string) int {
 	if !s.processOptionsAndValidate(args, options) {
 		return -1
 	}
@@ -81,10 +81,9 @@ func (s *Session) packInternal() int {
 			s.Error("Could not open Image %s", v)
 			continue
 		}
-		oz := img.Bounds()
-		img = resize.Thumbnail(2560, 1440, img, resize.MitchellNetravali)
-		s.Log("Resized: (%d,%d) -> (%d,%d)", oz.Dx(), oz.Dy(), img.Bounds().Dx(), img.Bounds().Dy()) //TODO.md make resizing optional
-		err = s.StoreAsJpg(idx, img)
+		//fixme make resize optional and control quality
+		img = util.Thumbnail(2560, 1440, img)
+		err = s.storeAsJpg(idx, img)
 		if err != nil {
 			s.Error("Could not store resized Image %s", v)
 			continue
@@ -97,7 +96,7 @@ func (s *Session) packInternal() int {
 
 	s.WriteMetadataJson()
 
-	if err := s.ZipFilesInWorkFolder(); err != nil {
+	if err := s.zipFilesTempDir(); err != nil {
 		s.Error("Error writing CBZ %v", err)
 	}
 

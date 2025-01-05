@@ -1,17 +1,17 @@
-package main
+package session
 
 import (
+	"context"
 	"fmt"
-	"github.com/klauspost/compress/zip"
-	"github.com/mholt/archiver/v3"
-	"github.com/nwaples/rardecode"
+	"github.com/mholt/archives"
 	"io"
+	"io/fs"
 	"os"
 	"path"
 	"sort"
 )
 
-func (s *Session) repack(args []string, options map[string]string) int {
+func (s *Session) Repack(args []string, options map[string]string) int {
 	if !s.processOptionsAndValidate(args, options) {
 		return -1
 	}
@@ -19,42 +19,20 @@ func (s *Session) repack(args []string, options map[string]string) int {
 	fmt.Printf("Name: %s\n", s.MetaData.Name)
 	fmt.Printf("OutFile: %s\n", s.OutputFile)
 
-	f, err := os.Open(s.InputFile)
+	zfs, err := archives.FileSystem(context.Background(), s.InputFile, nil)
 	if err != nil {
 		panic(err)
-	}
-
-	eIface, err := archiver.ByHeader(f)
-	if err != nil {
-		panic(err)
-	}
-
-	e, ok := eIface.(archiver.Walker)
-	if !ok {
-		panic(fmt.Errorf("format specified by source filename is not an extractor format: (%T)", eIface))
 	}
 
 	filter := make([]string, 0) //All files to filter against
-	err = e.Walk(s.InputFile, func(f archiver.File) error {
-		ident := ""
-		switch h := f.Header.(type) {
-		case zip.FileHeader:
-			ident = h.Name
-			break
-		case *rardecode.FileHeader:
-			ident = h.Name
-			break
-		default:
-			panic(fmt.Errorf("unhandled type: %T", h))
-		}
-
-		if _, ok := allowedTypes[path.Ext(ident)]; ok {
-			filter = append(filter, ident)
+	extractError := fs.WalkDir(zfs, ".", func(dirPath string, d fs.DirEntry, err error) error {
+		if _, ok := allowedTypes[dirPath]; ok {
+			filter = append(filter, dirPath)
 		}
 		return nil
 	})
-	if err != nil {
-		panic(err)
+	if extractError != nil {
+		panic(extractError)
 	}
 
 	files := make(map[string]string, 0)
@@ -81,25 +59,24 @@ func (s *Session) repack(args []string, options map[string]string) int {
 		panic(err)
 	}
 
-	err = e.Walk(s.InputFile, func(f archiver.File) error {
-		ident := ""
-		switch h := f.Header.(type) {
-		case zip.FileHeader:
-			ident = h.Name
-			break
-		case *rardecode.FileHeader:
-			ident = h.Name
-			break
-		default:
-			panic(fmt.Errorf("unhandled type: %T", h))
-		}
+	zfs2, err := archives.FileSystem(context.Background(), s.InputFile, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	extractError2 := fs.WalkDir(zfs2, ".", func(dirPath string, d fs.DirEntry, err error) error {
+		ident := dirPath
 		if _, ok := files[ident]; ok {
-			of := path.Base(f.Name())
+			of := path.Base(d.Name())
 			out, err := os.Create(path.Join(workdir, of))
 			if err != nil {
 				panic(err)
 			}
-			_, err = io.Copy(out, f.ReadCloser)
+			in, err := os.Open(dirPath)
+			if err != nil {
+				panic(err)
+			}
+			_, err = io.Copy(out, in)
 			if err != nil {
 				panic(err)
 			}
@@ -107,8 +84,8 @@ func (s *Session) repack(args []string, options map[string]string) int {
 		}
 		return nil
 	})
-	if err != nil {
-		panic(err)
+	if extractError2 != nil {
+		panic(extractError2)
 	}
 
 	s.InputFile = workdir

@@ -1,4 +1,4 @@
-package main
+package session
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ var LOCK sync.Mutex
 type void struct {
 }
 
-func (s *Session) monitor(args []string, options map[string]string) int {
+func (s *Session) Monitor(args []string, options map[string]string) int {
 	s.MonitorFolder = args[0]
 
 	createFolderIfNotExist(s.MonitorFolder)
@@ -123,17 +123,17 @@ func processList(s *Session) {
 
 	if path.Ext(theTing) == ".pdf" {
 		log.Printf("PDF to process! %s", theTing)
-		s.convert([]string{theTing}, map[string]string{})
+		s.Convert([]string{theTing}, map[string]string{})
 	} else if path.Ext(theTing) == ".cbz" {
 		log.Printf("CBZ to process! %s", theTing)
 		s.DirectUpload = false
-		s.repack([]string{theTing}, map[string]string{})
+		s.Repack([]string{theTing}, map[string]string{})
 	} else {
 		log.Printf("NOT processing: %s", theTing)
 		LOCK.Unlock()
 		return
 	}
-	
+
 	//upload cbz
 	fmt.Printf("Directly Uploading %s\n", s.OutputFile)
 	s.InputFile = s.OutputFile
