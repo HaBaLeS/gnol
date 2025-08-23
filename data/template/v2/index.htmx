@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    >
+    <style>
+
+        .grid {
+            justify-items: center
+        }
+
+        .article-card {
+            width: 240px;
+            height: 300px;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            font-family: Arial, Helvetica, sans-serif;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+            transition: all 300ms;
+            margin-left: 10px;
+        }
+
+        .article-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+        }
+
+        .article-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .article-card .content {
+            box-sizing: border-box;
+            width: 100%;
+            position: absolute;
+            padding: 30px 20px 20px 20px;
+            height: auto;
+            bottom: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+        }
+
+        .article-card .date,
+        .article-card .title {
+            margin: 0;
+        }
+
+        .article-card .date {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 4px;
+        }
+
+        .article-card .title {
+            font-size: 17px;
+            color: #fff;
+        }
+
+        .article-card .nsfw {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 4px;
+        }
+
+    </style>
+    <title>Gnol V2</title>
+
+</head>
+<body>
+<main class="container">
+    <div class="grid">
+        {{ with .SeriesList }}
+        {{ range $idxx, $v := . }}
+        <div .cl>
+            <div class="article-card">
+                <div class="content">
+                    <p class="date">69 Comics</p>
+                    <p class="title">{{ $v.Name }}</p>
+                </div>
+                <img src="data:image/png;base64,{{ $v.CoverImageBase64 }}" alt="article-cover" />
+            </div>
+        </div>
+        {{end}}
+        {{end}}
+
+    </div>
+</main>
+</body>
+</html>

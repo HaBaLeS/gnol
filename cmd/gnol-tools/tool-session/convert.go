@@ -10,6 +10,7 @@ import (
 )
 
 func (s *Session) Convert(args []string, options map[string]string) int {
+	s.processOptionsAndValidate(args, options)
 	s.Log("Loading PDF %s", s.InputFile)
 	doc, err := fitz.New(s.InputFile)
 	if err != nil {

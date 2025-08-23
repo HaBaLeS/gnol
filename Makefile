@@ -16,7 +16,7 @@ build:
 	go build  -ldflags '$(LD_FLAG)' -v  -o bin/gnol
 	go build  -ldflags '$(LD_FLAG)' -v  -o bin/gnol-tools ./cmd/gnol-tools
 
-install:
+install: clean build
 	go install -ldflags '$(LD_FLAG)' -v  ./cmd/gnol-tools
 
 check:

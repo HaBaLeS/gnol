@@ -322,7 +322,7 @@ func (s *Session) WriteMetadataJson() error {
 	if encErr != nil {
 		return err
 	}
-	panic("not good! to printf")
+	//panic(fmt.Errorf("not good! to printf, %v", err))
 	if s.Verbose {
 		out, err := json.MarshalIndent(s.MetaData, "", "\t")
 		if err != nil {

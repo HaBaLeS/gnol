@@ -26,7 +26,7 @@ func (s *Session) Repack(args []string, options map[string]string) int {
 
 	filter := make([]string, 0) //All files to filter against
 	extractError := fs.WalkDir(zfs, ".", func(dirPath string, d fs.DirEntry, err error) error {
-		if _, ok := allowedTypes[dirPath]; ok {
+		if _, ok := allowedTypes[path.Ext(dirPath)]; ok {
 			filter = append(filter, dirPath)
 		}
 		return nil
@@ -72,7 +72,7 @@ func (s *Session) Repack(args []string, options map[string]string) int {
 			if err != nil {
 				panic(err)
 			}
-			in, err := os.Open(dirPath)
+			in, err := zfs2.Open(dirPath)
 			if err != nil {
 				panic(err)
 			}

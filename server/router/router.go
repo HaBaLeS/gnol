@@ -17,12 +17,11 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"html/template"
-	"io/ioutil"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 type GnolContext struct {
@@ -208,12 +207,19 @@ func (ah *AppHandler) Routes() {
 		*/
 	}
 
+	v2 := ah.Router.Group("/v2")
+	{
+		v2.Use(ah.requireAuth)
+		v2.GET("/", ah.v2SeriesList)
+	}
+
 	ah.Router.NoRoute(func(ctx *gin.Context) {
+		log.Printf("No route for: %s", ctx.Request.URL)
 		if ctx.Request.URL.Path == "/favicon.ico" {
 			ctx.Status(http.StatusNotFound)
 			return
 		}
-		ctx.Redirect(http.StatusTemporaryRedirect, "/series")
+		ctx.Redirect(http.StatusTemporaryRedirect, "series")
 	})
 }
 
@@ -267,24 +273,21 @@ func userSessionMiddleware(ctx *gin.Context) {
 }
 
 func (ah *AppHandler) initTemplates() {
-	var allFiles []string
+
 	var err error
 	ah.templates = template.New("root")
 	ah.templates = ah.templates.Funcs(template.FuncMap{"mod": mod, "inc": inc})
 	if ah.config.LocalResources {
-		fi, _ := ioutil.ReadDir("data/template/")
-		for _, file := range fi {
-			filename := file.Name()
-			if strings.HasSuffix(filename, ".gohtml") {
-				allFiles = append(allFiles, "data/template/"+filename)
+		var allFiles []string
+		filepath.Walk("data/template/", func(path string, info fs.FileInfo, err error) error {
+			if !info.IsDir() {
+				allFiles = append(allFiles, path)
 			}
-		}
+			return nil
+		})
 		ah.templates, err = ah.templates.ParseFiles(allFiles...)
-		if err != nil {
-			panic(err)
-		}
 	} else {
-		ah.templates, err = ah.templates.ParseFS(template2.Embedded, "*.gohtml")
+		ah.templates, err = ah.templates.ParseFS(template2.Embedded, "**/*.htmx", "*.gohtml")
 		if err != nil {
 			panic(err)
 		}
