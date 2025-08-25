@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+
+
+  db:
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=gnol
+      - POSTGRES_PASSWORD=lkfja984r09wrfwef
+      - POSTGRES_DB=gnol
+    ports:
+      - '127.0.0.1:5432:5432'

@@ -19,6 +19,16 @@
             console.log("The transfer failed.");
         }
 
+        function removeComic(comicID) {
+            var oReq = new XMLHttpRequest();
+            oReq.addEventListener("loadend", processCommand);
+            oReq.addEventListener("error", processError);
+            oReq.open("DELETE", "/comics/remove/" + comicID);
+            oReq.responseType = "json";
+            oReq.send();
+            return false //prevent default
+        }
+
         function deleteComic(comicID) {
             var oReq = new XMLHttpRequest();
             oReq.addEventListener("loadend", processCommand);
@@ -124,6 +134,15 @@
         <div class="block">
             <h1 class="title">Remove Comic</h1>
             <p>Remove comic from personal views. (Files are not deleted)</p>
+            <div>
+                <button class="button is-primary is-light is-small is-responsive"
+                        onclick="return removeComic({{.Issue.Id}});">Remove Comic
+                </button>
+            </div>
+        </div>
+        <div class="block">
+            <h1 class="title">Delete Comic</h1>
+            <p>Delete Comic from Gnol including all files</p>
             <div>
                 <button class="button is-primary is-light is-small is-responsive"
                         onclick="return deleteComic({{.Issue.Id}});">Delete Comic
