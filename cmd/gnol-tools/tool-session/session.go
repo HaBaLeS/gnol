@@ -6,9 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/HaBaLeS/gnol/server/util"
-	"github.com/fatih/color"
-	"github.com/gen2brain/go-fitz"
 	"image"
 	"image/jpeg"
 	"io"
@@ -20,6 +17,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/HaBaLeS/gnol/server/util"
+	"github.com/fatih/color"
+	"github.com/gen2brain/go-fitz"
 )
 
 type Session struct {
@@ -322,7 +323,6 @@ func (s *Session) WriteMetadataJson() error {
 	if encErr != nil {
 		return err
 	}
-	panic("not good! to printf")
 	if s.Verbose {
 		out, err := json.MarshalIndent(s.MetaData, "", "\t")
 		if err != nil {

@@ -17,3 +17,4 @@ test-data/
 docker-compose-volumes
 leech-data/
 bin/
+tmp/

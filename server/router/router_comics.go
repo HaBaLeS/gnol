@@ -2,17 +2,34 @@ package router
 
 import (
 	"fmt"
-	"github.com/HaBaLeS/gnol/server/command"
-	"github.com/HaBaLeS/gnol/server/storage"
-	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
+
+	"github.com/HaBaLeS/gnol/server/command"
+	"github.com/HaBaLeS/gnol/server/storage"
+	"github.com/gin-gonic/gin"
 )
 
 func (ah *AppHandler) deleteComic(ctx *gin.Context) {
+	comicID := ctx.Param("comicId")
+	uid := getGnolContext(ctx).Session.UserId
+	comic := ah.dao.ComicById(comicID)
+	if comic.OwnerID != uid {
+		panic("you are not the owner of this comic!")
+	}
+	ah.dao.DB.MustExec("delete from user_to_comic where comic_id = $1", comicID)
+	ah.dao.DB.MustExec("delete from comic where id = $1", comicID)
+	err := os.Remove(comic.FilePath)
+	if err != nil {
+		panic(fmt.Errorf("failed to remove file: %s. got error %v", comic.FilePath, err)) //does the transaction roll back?
+	}
+	ctx.JSON(200, command.NewRedirectCommand(fmt.Sprintf("/series/%d", comic.SeriesId)))
+}
+
+func (ah *AppHandler) removeComic(ctx *gin.Context) {
 	comicID := ctx.Param("comicId")
 	uid := getGnolContext(ctx).Session.UserId
 	comic := ah.dao.ComicById(comicID)

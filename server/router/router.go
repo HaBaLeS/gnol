@@ -3,6 +3,14 @@ package router
 
 import (
 	"fmt"
+	"html/template"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/HaBaLeS/gnol/data/static"
 	template2 "github.com/HaBaLeS/gnol/data/template"
 	"github.com/HaBaLeS/gnol/docs"
@@ -16,13 +24,6 @@ import (
 	"github.com/rs/xid"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"html/template"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 type GnolContext struct {
@@ -88,6 +89,13 @@ func (ah *AppHandler) Routes() {
 
 	//Define global middleware
 	store := cookie.NewStore([]byte("secret"))
+	store.Options(sessions.Options{
+		MaxAge:   86400 * 30,
+		Path:     "/",
+		Secure:   false, //fixme only for dev mode!!
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
 	ah.Router.Use(sessions.Sessions("gnol-session-id", store))
 	ah.Router.Use(userSessionMiddleware)
 
@@ -163,6 +171,7 @@ func (ah *AppHandler) Routes() {
 		cm.GET("/:comicId/continue/:lastpage", ah.comicsLoad)
 		cm.GET("/:comicId/:imageId", ah.comicsPageImage)
 		cm.PUT("/last/:comicId/:lastpage", ah.comicSetLastPage)
+		cm.DELETE("/remove/:comicId", ah.removeComic)
 		cm.DELETE("/delete/:comicId", ah.deleteComic)
 	}
 
