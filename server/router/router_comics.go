@@ -143,6 +143,11 @@ func (ah *AppHandler) comicSetLastPage(ctx *gin.Context) {
 	lastpage := ctx.Param("lastpage")
 
 	ah.dao.DB.MustExec("update user_to_comic set last_page = $1 where user_id = $2 and comic_id = $3", lastpage, us.UserId, comicID)
+
+	num, _ := strconv.Atoi(lastpage)
+	if num+1 >= ah.dao.ComicById(comicID).NumPages {
+		ah.dao.SetFinished(us.UserId, comicID)
+	}
 }
 
 func (ah *AppHandler) comicsPageImage(ctx *gin.Context) {

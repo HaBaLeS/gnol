@@ -18,6 +18,7 @@ type Comic struct {
 	OwnerID          int            `db:"ownerid"`
 	OrderNum         int            `db:"ordernum"`
 	Sha256sum        sql.NullString `db:"sha256sum"`
+	Finished         bool           `db:"finished"`
 }
 
 type Series struct {

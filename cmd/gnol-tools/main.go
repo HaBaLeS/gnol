@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	session "github.com/HaBaLeS/gnol/cmd/gnol-tools/tool-session"
-	"github.com/teris-io/cli"
 	_ "image/png"
 	"os"
+
+	session "github.com/HaBaLeS/gnol/cmd/gnol-tools/tool-session"
+	"github.com/teris-io/cli"
 )
 
 var VersionNum = "undefined"
@@ -60,6 +61,7 @@ func main() {
 		WithOption(upload).
 		WithOption(name).
 		WithOption(verbose).
+		WithOption(seriesId).
 		WithAction(s.Packfolder)
 
 	uploadcmd := cli.NewCommand("upload", "Upload CBZ/CBR to a Gnol instance").
