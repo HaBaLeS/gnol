@@ -31,6 +31,10 @@
     padding-left: 1px;
 }
 
+.imgFinished {
+    filter: grayscale(50%);
+}
+
 #fpi {
     max-height:100%;
     max-width: 100%;

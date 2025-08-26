@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+
 	"github.com/jmoiron/sqlx"
 )
 
@@ -81,6 +82,11 @@ func migrate(db *sqlx.DB) {
 	if version < 14 {
 		db.MustExec(schema_14)
 		db.MustExec(UPDATE_VERSION, 14)
+	}
+
+	if version < 15 {
+		db.MustExec(schema_15)
+		db.MustExec(UPDATE_VERSION, 15)
 	}
 
 }
@@ -223,4 +229,11 @@ create table gnol_session (
 
 var schema_14 = `
 alter table gnoluser  add column nsfw bool default false;
+`
+
+var schema_15 = `
+	alter table user_to_comic add column finished boolean default false;
+	alter table user_to_comic add column finished_at timestamp;
+	alter table user_to_comic add column favorite boolean default false;
+	alter table user_to_comic add column did_not_read boolean default false;
 `

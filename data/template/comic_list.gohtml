@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>GNOL</title>
-    <link rel="stylesheet" href="/static/css/bulma.min.css">
+    <link rel="stylesheet" href="/static/css/bulma.min.css" />
     <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
 
 </head>
@@ -22,7 +22,7 @@
                     <div class="tile is-child card">
                         <div class="card-image">
                             <figure class="image is-fullwidth">
-                                <img src="data:image/png;base64,{{ $v.CoverImageBase64 }}" alt="Red dot" />
+                                <img src="data:image/png;base64,{{ $v.CoverImageBase64 }}" alt="Red dot" {{if .Finished}} style="filter: grayscale(100%)" {{end}} />
                             </figure>
                         </div>
                         <div class="card-content">

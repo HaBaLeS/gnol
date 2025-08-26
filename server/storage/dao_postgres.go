@@ -3,13 +3,14 @@ package storage
 import (
 	"database/sql"
 	"fmt"
+	"log"
+
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
-	"log"
 )
 
 const (
@@ -22,7 +23,7 @@ select  c.*, utc.last_page from comic as c
 `
 
 	COMICS_FOR_USER_IN_SERIES = `
-select  c.*, utc.last_page from comic as c
+select  c.*, utc.last_page, utc.finished from comic as c
     join user_to_comic utc on c.id = utc.comic_id
     where utc.user_id = $1 and series_id = $2 
 	order by c.ordernum asc
@@ -159,6 +160,14 @@ func (dao *DAO) ComicById(id string) *Comic {
 	c := &Comic{}
 	dao.DB.Get(c, "select * from comic where id = $1", id)
 	return c
+}
+
+func (dao *DAO) SetFinished(userID int, comicID string) {
+	dao.DB.MustExec("update user_to_comic set finished = true where user_id=$1 and comic_id = $2", userID, comicID)
+}
+
+func (dao *DAO) ToggleFinished(userID, comicID string) {
+	dao.DB.MustExec("update user_to_comic set finished = !finished where user_id=$1 and comic_id = $2", userID, comicID)
 }
 
 func (dao *DAO) CreateJob(jtype, juser int, data string) error {
