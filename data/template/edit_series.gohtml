@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/static/css/bulma.min.css">
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.js"></script>
     <script type="text/javascript" src="/static/js/command.js"></script>
+    <script type="text/javascript" src="/static/js/htmx.min.js"></script>
     <script>
 
 
@@ -72,7 +73,47 @@
             </form>
         </div>
         <div class="block">
-            <h1 class="title">Share Series</h1>
+            <h1 class="title">Story Arcs</h1>
+            <form>
+                <input type="hidden" name="SeriesId" value="{{.Series.Id}}">
+                <label class="label">Story Arc</label>
+                <div class="field has-addons">
+
+                    <div class="control ">
+                        <input class="input" name="Name" type="text" placeholder="Name of arc">
+                    </div>
+                    <div class="control">
+                        <button hx-post="/series/x/{{.Series.Id}}/addArc"  hx-target="tbody" class="button is-info">
+                            Append
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Pos</th>
+                    <th>Name</th>
+                    <th>Count</th>
+                    <th>Fandom Link</th>
+                    <th>edit</th>
+                </tr>
+                </thead>
+                <tbody hx-get="/series/x/{{.Series.Id}}/arcs" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+                    <tr>
+                        <td>0</td>
+                        <td>Default</td>
+                        <td>default arc for all comics</td>
+                        <td></td>
+                        <td>[x][e]</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="block">
+            <h1 class="title">Series Tools</h1>
+            - change image
+
             <form id="shareForm">
                 <div class="field">
                     <select id="targetUserId">

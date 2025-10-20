@@ -89,6 +89,16 @@ func migrate(db *sqlx.DB) {
 		db.MustExec(UPDATE_VERSION, 15)
 	}
 
+	if version < 16 {
+		db.MustExec(schema_16)
+		db.MustExec(UPDATE_VERSION, 16)
+	}
+
+	if version < 17 {
+		db.MustExec(schema_17)
+		db.MustExec(UPDATE_VERSION, 17)
+	}
+
 }
 
 var schema_1 = `
@@ -236,4 +246,18 @@ var schema_15 = `
 	alter table user_to_comic add column finished_at timestamp;
 	alter table user_to_comic add column favorite boolean default false;
 	alter table user_to_comic add column did_not_read boolean default false;
+`
+var schema_16 = `
+	--- drop table series_arc;
+	create table series_arc (
+		id SERIAL primary key not null,
+		ordernum integer default 100,
+		name text,
+		description text,
+		fandom_link text,
+		series_id integer references series(id)
+	);
+`
+var schema_17 = `
+	alter table comic add column arcId integer default 0;
 `

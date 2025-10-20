@@ -1,0 +1,9 @@
+{{ range $e, $v := .SeriesArcs }}
+<tr>
+    <td>{{$e}}</td>
+    <td>{{.Name}}</td>
+    <td>{{.Description.String}}</td>
+    <td>{{.FandomLink.String}}</td>
+    <td>[x][e]</td>
+</tr>
+{{end}}

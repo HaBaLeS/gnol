@@ -15,6 +15,7 @@ import (
 	template2 "github.com/HaBaLeS/gnol/data/template"
 	"github.com/HaBaLeS/gnol/docs"
 	"github.com/HaBaLeS/gnol/server/cache"
+	"github.com/HaBaLeS/gnol/server/dto"
 	"github.com/HaBaLeS/gnol/server/jobs"
 	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/HaBaLeS/gnol/server/util"
@@ -27,11 +28,13 @@ import (
 )
 
 type GnolContext struct {
-	Issue      *storage.Comic
-	Series     *storage.Series
-	ComicList  []*storage.Comic
+	Issue  *storage.Comic
+	Series *storage.Series
+	//ComicList  []*storage.Comic
+	ArcList    []*dto.ArcDTO
 	SeriesList []*storage.Series
 	UserList   []*storage.User
+	SeriesArcs []*storage.SeriesArc
 	Session    *storage.GnolSession
 	Flash      string
 	UserInfo   *storage.User
@@ -193,6 +196,9 @@ func (ah *AppHandler) Routes() {
 		srs.POST("/create", ah.createSeries)
 		srs.GET("/:seriesId/edit", ah.seriesEdit)    //Render Edit Page
 		srs.POST("/:seriesId/edit", ah.updateSeries) //FIXME this should share stuff witl API!!
+		srs.POST("/x/:seriesId/addArc", ah.xSeriesAddArc)
+		srs.GET("/x/:seriesId/arcs", ah.xSeriesArcs)
+		srs.GET("/x/:seriesId/:comicId/seriesArcOptions", ah.xSeriesArcOptions)
 	}
 
 	//Define Series
@@ -307,6 +313,9 @@ func (ah *AppHandler) getTemplate(name string) (*template.Template, error) {
 		ah.initTemplates()
 	}
 	tpl := ah.templates.Lookup(name)
+	if tpl == nil {
+		return nil, fmt.Errorf("template %s not found", name)
+	}
 	return tpl, nil
 }
 
@@ -314,6 +323,7 @@ func (ah *AppHandler) renderTemplate(templateName string, ctx *gin.Context, rend
 	tpl, tlerr := ah.getTemplate(templateName)
 	if tlerr != nil {
 		renderError(tlerr, ctx.Writer)
+		return
 	}
 	re := tpl.Execute(ctx.Writer, renderCtx)
 	if re != nil {

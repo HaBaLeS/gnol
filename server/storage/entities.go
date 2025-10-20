@@ -19,6 +19,7 @@ type Comic struct {
 	OrderNum         int            `db:"ordernum"`
 	Sha256sum        sql.NullString `db:"sha256sum"`
 	Finished         bool           `db:"finished"`
+	ArcId            int            `db:"arcid"`
 }
 
 type Series struct {
@@ -43,4 +44,13 @@ type GnolSession struct {
 	SessionId  string    `db:"session_id"`
 	ValidUntil time.Time `db:"valid_until"`
 	UserId     int       `db:"user_id"`
+}
+
+type SeriesArc struct {
+	Id          int            `db:"id"`
+	OrderNum    int            `db:"ordernum"`
+	Name        string         `db:"name"`
+	Description sql.NullString `db:"description"`
+	FandomLink  sql.NullString `db:"fandom_link"`
+	SeriesId    int            `db:"series_id"`
 }

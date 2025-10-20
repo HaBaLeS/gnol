@@ -13,36 +13,40 @@
 {{ template "navbar" .}}
 <section class="section">
     <div class="container">
-        <div class="columns">
-{{ with .ComicList }}
-    {{ range $idxx, $v := . }}
-            {{ if mod $idxx 4}} </div><div class="columns"> {{end}}
-            <div class="column is-3">
-                <div class="tile is-parent">
-                    <div class="tile is-child card">
-                        <div class="card-image">
-                            <figure class="image is-fullwidth">
-                                <img src="data:image/png;base64,{{ $v.CoverImageBase64 }}" alt="Red dot" {{if .Finished}} style="filter: grayscale(100%)" {{end}} />
-                            </figure>
-                        </div>
-                        <div class="card-content">
-                            <div class="content">
-                                <p ><b>{{ $v.Name }}</b><br>Page: {{inc $v.LastPage}}/{{$v.NumPages}} </p>
+        {{ with .ArcList }}
+            {{ range $arc := . }}
+                <h1 class="title">{{.SeriesArc.Name}}</h1>
+                <h2 class="subtitle">{{.SeriesArc.Description.String}}</h2>
+                <div class="columns">
+                {{ range $idxx, $v := .Comics }}
+                    {{ if mod $idxx 4}} </div><div class="columns"> {{end}}
+                    <div class="column is-3">
+                        <div class="tile is-parent">
+                        <div class="tile is-child card">
+                            <div class="card-image">
+                                <figure class="image is-fullwidth">
+                                    <img src="data:image/png;base64,{{ $v.CoverImageBase64 }}" alt="Red dot" {{if .Finished}} style="filter: grayscale(100%)" {{end}} />
+                                </figure>
                             </div>
-                            {{ range $idxx, $v := .Tags }}
-                                <span class="button  is-small is-info is-light">{{.}}</span>
-                            {{end}}
+                            <div class="card-content">
+                                <div class="content">
+                                    <p ><b>{{ $v.Name }}</b><br>Page: {{inc $v.LastPage}}/{{$v.NumPages}} </p>
+                                </div>
+                                {{ range $idxx, $v := .Tags }}
+                                    <span class="button  is-small is-info is-light">{{.}}</span>
+                                {{end}}
+                            </div>
+                            <footer class="card-footer">
+                                <a href="/comics/{{$v.Id}}/continue/{{$v.LastPage}}" class="card-footer-item">Read/continue</a>
+                                <a href="/comics/{{$v.Id}}/edit" class="card-footer-item" >Edit</a>
+                            </footer>
                         </div>
-                        <footer class="card-footer">
-                            <a href="/comics/{{$v.Id}}/continue/{{$v.LastPage}}" class="card-footer-item">Read/continue</a>
-                            <a href="/comics/{{$v.Id}}/edit" class="card-footer-item" >Edit</a>
-                        </footer>
                     </div>
+                    </div>
+                {{ end }}
                 </div>
-            </div>
-    {{ end }}
-{{ end }}
-            </div>
+            {{ end }}
+        {{ end }}
     </div>
 </section>
 

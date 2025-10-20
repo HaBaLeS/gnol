@@ -2,16 +2,17 @@ package router
 
 import (
 	"fmt"
-	"github.com/HaBaLeS/gnol/server/dto"
-	"github.com/HaBaLeS/gnol/server/jobs"
-	"github.com/HaBaLeS/gnol/server/storage"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"os"
 	"path"
 	"strconv"
+
+	"github.com/HaBaLeS/gnol/server/dto"
+	"github.com/HaBaLeS/gnol/server/jobs"
+	"github.com/HaBaLeS/gnol/server/storage"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 const (
@@ -48,7 +49,7 @@ func (ah *AppHandler) apiListComics(ctx *gin.Context) {
 	uid := uidi.(int)
 	query := "select c.id, c.name, c.series_id, s.name as \"sname\", c.nsfw, c.num_pages, c.sha256sum from comic c, series s where c.series_id = s.id and c.ownerid = $1 order by c.id;"
 
-	var resList = []dto.ComicEntry{}
+	var resList = []dto.ComicDTO{}
 	err := ah.dao.DB.Select(&resList, query, uid)
 	if err != nil {
 		panic(err)
@@ -141,7 +142,7 @@ func (ah *AppHandler) apiSeries(ctx *gin.Context) {
 func (ah *AppHandler) apiCheckHash(ctx *gin.Context) {
 	uidi, _ := ctx.Get(API_USER_ID)
 	hash := ctx.Param("hash")
-	var retVal dto.ComicEntry
+	var retVal dto.ComicDTO
 	query := "select c.id, c.name, c.series_id, s.name as \"sname\", c.nsfw, c.num_pages, c.sha256sum from comic c, series s where c.series_id = s.id and c.ownerid = $1 and c.sha256sum = $2;"
 	err := ah.dao.DB.Get(&retVal, query, uidi, hash)
 	if err != nil {
