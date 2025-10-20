@@ -1,6 +1,8 @@
 package dto
 
-type ComicEntry struct {
+import "github.com/HaBaLeS/gnol/server/storage"
+
+type ComicDTO struct {
 	Id        int
 	Name      string
 	Series_id int
@@ -8,4 +10,9 @@ type ComicEntry struct {
 	Nsfw      bool
 	Num_pages int
 	Sha256sum string
+}
+
+type ArcDTO struct {
+	*storage.SeriesArc
+	Comics []*storage.Comic
 }

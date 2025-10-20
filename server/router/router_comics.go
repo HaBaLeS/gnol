@@ -77,6 +77,7 @@ func (ah *AppHandler) updateComic(ctx *gin.Context) {
 		nsfwbool bool
 		SeriesID int `form:"seriesID"`
 		OrderNum int `form:"orderNum"`
+		ArcId    int `form:"seriesArcID"`
 	}
 	cr := &ChangeReq{}
 	berr := ctx.ShouldBind(cr)
@@ -89,8 +90,14 @@ func (ah *AppHandler) updateComic(ctx *gin.Context) {
 	}
 	us := getGnolContext(ctx).Session
 	old := ah.dao.ComicById(strconv.Itoa(cr.ComicID))
+
+	// if comic is moved to another series set arcID to o (default)
+	if old.SeriesId != cr.SeriesID {
+		cr.ArcId = 0
+	}
+
 	if us.UserId == old.OwnerID {
-		ah.dao.DB.MustExec("update comic set series_id = $1, nsfw = $2, name = $3, orderNum = $6 where id = $4 and ownerID = $5", cr.SeriesID, cr.nsfwbool, cr.Name, cr.ComicID, us.UserId, cr.OrderNum)
+		ah.dao.DB.MustExec("update comic set series_id = $1, nsfw = $2, name = $3, orderNum = $6, arcId =$7 where id = $4 and ownerID = $5", cr.SeriesID, cr.nsfwbool, cr.Name, cr.ComicID, us.UserId, cr.OrderNum, cr.ArcId)
 	} else {
 		//TODO Log or panic error user is not allowed to do that
 	}

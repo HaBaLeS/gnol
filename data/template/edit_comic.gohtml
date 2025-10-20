@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/static/css/bulma.min.css">
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.js"></script>
     <script type="text/javascript" src="/static/js/command.js"></script>
+    <script type="text/javascript" src="/static/js/htmx.min.js"></script>
     <script>
 
 
@@ -101,6 +102,10 @@
                             {{end}}
                         </select>
                     </div>
+                    <label class="label">Series Arc</label>
+                    <select name="seriesArcID" hx-params="none" hx-get="/series/x/{{.Issue.SeriesId}}/{{.Issue.Id}}/seriesArcOptions" hx-trigger="load" >
+
+                    </select>
                     <div>
                         <button class="button is-primary is-light is-small is-responsive"
                                 onclick="sendForm(); return false;">Update Comic

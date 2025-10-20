@@ -76,7 +76,7 @@ func (dao *DAO) init() {
 func (dao *DAO) ComicsForUser(id int) []*Comic {
 	retList := make([]*Comic, 0)
 	if err := dao.DB.Select(&retList, ALL_COMICS_FOR_USER, id); err != nil {
-		dao.log.Printf("SQL Errror, %v", err)
+		dao.log.Printf("SQL Error, %v", err)
 	}
 
 	//--  dont knwo if we should do that lazy or direct \o/
@@ -134,6 +134,21 @@ func (dao *DAO) SeriesById(seriesId string, userId int) (*Series, bool) {
 		return nil, false
 	}
 	return retSerie, true
+}
+
+func (dao *DAO) AddSeriesArc(seriesId, name string) {
+	dao.DB.MustExec("INSERT INTO series_arc (series_id, name) values ($1, $2)", seriesId, name)
+}
+
+func (dao *DAO) ListSeriesArcs(seriesId string) []*SeriesArc {
+	retList := make([]*SeriesArc, 0)
+
+	err := dao.DB.Select(&retList, "select * from series_arc where series_id = $1 order by ordernum asc", seriesId)
+	if err != nil {
+		panic(err)
+	}
+
+	return retList
 }
 
 func (dao *DAO) SaveComic(c *Comic) int {

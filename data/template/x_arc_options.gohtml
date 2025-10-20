@@ -1,0 +1,3 @@
+{{ range $val := .SeriesArcs }}
+    <option  {{if eq $val.Id  $.Issue.ArcId }} selected {{end}} value="{{$val.Id}}">{{$val.Name}}</option>
+{{end}}
