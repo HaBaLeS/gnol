@@ -8,9 +8,9 @@ import (
 	"path"
 	"strconv"
 
+	"github.com/HaBaLeS/gnol/server/database"
 	"github.com/HaBaLeS/gnol/server/dto"
 	"github.com/HaBaLeS/gnol/server/jobs"
-	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -122,7 +122,7 @@ func (ah *AppHandler) apiUploadComic(ctx *gin.Context) {
 // @Router  /series [get]
 // @Security ApiKeyAuth
 func (ah *AppHandler) apiSeries(ctx *gin.Context) {
-	var series []storage.Series
+	var series []database.Series
 	err := ah.dao.DB.Select(&series, "select Id, Name from series order by Id;")
 	if err != nil {
 		panic(err)

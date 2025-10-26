@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/HaBaLeS/gnol/server/command"
+	"github.com/HaBaLeS/gnol/server/database"
 	"github.com/HaBaLeS/gnol/server/dto"
-	"github.com/HaBaLeS/gnol/server/storage"
 	"github.com/gin-gonic/gin"
 )
 
@@ -36,21 +36,21 @@ func (ah *AppHandler) comicsInSeriesList(ctx *gin.Context) {
 	ah.renderTemplate("comic_list.gohtml", ctx, gctx)
 }
 
-func addDefaultArcIfNecessary(arcs []*storage.SeriesArc, series *storage.Series) []*storage.SeriesArc {
+func addDefaultArcIfNecessary(arcs []*database.SeriesArc, series *database.Series) []*database.SeriesArc {
 
-	defaultArc := storage.SeriesArc{
+	defaultArc := database.SeriesArc{
 		Name:        series.Name,
 		Description: sql.NullString{"Issues without story arc", true},
 		OrderNum:    0,
 		Id:          0,
 		EditLink:    fmt.Sprintf("/series/%d/edit", series.Id),
 	}
-	arcs = append([]*storage.SeriesArc{&defaultArc}, arcs...)
+	arcs = append([]*database.SeriesArc{&defaultArc}, arcs...)
 	return arcs
 }
 
-func filterComicByArcId(list []*storage.Comic, id int) []*storage.Comic {
-	retVal := make([]*storage.Comic, 0)
+func filterComicByArcId(list []*database.Comic, id int) []*database.Comic {
+	retVal := make([]*database.Comic, 0)
 	for _, comic := range list {
 		if comic.ArcId == id {
 			retVal = append(retVal, comic)
@@ -155,12 +155,20 @@ func (ah *AppHandler) xSeriesArcOptions(ctx *gin.Context) {
 	cID := ctx.Param("comicId")
 	rc.Issue = ah.dao.ComicById(cID)
 
-	rc.SeriesArcs = make([]*storage.SeriesArc, 1)
-	rc.SeriesArcs[0] = &storage.SeriesArc{
+	rc.SeriesArcs = make([]*database.SeriesArc, 1)
+	rc.SeriesArcs[0] = &database.SeriesArc{
 		Id:   0,
 		Name: "No Arc",
 	}
 
 	rc.SeriesArcs = append(rc.SeriesArcs, ah.dao.ListSeriesArcs(sID)...)
 	ah.renderTemplate("x_arc_options.gohtml", ctx, rc)
+}
+
+func (ah *AppHandler) recreateSeriesCover(ctx *gin.Context) {
+
+}
+
+func (ah *AppHandler) replaceSeriesCover(ctx *gin.Context) {
+	//comicId := ctx.Param("comicId")
 }

@@ -15,10 +15,11 @@ import (
 	template2 "github.com/HaBaLeS/gnol/data/template"
 	"github.com/HaBaLeS/gnol/docs"
 	"github.com/HaBaLeS/gnol/server/cache"
+	"github.com/HaBaLeS/gnol/server/database"
+	"github.com/HaBaLeS/gnol/server/database/dao"
 	"github.com/HaBaLeS/gnol/server/dto"
 	"github.com/HaBaLeS/gnol/server/jobs"
 	"github.com/HaBaLeS/gnol/server/storage"
-	"github.com/HaBaLeS/gnol/server/storage/dao"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -29,19 +30,19 @@ import (
 )
 
 type GnolContext struct {
-	Issue  *storage.Comic
-	Series *storage.Series
+	Issue  *database.Comic
+	Series *database.Series
 	//ComicList  []*storage.Comic
 	ArcList    []*dto.ArcDTO
-	SeriesList []*storage.Series
-	UserList   []*storage.User
-	SeriesArcs []*storage.SeriesArc
-	Session    *storage.GnolSession
+	SeriesList []*database.Series
+	UserList   []*database.User
+	SeriesArcs []*database.SeriesArc
+	Session    *database.GnolSession
 	Flash      string
-	UserInfo   *storage.User
+	UserInfo   *database.User
 }
 
-func NewGnolContext(gs *storage.GnolSession) *GnolContext {
+func NewGnolContext(gs *database.GnolSession) *GnolContext {
 	return &GnolContext{
 		Session: gs,
 	}
@@ -49,12 +50,13 @@ func NewGnolContext(gs *storage.GnolSession) *GnolContext {
 
 // AppHandler combines Router with other submodules Implementations, like DOA, Config, Cache
 type AppHandler struct {
-	Router    *gin.Engine
-	config    *util.ToolConfig
-	dao       *dao.DAO
-	cache     *cache.ImageCache
-	bgJobs    *jobs.JobRunner
-	templates *template.Template
+	Router      *gin.Engine
+	config      *util.ToolConfig
+	dao         *dao.DAO
+	cache       *cache.ImageCache
+	bgJobs      *jobs.JobRunner
+	templates   *template.Template
+	fileStorage *storage.FileStorage
 	//web       *webauthn.WebAuthn
 }
 
@@ -66,6 +68,11 @@ func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobR
 		cache:  cache,
 		bgJobs: bgj,
 		dao:    dao,
+		fileStorage: &storage.FileStorage{
+			cache,
+			config,
+			dao,
+		},
 	}
 
 	/*web, err := webauthn.New(&webauthn.Config{
@@ -177,6 +184,9 @@ func (ah *AppHandler) Routes() {
 		cm.PUT("/last/:comicId/:lastpage", ah.comicSetLastPage)
 		cm.DELETE("/remove/:comicId", ah.removeComic)
 		cm.DELETE("/delete/:comicId", ah.deleteComic)
+		cm.PATCH("/recreateCover", ah.recreateComicCover)
+		cm.PATCH("/replaceCover", ah.replaceComicCover)
+
 	}
 
 	//Define Comic
@@ -200,6 +210,8 @@ func (ah *AppHandler) Routes() {
 		srs.POST("/x/:seriesId/addArc", ah.xSeriesAddArc)
 		srs.GET("/x/:seriesId/arcs", ah.xSeriesArcs)
 		srs.GET("/x/:seriesId/:comicId/seriesArcOptions", ah.xSeriesArcOptions)
+		srs.PATCH("/recreateCover", ah.recreateSeriesCover)
+		srs.PATCH("/replaceCover", ah.replaceSeriesCover)
 	}
 
 	//Define Series
@@ -243,7 +255,7 @@ func (ah *AppHandler) requireAuth(ctx *gin.Context) {
 	ssn := sessions.Default(ctx)
 	sid := ssn.Get("gnol-session-id")
 	if sid != nil {
-		gs := &storage.GnolSession{}
+		gs := &database.GnolSession{}
 
 		if err := ah.dao.DB.Get(gs, "select * from gnol_session gs where session_id = $1 and gs.valid_until > now()", sid); err == nil {
 			if gs != nil {

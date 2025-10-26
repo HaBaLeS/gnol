@@ -3,12 +3,13 @@ package jobs
 import (
 	"context"
 	"encoding/json"
-	"github.com/HaBaLeS/gnol/server/storage"
-	"github.com/HaBaLeS/gnol/server/util"
-	"github.com/mholt/archives"
 	"io/fs"
 	"strconv"
 	"strings"
+
+	"github.com/HaBaLeS/gnol/server/database"
+	"github.com/HaBaLeS/gnol/server/util"
+	"github.com/mholt/archives"
 )
 
 type JobMeta struct {
@@ -24,7 +25,7 @@ func (j *JobRunner) CreateNewArchiveJob(jobMeta *JobMeta, userID int) error {
 	if err != nil {
 		return err
 	}
-	bgjob := &storage.GnolJob{
+	bgjob := &database.GnolJob{
 		JobType:   ScanMeta,
 		Data:      string(data),
 		JobStatus: NotStarted,
@@ -34,14 +35,14 @@ func (j *JobRunner) CreateNewArchiveJob(jobMeta *JobMeta, userID int) error {
 	return nil
 }
 
-func (j *JobRunner) scanMetaData(jdesc *storage.GnolJob) error {
+func (j *JobRunner) scanMetaData(jdesc *database.GnolJob) error {
 
 	jm := &JobMeta{}
 	err := json.Unmarshal([]byte(jdesc.Data), jm)
 	if err != nil {
 		return err
 	}
-	c := &storage.Comic{}
+	c := &database.Comic{}
 
 	fsys, err := archives.FileSystem(context.Background(), jm.Filename, nil)
 	if err != nil {

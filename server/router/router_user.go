@@ -2,11 +2,12 @@ package router
 
 import (
 	"fmt"
-	"github.com/HaBaLeS/gnol/server/storage"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
+
+	"github.com/HaBaLeS/gnol/server/database"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-gonic/gin"
 )
 
 func (ah *AppHandler) serveTemplate(t string) gin.HandlerFunc {
@@ -85,7 +86,7 @@ func (ah *AppHandler) loginUser(ctx *gin.Context) {
 	sid := sessions.Default(ctx).Get("gnol-session-id")
 
 	if user == nil {
-		gs := &storage.GnolSession{}
+		gs := &database.GnolSession{}
 		rc := NewGnolContext(gs)
 		rc.Flash = "Login Failed"
 		ah.renderTemplate("login_user.gohtml", ctx, rc)
