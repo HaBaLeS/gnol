@@ -4,15 +4,16 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/HaBaLeS/gnol/server/cache"
-	"github.com/HaBaLeS/gnol/server/jobs"
-	"github.com/HaBaLeS/gnol/server/router"
-	"github.com/HaBaLeS/gnol/server/storage"
-	"github.com/HaBaLeS/gnol/server/util"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/HaBaLeS/gnol/server/cache"
+	"github.com/HaBaLeS/gnol/server/jobs"
+	"github.com/HaBaLeS/gnol/server/router"
+	"github.com/HaBaLeS/gnol/server/storage/dao"
+	"github.com/HaBaLeS/gnol/server/util"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -38,7 +39,7 @@ type Application struct {
 	Config     *util.ToolConfig
 	HTTPServer *http.Server
 	Handler    *router.AppHandler
-	dao        *storage.DAO
+	dao        *dao.DAO
 	Cache      *cache.ImageCache
 	BGJobs     *jobs.JobRunner
 }
@@ -63,7 +64,7 @@ func NewServer(cfgPath string) *Application {
 // @description				your auth key for the API
 func (a *Application) Start() {
 
-	a.dao = storage.NewDAO(a.Config)
+	a.dao = dao.NewDAO(a.Config)
 
 	a.Cache = cache.NewImageCache(a.Config)
 	go a.Cache.RecoverCacheDir()

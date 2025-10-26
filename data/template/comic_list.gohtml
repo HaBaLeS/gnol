@@ -15,8 +15,12 @@
     <div class="container">
         {{ with .ArcList }}
             {{ range $arc := . }}
-                <h1 class="title">{{.SeriesArc.Name}}</h1>
-                <h2 class="subtitle">{{.SeriesArc.Description.String}}</h2>
+                <h1 class="title">{{.SeriesArc.Name}}                </h1>
+                <h2 class="subtitle">{{.SeriesArc.Description.String}}
+                    {{ if .SeriesArc.EditLink }}
+                        <a href="{{.SeriesArc.EditLink}}">(edit Series)</a>
+                    {{end}}
+                    </h2>
                 <div class="columns">
                 {{ range $idxx, $v := .Comics }}
                     {{ if mod $idxx 4}} </div><div class="columns"> {{end}}
