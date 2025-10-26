@@ -154,6 +154,13 @@ func (ah *AppHandler) xSeriesArcOptions(ctx *gin.Context) {
 	sID := ctx.Param("seriesId")
 	cID := ctx.Param("comicId")
 	rc.Issue = ah.dao.ComicById(cID)
-	rc.SeriesArcs = ah.dao.ListSeriesArcs(sID)
+
+	rc.SeriesArcs = make([]*storage.SeriesArc, 1)
+	rc.SeriesArcs[0] = &storage.SeriesArc{
+		Id:   0,
+		Name: "No Arc",
+	}
+
+	rc.SeriesArcs = append(rc.SeriesArcs, ah.dao.ListSeriesArcs(sID)...)
 	ah.renderTemplate("x_arc_options.gohtml", ctx, rc)
 }

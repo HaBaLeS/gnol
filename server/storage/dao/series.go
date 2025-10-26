@@ -71,7 +71,7 @@ func (dao *DAO) AddSeriesArc(seriesId, name string) {
 func (dao *DAO) ListSeriesArcs(seriesId string) []*storage.SeriesArc {
 	retList := make([]*storage.SeriesArc, 0)
 
-	err := dao.DB.Select(&retList, "select * from series_arc where series_id = $1 order by ordernum asc", seriesId)
+	err := dao.DB.Select(&retList, "select * from series_arc where series_id = $1 order by ordernum, name asc", seriesId)
 	if err != nil {
 		panic(err)
 	}
