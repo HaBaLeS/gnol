@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/HaBaLeS/gnol/server/cache"
+	"github.com/HaBaLeS/gnol/server/database/dao"
 	"github.com/HaBaLeS/gnol/server/jobs"
 	"github.com/HaBaLeS/gnol/server/router"
-	"github.com/HaBaLeS/gnol/server/storage/dao"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/gin-gonic/gin"
 )

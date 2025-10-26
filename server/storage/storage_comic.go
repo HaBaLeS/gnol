@@ -3,13 +3,54 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/HaBaLeS/gnol/server/util"
-	"github.com/mholt/archives"
 	"io"
 	"io/fs"
+	"io/ioutil"
 	"os"
 	"path"
+
+	"github.com/HaBaLeS/gnol/server/cache"
+	"github.com/HaBaLeS/gnol/server/database/dao"
+	"github.com/HaBaLeS/gnol/server/util"
+	"github.com/mholt/archives"
 )
+
+type FileStorage struct {
+	Cache  *cache.ImageCache
+	Config *util.ToolConfig
+	Dao    *dao.DAO
+}
+
+func (f *FileStorage) FetchImageData(comicId string, num int) ([]byte, error) {
+
+	filePath := f.Dao.ComicFilenameForId(comicId)
+
+	//get file from cache
+	var err error
+	file, hit := f.Cache.GetFileFromCache(filePath, num)
+	if !hit {
+		file, err = GetPageImage(f.Config, filePath, comicId, num)
+		if err != nil {
+			return nil, err
+		}
+		f.Cache.AddFileToCache(file)
+	}
+
+	//as a image-provider module not the cache directly
+	img, oerr := os.Open(file)
+	if oerr != nil {
+		return nil, oerr
+	} else {
+		defer img.Close()
+	}
+
+	data, rerr := ioutil.ReadAll(img)
+	if rerr != nil {
+		return nil, rerr
+	}
+
+	return data, nil
+}
 
 func GetPageImage(config *util.ToolConfig, filepath string, comicIdent string, pageNum int) (string, error) {
 

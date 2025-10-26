@@ -1,14 +1,16 @@
 package jobs
 
-import "github.com/HaBaLeS/gnol/server/storage"
+import (
+	"github.com/HaBaLeS/gnol/server/database"
+)
 
-//CreatePFCConversionJob creates a new job for processing PDF files and crate a CBZ out of it
-func (j *JobRunner) CreatePFCConversionJob(pdfFile string,uid int) {
-	bgjob := &storage.GnolJob{
-		JobType:     PdfToCbz,
-		Data:   pdfFile,
+// CreatePFCConversionJob creates a new job for processing PDF files and crate a CBZ out of it
+func (j *JobRunner) CreatePFCConversionJob(pdfFile string, uid int) {
+	bgjob := &database.GnolJob{
+		JobType: PdfToCbz,
+		Data:    pdfFile,
 		//DisplayName: "Create CBZ from PDF",
-		JobStatus:   NotStarted,
+		JobStatus: NotStarted,
 		//BaseEntity:  storage.CreateBaseEntity(bucketJobOpen),
 		UserID: uid,
 	}
@@ -16,7 +18,7 @@ func (j *JobRunner) CreatePFCConversionJob(pdfFile string,uid int) {
 
 }
 
-func (j *JobRunner) convertToPDF(job *storage.GnolJob) error {
+func (j *JobRunner) convertToPDF(job *database.GnolJob) error {
 	/*fmt.Printf("Running conversion\n")
 
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "fitz")
@@ -84,6 +86,6 @@ func (j *JobRunner) convertToPDF(job *storage.GnolJob) error {
 
 	j.CreateNewArchiveJob(outZipPath,job.UserID,"")
 	//FIXME cleanup unpacked, and tmp
-*/
+	*/
 	return nil
 }

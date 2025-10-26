@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/HaBaLeS/gnol/server/storage/migration"
+	"github.com/HaBaLeS/gnol/server/database/migration"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/stdlib"

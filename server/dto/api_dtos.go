@@ -1,6 +1,8 @@
 package dto
 
-import "github.com/HaBaLeS/gnol/server/storage"
+import (
+	"github.com/HaBaLeS/gnol/server/database"
+)
 
 type ComicDTO struct {
 	Id        int
@@ -13,6 +15,6 @@ type ComicDTO struct {
 }
 
 type ArcDTO struct {
-	*storage.SeriesArc
-	Comics []*storage.Comic
+	*database.SeriesArc
+	Comics []*database.Comic
 }
