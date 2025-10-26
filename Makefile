@@ -1,5 +1,5 @@
 NOW=$(shell date +'%Y-%m-%d_%T')
-VERSION=0.17.1
+VERSION=0.17.2
 LD_FLAG=-X main.VersionNum=$(VERSION) -X main.BuildDate=$(NOW)
 
 
