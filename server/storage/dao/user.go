@@ -1,19 +1,56 @@
-package storage
+package dao
 
 import (
 	"bytes"
+
+	"github.com/HaBaLeS/gnol/server/storage"
+	"github.com/google/uuid"
 	"github.com/rs/xid"
 	"golang.org/x/crypto/argon2"
 )
 
-func (dao *DAO) GetUser(userId int) (*User, error) {
-	user := new(User)
+func (dao *DAO) AllUsers() []*storage.User {
+	retList := make([]*storage.User, 0)
+	err := dao.DB.Select(&retList, "select id, name  from gnoluser")
+	if err != nil {
+		panic(err)
+	}
+	return retList
+}
+
+func (dao *DAO) GetUserForApiToken(gt string) (error, int) {
+	var uid int
+	err := dao.DB.Get(&uid, "select us.id from gnoluser us, apitoken at where us.id = at.user_id and at.token = $1", gt)
+	if err != nil {
+		return err, -1
+	}
+	return nil, uid
+}
+
+func (dao *DAO) GetOrCreateAPItoken(id int) []string {
+	var res []string
+	err := dao.DB.Select(&res, "select token from apitoken where user_id = $1", id)
+	if err != nil {
+		panic(err)
+	}
+
+	if len(res) == 0 {
+		newToken := uuid.New().String()
+		dao.DB.MustExec("insert into apitoken (user_id,token) values ($1,$2)", id, newToken)
+
+		return dao.GetOrCreateAPItoken(id)
+	}
+	return res
+}
+
+func (dao *DAO) GetUser(userId int) (*storage.User, error) {
+	user := new(storage.User)
 	err := dao.DB.Get(user, "select * from gnoluser where id = $1", userId)
 	return user, err
 }
 
-func (dao *DAO) AuthUser(name string, pass string) *User {
-	user := new(User)
+func (dao *DAO) AuthUser(name string, pass string) *storage.User {
+	user := new(storage.User) //TODO why use new?
 	err := dao.DB.Get(user, "select * from gnoluser where name = $1", name)
 	if err != nil {
 		dao.log.Printf("Error querying for user: %v", err)
@@ -44,7 +81,7 @@ func (dao *DAO) AddUser(name, password string) bool {
 	return true
 }
 
-func (dao *DAO) AddWebAuthnUser(user *User) bool {
+func (dao *DAO) AddWebAuthnUser(user *storage.User) bool {
 
 	/*creds := user.creds[0]
 
@@ -70,7 +107,7 @@ func (dao *DAO) AddWebAuthnUser(user *User) bool {
 	return false
 }
 
-func (dao *DAO) GetWebAuthnUser(username string) *User {
+func (dao *DAO) GetWebAuthnUser(username string) *storage.User {
 	/*user := new(User)
 	err := dao.DB.Get(user, "select * from gnoluser where name =$1 and webauthn = true", username)
 	if err != nil {
@@ -95,25 +132,18 @@ func (dao *DAO) GetWebAuthnUser(username string) *User {
 	return nil
 }
 
+// FIXME move somewhere out of DAO
 func hashPassword(pass string) ([]byte, []byte) {
 	salt := xid.New().Bytes()
 	hash := argon2.Key([]byte(pass), salt, 3, 32*1024, 4, 32)
 	return hash, salt
 }
 
+// FIXME move somewhere out of DAO
 func checkPassword(salt []byte, dbhash []byte, pass string) bool {
 	hash := argon2.Key([]byte(pass), salt, 3, 32*1024, 4, 32)
 	if bytes.Compare(hash, dbhash) != 0 { //FIXME introduce constant time comparison
 		return false
 	}
 	return true
-}
-
-type User struct {
-	Id           int
-	Name         string
-	PasswordHash []byte `db:"password_hash"`
-	Salt         []byte
-	WebAuthn     bool `db:"webauthn"`
-	Nsfw         bool
 }

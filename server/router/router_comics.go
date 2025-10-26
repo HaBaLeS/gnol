@@ -129,7 +129,7 @@ func (ah *AppHandler) shareSeries(ctx *gin.Context) {
 	seriesId := ctx.Param("seriesId")
 	targetUser := ctx.Param("userId")
 
-	_, ok := ah.dao.SeriesById(seriesId, us.UserId)
+	_, ok := ah.dao.SeriesByIdAndUser(seriesId, us.UserId)
 	if !ok {
 		ctx.JSON(http.StatusForbidden, "Only Owner of comic can share it")
 	}

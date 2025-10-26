@@ -52,5 +52,15 @@ type SeriesArc struct {
 	Name        string         `db:"name"`
 	Description sql.NullString `db:"description"`
 	FandomLink  sql.NullString `db:"fandom_link"`
-	SeriesId    int            `db:"series_id"`
+	EditLink    string
+	SeriesId    int `db:"series_id"`
+}
+
+type User struct {
+	Id           int
+	Name         string
+	PasswordHash []byte `db:"password_hash"`
+	Salt         []byte
+	WebAuthn     bool `db:"webauthn"`
+	Nsfw         bool
 }

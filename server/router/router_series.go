@@ -2,6 +2,7 @@ package router
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -17,7 +18,9 @@ func (ah *AppHandler) comicsInSeriesList(ctx *gin.Context) {
 	coimicList := ah.dao.ComicsForUserInSeries(gctx.Session.UserId, sID)
 
 	arcs := ah.dao.ListSeriesArcs(sID)
-	arcs = addDefaultArcIfNecessary(arcs)
+
+	seriesInfo := ah.dao.SeriesInfoById(sID)
+	arcs = addDefaultArcIfNecessary(arcs, seriesInfo)
 
 	comicByArc := make([]*dto.ArcDTO, 0)
 	for _, arc := range arcs {
@@ -33,12 +36,14 @@ func (ah *AppHandler) comicsInSeriesList(ctx *gin.Context) {
 	ah.renderTemplate("comic_list.gohtml", ctx, gctx)
 }
 
-func addDefaultArcIfNecessary(arcs []*storage.SeriesArc) []*storage.SeriesArc {
+func addDefaultArcIfNecessary(arcs []*storage.SeriesArc, series *storage.Series) []*storage.SeriesArc {
+
 	defaultArc := storage.SeriesArc{
-		Name:        "Unsorted Arc",
-		Description: sql.NullString{"[No Story Arc defined]", true},
+		Name:        series.Name,
+		Description: sql.NullString{"Issues without story arc", true},
 		OrderNum:    0,
 		Id:          0,
+		EditLink:    fmt.Sprintf("/series/%d/edit", series.Id),
 	}
 	arcs = append([]*storage.SeriesArc{&defaultArc}, arcs...)
 	return arcs
@@ -109,7 +114,7 @@ func (ah *AppHandler) seriesEdit(ctx *gin.Context) {
 	rc := getGnolContext(ctx)
 	sID := ctx.Param("seriesId")
 	var ok bool
-	rc.Series, ok = ah.dao.SeriesById(sID, rc.Session.UserId)
+	rc.Series, ok = ah.dao.SeriesByIdAndUser(sID, rc.Session.UserId)
 	if ok {
 		rc.UserList = ah.dao.AllUsers()
 		ah.renderTemplate("edit_series.gohtml", ctx, rc)

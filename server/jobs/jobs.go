@@ -2,12 +2,14 @@ package jobs
 
 import (
 	"fmt"
-	"github.com/HaBaLeS/gnol/server/storage"
-	"github.com/HaBaLeS/gnol/server/util"
 	"log"
 	"os"
 	"path"
 	"time"
+
+	"github.com/HaBaLeS/gnol/server/storage"
+	"github.com/HaBaLeS/gnol/server/storage/dao"
+	"github.com/HaBaLeS/gnol/server/util"
 )
 
 var bucketJobOpen = []byte("jobs_open")
@@ -33,11 +35,11 @@ type JobRunner struct {
 	jobLocked bool
 	log       *log.Logger
 	cfg       *util.ToolConfig
-	dao       *storage.DAO
+	dao       *dao.DAO
 }
 
 // NewJobRunner Constructor
-func NewJobRunner(dao *storage.DAO, cfg *util.ToolConfig) *JobRunner { //fixme give config instead of job path
+func NewJobRunner(dao *dao.DAO, cfg *util.ToolConfig) *JobRunner { //fixme give config instead of job path
 	out, _ := os.Create(path.Join(cfg.TempDirectory, "jobs.log"))
 	lg := log.New(out, "gnol-job", log.LstdFlags)
 	return &JobRunner{

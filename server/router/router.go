@@ -18,6 +18,7 @@ import (
 	"github.com/HaBaLeS/gnol/server/dto"
 	"github.com/HaBaLeS/gnol/server/jobs"
 	"github.com/HaBaLeS/gnol/server/storage"
+	"github.com/HaBaLeS/gnol/server/storage/dao"
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -50,7 +51,7 @@ func NewGnolContext(gs *storage.GnolSession) *GnolContext {
 type AppHandler struct {
 	Router    *gin.Engine
 	config    *util.ToolConfig
-	dao       *storage.DAO
+	dao       *dao.DAO
 	cache     *cache.ImageCache
 	bgJobs    *jobs.JobRunner
 	templates *template.Template
@@ -58,7 +59,7 @@ type AppHandler struct {
 }
 
 // NewHandler Create a new AppHandler for the Server
-func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobRunner, dao *storage.DAO) *AppHandler {
+func NewHandler(config *util.ToolConfig, cache *cache.ImageCache, bgj *jobs.JobRunner, dao *dao.DAO) *AppHandler {
 	ah := &AppHandler{
 		Router: gin.Default(), //Fixme, don't use defaults
 		config: config,
