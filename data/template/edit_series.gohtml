@@ -57,7 +57,10 @@
 <section class="section">
     <div class="container">
         <div class="block">
-            <h1 class="title">Edit Series</h1>
+            <a onclick="history.back()">Go Back</a>
+            <h1 class="title">Edit Series {{.Series.Name}}</h1>
+
+
             <form id="editForm">
                 <div class="field">
                     <input type="hidden" name="seriesId" value="{{.Series.Id}}">
@@ -74,7 +77,7 @@
         </div>
         <div class="block">
             <h1 class="title">Story Arcs</h1>
-            <form>
+            <form id="arcForm" hx-on--after-request="this.reset()" >
                 <input type="hidden" name="SeriesId" value="{{.Series.Id}}">
                 <label class="label">Story Arc</label>
                 <div class="field has-addons">
@@ -83,7 +86,7 @@
                         <input class="input" name="Name" type="text" placeholder="Name of arc">
                     </div>
                     <div class="control">
-                        <button hx-post="/series/x/{{.Series.Id}}/addArc"  hx-target="tbody" class="button is-info">
+                        <button hx-post="/series/x/{{.Series.Id}}/addArc"  hx-target="tbody"  class="button is-info">
                             Append
                         </button>
                     </div>
