@@ -3,12 +3,13 @@ package session
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/HaBaLeS/gnol/server/dto"
-	"github.com/HaBaLeS/gnol/server/router"
-	"github.com/HaBaLeS/gnol/server/util"
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/HaBaLeS/gnol/server/dto"
+	"github.com/HaBaLeS/gnol/server/router"
+	"github.com/HaBaLeS/gnol/server/util"
 )
 
 func (s *Session) Upload(args []string, options map[string]string) int {
@@ -90,7 +91,7 @@ func (s *Session) uploadInternal() int {
 	return 0
 }
 
-func (s *Session) checkIfFileExists() (bool, *dto.ComicEntry) {
+func (s *Session) checkIfFileExists() (bool, *dto.ComicDTO) {
 	hash, err := util.HashFile(s.InputFile)
 	if err != nil {
 		panic(err) //file must exist at that point
@@ -112,7 +113,7 @@ func (s *Session) checkIfFileExists() (bool, *dto.ComicEntry) {
 		return false, nil
 	}
 
-	dto := &dto.ComicEntry{}
+	dto := &dto.ComicDTO{}
 	dec := json.NewDecoder(resp.Body)
 	if err := dec.Decode(dto); err != nil {
 		panic(err)

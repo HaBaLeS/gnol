@@ -2,14 +2,19 @@
 
 import (
 	"encoding/json"
-	"github.com/HaBaLeS/gnol/server/util"
-	"github.com/gen2brain/go-fitz"
+	"fmt"
 	"os"
 	"path"
 	"time"
+
+	"github.com/HaBaLeS/gnol/server/util"
+	"github.com/gen2brain/go-fitz"
 )
 
 func (s *Session) Convert(args []string, options map[string]string) int {
+	if !s.processOptionsAndValidate(args, options) {
+		return -1
+	}
 	s.Log("Loading PDF %s", s.InputFile)
 	doc, err := fitz.New(s.InputFile)
 	if err != nil {
@@ -48,6 +53,10 @@ func (s *Session) Convert(args []string, options map[string]string) int {
 		s.storeAsJpg(n, pageImage)
 		resizeTime += time.Since(s2)
 		//s.Log("Writing page: %s (%dx%d) -> (%dx%d)", pagename, img.Bounds().Dx(), img.Bounds().Dy(), m.Bounds().Dx(), m.Bounds().Dy())
+		fmt.Print(".")
+		if n%10 == 0 {
+			fmt.Print("\n")
+		}
 	}
 
 	s.Log("Write gnol.json with Metadata and Cover image")
