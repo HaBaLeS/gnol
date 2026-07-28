@@ -137,6 +137,16 @@
 
         </div>
         <div class="block">
+            <h1 class="title">Update CoverImage</h1>
+            <form id="coverReplaceForm" hx-patch="/comics/recreateCover">
+                <div class="field">
+                    <input type="hidden" name="comicId" value="{{.Issue.Id}}">
+                    <input type="text" name="page" type="number" value="0" />
+                    <button class="button is-primary is-light is-small is-responsive">Update</button>
+                </div>
+            </form>
+        </div>
+        <div class="block">
             <h1 class="title">Remove Comic</h1>
             <p>Remove comic from personal views. (Files are not deleted)</p>
             <div>

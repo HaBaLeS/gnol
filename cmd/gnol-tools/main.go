@@ -15,6 +15,7 @@ var BuildDate = "undefined"
 const (
 	SERIES_ID = "seriesId"
 	ORDER_NUM = "orderNum"
+	OVERWRITE = "overwrite"
 )
 
 func main() {
@@ -38,7 +39,7 @@ func main() {
 	upload := cli.NewOption("upload", "Directly upload CBZ after creation").WithType(cli.TypeBool).WithChar('u')
 	seriesId := cli.NewOption(SERIES_ID, "Specify which series the file belongs to").WithType(cli.TypeNumber).WithChar('s')
 	orderNum := cli.NewOption(ORDER_NUM, "Specify a ordering number for sorting within a Series").WithType(cli.TypeNumber).WithChar('o')
-
+	overwrite := cli.NewOption(OVERWRITE, "Force Overwrite existing files").WithType(cli.TypeBool).WithChar('f')
 	//FIXME move keys to constants
 
 	pdf2cbz := cli.NewCommand("pdf2cbz", "PDF to CBZ/CBR converter with support for GNOL Metadata").
@@ -49,7 +50,10 @@ func main() {
 		WithOption(coverImage).
 		WithOption(name).
 		WithOption(verbose).
-		WithAction(s.Convert)
+		WithOption(upload).
+		WithOption(seriesId).
+		WithOption(overwrite).
+		WithAction(s.ConvertNew)
 
 	folder2cbz := cli.NewCommand("folder2cbz", "Pack folder of images to CBZ with support for GNOL Metadata. Files will be converted to JPEG and Downsized").
 		WithArg(inDirArg).

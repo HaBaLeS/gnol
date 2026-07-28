@@ -3,7 +3,7 @@ package dao
 import (
 	"database/sql"
 
-	"github.com/HaBaLeS/gnol/server/storage"
+	"github.com/HaBaLeS/gnol/server/database"
 )
 
 const (
@@ -25,8 +25,8 @@ func (dao *DAO) CreateJob(jtype, juser int, data string) error {
 	return err
 }
 
-func (dao *DAO) GetOldestOpenJob() *storage.GnolJob {
-	job := new(storage.GnolJob)
+func (dao *DAO) GetOldestOpenJob() *database.GnolJob {
+	job := new(database.GnolJob)
 	err := dao.DB.Get(job, OLDEST_OPEN_JOB)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -37,6 +37,6 @@ func (dao *DAO) GetOldestOpenJob() *storage.GnolJob {
 	return job
 }
 
-func (dao *DAO) UpdatJobStatus(job *storage.GnolJob, newStatus int) {
+func (dao *DAO) UpdatJobStatus(job *database.GnolJob, newStatus int) {
 	dao.DB.MustExec(UPDATE_JOB_STATUS, newStatus, job.Id)
 }

@@ -3,14 +3,14 @@ package dao
 import (
 	"bytes"
 
-	"github.com/HaBaLeS/gnol/server/storage"
+	"github.com/HaBaLeS/gnol/server/database"
 	"github.com/google/uuid"
 	"github.com/rs/xid"
 	"golang.org/x/crypto/argon2"
 )
 
-func (dao *DAO) AllUsers() []*storage.User {
-	retList := make([]*storage.User, 0)
+func (dao *DAO) AllUsers() []*database.User {
+	retList := make([]*database.User, 0)
 	err := dao.DB.Select(&retList, "select id, name  from gnoluser")
 	if err != nil {
 		panic(err)
@@ -43,14 +43,14 @@ func (dao *DAO) GetOrCreateAPItoken(id int) []string {
 	return res
 }
 
-func (dao *DAO) GetUser(userId int) (*storage.User, error) {
-	user := new(storage.User)
+func (dao *DAO) GetUser(userId int) (*database.User, error) {
+	user := new(database.User)
 	err := dao.DB.Get(user, "select * from gnoluser where id = $1", userId)
 	return user, err
 }
 
-func (dao *DAO) AuthUser(name string, pass string) *storage.User {
-	user := new(storage.User) //TODO why use new?
+func (dao *DAO) AuthUser(name string, pass string) *database.User {
+	user := new(database.User) //TODO why use new?
 	err := dao.DB.Get(user, "select * from gnoluser where name = $1", name)
 	if err != nil {
 		dao.log.Printf("Error querying for user: %v", err)
@@ -81,7 +81,7 @@ func (dao *DAO) AddUser(name, password string) bool {
 	return true
 }
 
-func (dao *DAO) AddWebAuthnUser(user *storage.User) bool {
+func (dao *DAO) AddWebAuthnUser(user *database.User) bool {
 
 	/*creds := user.creds[0]
 
@@ -107,7 +107,7 @@ func (dao *DAO) AddWebAuthnUser(user *storage.User) bool {
 	return false
 }
 
-func (dao *DAO) GetWebAuthnUser(username string) *storage.User {
+func (dao *DAO) GetWebAuthnUser(username string) *database.User {
 	/*user := new(User)
 	err := dao.DB.Get(user, "select * from gnoluser where name =$1 and webauthn = true", username)
 	if err != nil {

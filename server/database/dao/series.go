@@ -1,20 +1,21 @@
 package dao
 
 import (
+	"encoding/base64"
 	"fmt"
 
-	"github.com/HaBaLeS/gnol/server/storage"
+	"github.com/HaBaLeS/gnol/server/database"
 )
 
 const (
 	CREATE_SERIES = "insert into series (name, cover_image_base64) values ($1,$2)"
 
-	SERIES_FOR_USER      = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 and s.nsfw = false group by s.id order by s.ordernum asc"
-	SERIES_FOR_USER_NSFW = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 and s.nsfw = true group by s.id order by s.ordernum asc"
+	SERIES_FOR_USER      = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 and s.nsfw = false group by s.id order by s.ordernum, s.name asc"
+	SERIES_FOR_USER_NSFW = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 and s.nsfw = true group by s.id order by s.ordernum, s.name asc"
 )
 
-func (dao *DAO) AllSeries(includeNSFW bool) []*storage.Series {
-	retList := make([]*storage.Series, 0)
+func (dao *DAO) AllSeries(includeNSFW bool) []*database.Series {
+	retList := make([]*database.Series, 0)
 	err := dao.DB.Select(&retList, "select id, name from series where nsfw = $1 or nsfw = false order by name", includeNSFW)
 	if err != nil {
 		panic(err)
@@ -29,24 +30,24 @@ func (dao *DAO) CreateSeries(name, imageB64 string) (int, error) {
 	return int(id), err
 }
 
-func (dao *DAO) SeriesForUser(id int) []*storage.Series {
-	retList := make([]*storage.Series, 0)
+func (dao *DAO) SeriesForUser(id int) []*database.Series {
+	retList := make([]*database.Series, 0)
 	if err := dao.DB.Select(&retList, SERIES_FOR_USER, id); err != nil {
 		dao.log.Printf("SQL Errror, %v", err)
 	}
 	return retList
 }
 
-func (dao *DAO) NSFWSeriesForUser(id int) []*storage.Series {
-	retList := make([]*storage.Series, 0)
+func (dao *DAO) NSFWSeriesForUser(id int) []*database.Series {
+	retList := make([]*database.Series, 0)
 	if err := dao.DB.Select(&retList, SERIES_FOR_USER_NSFW, id); err != nil {
 		dao.log.Printf("SQL Errror, %v", err)
 	}
 	return retList
 }
 
-func (dao *DAO) SeriesByIdAndUser(seriesId string, userId int) (*storage.Series, bool) {
-	retSerie := &storage.Series{}
+func (dao *DAO) SeriesByIdAndUser(seriesId string, userId int) (*database.Series, bool) {
+	retSerie := &database.Series{}
 	err := dao.DB.Get(retSerie, "select * from series s where s.id = $1 and s.ownerid  = $2", seriesId, userId)
 	if err != nil {
 		//You are not the owner!
@@ -55,8 +56,8 @@ func (dao *DAO) SeriesByIdAndUser(seriesId string, userId int) (*storage.Series,
 	return retSerie, true
 }
 
-func (dao *DAO) SeriesInfoById(id string) *storage.Series {
-	retSerie := &storage.Series{}
+func (dao *DAO) SeriesInfoById(id string) *database.Series {
+	retSerie := &database.Series{}
 	err := dao.DB.Get(retSerie, "select id, name, nsfw from series s where s.id = $1", id)
 	if err != nil {
 		panic(fmt.Errorf("request for non existent series id %s", id))
@@ -68,8 +69,8 @@ func (dao *DAO) AddSeriesArc(seriesId, name string) {
 	dao.DB.MustExec("INSERT INTO series_arc (series_id, name) values ($1, $2)", seriesId, name)
 }
 
-func (dao *DAO) ListSeriesArcs(seriesId string) []*storage.SeriesArc {
-	retList := make([]*storage.SeriesArc, 0)
+func (dao *DAO) ListSeriesArcs(seriesId string) []*database.SeriesArc {
+	retList := make([]*database.SeriesArc, 0)
 
 	err := dao.DB.Select(&retList, "select * from series_arc where series_id = $1 order by ordernum, name asc", seriesId)
 	if err != nil {
@@ -77,4 +78,13 @@ func (dao *DAO) ListSeriesArcs(seriesId string) []*storage.SeriesArc {
 	}
 
 	return retList
+}
+
+func (dao *DAO) SeriesCoverById(seriesId string) ([]byte, error) {
+	var b64 string
+	err := dao.DB.Get(&b64, "select s.cover_image_base64  from series s where id = $1", seriesId)
+	if err != nil {
+		return nil, err
+	}
+	return base64.StdEncoding.DecodeString(b64)
 }

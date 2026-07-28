@@ -1,27 +1,30 @@
 package router
 
 import (
+	"bytes"
+	"encoding/base64"
 	"fmt"
-	"io/ioutil"
+	"image"
+	"image/jpeg"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
 
 	"github.com/HaBaLeS/gnol/server/command"
-	"github.com/HaBaLeS/gnol/server/storage"
+	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/gin-gonic/gin"
 )
 
 func (ah *AppHandler) deleteComic(ctx *gin.Context) {
-	comicID := ctx.Param("comicId")
+	comicId := ctx.Param("comicId")
 	uid := getGnolContext(ctx).Session.UserId
-	comic := ah.dao.ComicById(comicID)
+	comic := ah.dao.ComicById(comicId)
 	if comic.OwnerID != uid {
 		panic("you are not the owner of this comic!")
 	}
-	ah.dao.DB.MustExec("delete from user_to_comic where comic_id = $1", comicID)
-	ah.dao.DB.MustExec("delete from comic where id = $1", comicID)
+	ah.dao.DB.MustExec("delete from user_to_comic where comic_id = $1", comicId)
+	ah.dao.DB.MustExec("delete from comic where id = $1", comicId)
 	err := os.Remove(comic.FilePath)
 	if err != nil {
 		panic(fmt.Errorf("failed to remove file: %s. got error %v", comic.FilePath, err)) //does the transaction roll back?
@@ -30,26 +33,26 @@ func (ah *AppHandler) deleteComic(ctx *gin.Context) {
 }
 
 func (ah *AppHandler) removeComic(ctx *gin.Context) {
-	comicID := ctx.Param("comicId")
+	comicId := ctx.Param("comicId")
 	uid := getGnolContext(ctx).Session.UserId
-	comic := ah.dao.ComicById(comicID)
-	ah.dao.DB.MustExec("delete from user_to_comic where comic_id = $1 and user_id = $2", comicID, uid)
+	comic := ah.dao.ComicById(comicId)
+	ah.dao.DB.MustExec("delete from user_to_comic where comic_id = $1 and user_id = $2", comicId, uid)
 	ctx.JSON(200, command.NewRedirectCommand(fmt.Sprintf("/series/%d", comic.SeriesId)))
 }
 
 func (ah *AppHandler) comicsLoad(ctx *gin.Context) {
-	comicID := ctx.Param("comicId")
+	comicId := ctx.Param("comicId")
 	lastPage := ctx.Param("lastpage")
-	comicID, _ = url.QueryUnescape(comicID)
+	comicId, _ = url.QueryUnescape(comicId)
 
-	comic := ah.dao.ComicById(comicID)
+	comic := ah.dao.ComicById(comicId)
 	if lastPage != "" {
 		lp, _ := strconv.Atoi(lastPage) //Fixme ignoring errors is bad
 		comic.LastPage = lp
 	}
 
 	if comic == nil {
-		renderError(fmt.Errorf("comic with id %s not found", comicID), ctx.Writer)
+		renderError(fmt.Errorf("comic with id %s not found", comicId), ctx.Writer)
 		return
 	}
 
@@ -158,42 +161,59 @@ func (ah *AppHandler) comicSetLastPage(ctx *gin.Context) {
 }
 
 func (ah *AppHandler) comicsPageImage(ctx *gin.Context) {
-	comicID := ctx.Param("comicId")
-	image := ctx.Param("imageId")
-	num, ce := strconv.Atoi(image)
+	comicId := ctx.Param("comicId")
+	imageNum := ctx.Param("imageId")
+	num, ce := strconv.Atoi(imageNum)
 	if ce != nil {
 		renderError(ce, ctx.Writer)
 		return
 	}
 
-	comic := ah.dao.ComicById(comicID) //FIXME change to getfilename for Comic
-
-	//get file from cache
-	var err error
-	file, hit := ah.cache.GetFileFromCache(comic.FilePath, num)
-	if !hit {
-		file, err = storage.GetPageImage(ah.config, comic.FilePath, comicID, num)
-		if err != nil {
-			renderError(err, ctx.Writer)
-			return
-		}
-		ah.cache.AddFileToCache(file)
+	data, err := ah.fileStorage.FetchImageData(comicId, num)
+	if err != nil {
+		renderError(err, ctx.Writer)
 	}
 
-	//as a image-provider module not the cache directly
-	img, oerr := os.Open(file)
-	if oerr != nil {
-		renderError(oerr, ctx.Writer)
-		return
-	}
-
-	data, rerr := ioutil.ReadAll(img)
-	if rerr != nil {
-		renderError(rerr, ctx.Writer)
-		return
-	}
 	_, re := ctx.Writer.Write(data)
 	if re != nil {
 		panic(re)
 	}
+}
+
+func (ah *AppHandler) recreateComicCover(ctx *gin.Context) {
+	type reqObj struct {
+		ComicId string `form:"comicId" binding:"required"`
+		Page    int    `form:"page" binding:"required"`
+	}
+	var req reqObj
+	if err := ctx.ShouldBind(&req); err != nil {
+		renderError(err, ctx.Writer)
+	}
+
+	data, err := ah.fileStorage.FetchImageData(req.ComicId, req.Page)
+	if err != nil {
+		panic(fmt.Errorf("fetch image page %v error: %v", req.Page, err))
+	}
+
+	//fixme move to a util
+	img, _, err := image.Decode(bytes.NewBuffer(data))
+	if err != nil {
+		panic(fmt.Errorf("error decoding image: %v", err))
+	}
+
+	//fixme move to a util
+	m := util.Thumbnail(240, 300, img)
+	buf := *new(bytes.Buffer)
+	if err := jpeg.Encode(&buf, m, nil); err != nil {
+		panic(err)
+	}
+
+	enc := base64.StdEncoding.EncodeToString(buf.Bytes())
+	ah.dao.DB.MustExec("update comic set cover_image_base64 = $1 where id = $2", enc, req.ComicId)
+
+	ctx.JSON(http.StatusOK, command.NewGoBackCommand())
+}
+
+func (ah *AppHandler) replaceComicCover(ctx *gin.Context) {
+
 }

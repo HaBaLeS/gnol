@@ -7,8 +7,8 @@ import (
 	"path"
 	"time"
 
-	"github.com/HaBaLeS/gnol/server/storage"
-	"github.com/HaBaLeS/gnol/server/storage/dao"
+	"github.com/HaBaLeS/gnol/server/database"
+	"github.com/HaBaLeS/gnol/server/database/dao"
 	"github.com/HaBaLeS/gnol/server/util"
 )
 
@@ -77,7 +77,7 @@ func (j *JobRunner) StartMonitor() {
 }
 
 // checkForJobs scans folder for job metadata if there is at least one it is created and returned to be executed
-func (j *JobRunner) CheckForJobs() *storage.GnolJob {
+func (j *JobRunner) CheckForJobs() *database.GnolJob {
 	job := j.FirstOpenJob()
 	if job != nil {
 		return job
@@ -91,7 +91,7 @@ func (j *JobRunner) StopMonitor() {
 	j.running = false
 }
 
-func (j *JobRunner) processJob(job *storage.GnolJob) {
+func (j *JobRunner) processJob(job *database.GnolJob) {
 	var jobError error
 	switch job.JobType {
 	case PdfToCbz:
@@ -121,14 +121,14 @@ func (j *JobRunner) processJob(job *storage.GnolJob) {
 	j.jobLocked = false
 }
 
-func (j *JobRunner) save(job *storage.GnolJob) {
+func (j *JobRunner) save(job *database.GnolJob) {
 	err := j.dao.CreateJob(job.JobType, job.UserID, job.Data)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (j *JobRunner) FirstOpenJob() *storage.GnolJob {
+func (j *JobRunner) FirstOpenJob() *database.GnolJob {
 	job := j.dao.GetOldestOpenJob()
 	if job == nil {
 		return nil

@@ -1,6 +1,11 @@
 package dao
 
-import "github.com/HaBaLeS/gnol/server/storage"
+import (
+	"encoding/base64"
+	"fmt"
+
+	"github.com/HaBaLeS/gnol/server/database"
+)
 
 const (
 	ADD_USER_2_COMIC    = "insert into user_to_comic (user_id, comic_id) values ($1, $2)"
@@ -14,7 +19,7 @@ const (
 select  c.*, utc.last_page, utc.finished from comic as c
     join user_to_comic utc on c.id = utc.comic_id
     where utc.user_id = $1 and series_id = $2 
-	order by c.ordernum asc
+	order by c.ordernum, c.name asc
 `
 
 	CREATE_COMIC = "insert into comic (id, name, nsfw, series_id, cover_image_base64, num_pages, file_path, ordernum ) values ($1, $2, $3, $4, $5, $6, $7, $8)"
@@ -25,14 +30,26 @@ func (dao *DAO) AddComicToUser(comicID string, userID string) error {
 	return err
 }
 
-func (dao *DAO) ComicById(id string) *storage.Comic {
-	c := &storage.Comic{}
-	dao.DB.Get(c, "select * from comic where id = $1", id)
+func (dao *DAO) ComicById(id string) *database.Comic {
+	c := &database.Comic{}
+	err := dao.DB.Get(c, "select * from comic where id = $1", id)
+	if err != nil {
+		panic(fmt.Errorf("get comic by id failed: %v", err))
+	}
 	return c
 }
 
-func (dao *DAO) ComicsForUser(id int) []*storage.Comic {
-	retList := make([]*storage.Comic, 0)
+func (dao *DAO) ComicFilenameForId(id string) string {
+	var retVal string
+	err := dao.DB.Get(&retVal, "select file_path from comic where id = $1", id)
+	if err != nil {
+		panic(fmt.Errorf("get comic by id failed: %v", err))
+	}
+	return retVal
+}
+
+func (dao *DAO) ComicsForUser(id int) []*database.Comic {
+	retList := make([]*database.Comic, 0)
 	if err := dao.DB.Select(&retList, ALL_COMICS_FOR_USER, id); err != nil {
 		dao.log.Printf("SQL Error, %v", err)
 	}
@@ -49,9 +66,9 @@ func (dao *DAO) ComicsForUser(id int) []*storage.Comic {
 	return retList
 }
 
-func (dao *DAO) ComicsForUserInSeries(id int, seriesID string) []*storage.Comic {
+func (dao *DAO) ComicsForUserInSeries(id int, seriesID string) []*database.Comic {
 
-	retList := make([]*storage.Comic, 0)
+	retList := make([]*database.Comic, 0)
 	if err := dao.DB.Select(&retList, COMICS_FOR_USER_IN_SERIES, id, seriesID); err != nil {
 		dao.log.Printf("SQL Errror, %v", err)
 	}
@@ -67,10 +84,19 @@ func (dao *DAO) ComicsForUserInSeries(id int, seriesID string) []*storage.Comic 
 	return retList
 }
 
-func (dao *DAO) SaveComic(c *storage.Comic) int {
+func (dao *DAO) SaveComic(c *database.Comic) int {
 	//insert into commic
 	var newID int
 	dao.DB.Get(&newID, "select nextval('comic_id_seq')")
 	dao.DB.MustExec(CREATE_COMIC, newID, c.Name, c.Nsfw, c.SeriesId, c.CoverImageBase64, c.NumPages, c.FilePath, c.OrderNum)
 	return newID
+}
+
+func (dao *DAO) ComicCoverById(comicId string) ([]byte, error) {
+	var b64 string
+	err := dao.DB.Get(&b64, "select s.cover_image_base64  from comic s where id = $1", comicId)
+	if err != nil {
+		return nil, err
+	}
+	return base64.StdEncoding.DecodeString(b64)
 }

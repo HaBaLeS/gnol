@@ -18,3 +18,4 @@ docker-compose-volumes
 leech-data/
 bin/
 tmp/
+gnol-tools

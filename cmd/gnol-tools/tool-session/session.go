@@ -20,7 +20,6 @@ import (
 
 	"github.com/HaBaLeS/gnol/server/util"
 	"github.com/fatih/color"
-	"github.com/gen2brain/go-fitz"
 )
 
 type Session struct {
@@ -41,6 +40,7 @@ type Session struct {
 	MonitorFolder string
 	OrderNum      string
 	SeriesId      string
+	Overwrite     bool
 }
 
 type CbzMetaData struct {
@@ -78,8 +78,9 @@ func NewSession() *Session {
 		From:         0,
 		To:           math.MaxInt64,
 		DirectUpload: false,
-		SeriesId:     "0",
+		SeriesId:     "-1",
 		OrderNum:     "100",
+		Overwrite:    false,
 	}
 	return s
 }
@@ -122,6 +123,10 @@ func (s *Session) processOptionsAndValidate(args []string, options map[string]st
 
 	if options["gnolhost"] != "" {
 		s.GnolHost = options["gnolhost"]
+	}
+
+	if options["overwrite"] != "" {
+		s.Overwrite = true
 	}
 
 	if s.InputFile == "" {
@@ -233,32 +238,19 @@ func (s *Session) cleanup() {
 	}
 }
 
-// fillMetaData extracts pdf metadata and populates session metadata
-func (s *Session) fillMetaData(doc *fitz.Document) {
-	md := doc.Metadata()
-	s.MetaData.NumPages = doc.NumPage()
-	s.MetaData.Name = strings.Trim(md["title"], "\x00")
-	if s.MetaData.Name == "" {
-		s.MetaData.Name = path.Base(s.InputFile)
+func (s *Session) SetCoverImage(filePath string) error {
+	img, err := s.LoadImage(filePath)
+	if err != nil {
+		return err
 	}
-
-	s.Log("Extract Metadata from PDF with title: '%s'", s.MetaData.Name)
-	s.Log("%d Pages", s.MetaData.NumPages)
-
-	for _, v := range strings.Split(strings.Trim(md["keywords"], "\x00"), " ") {
-		s.MetaData.Tags = append(s.MetaData.Tags, v)
-	}
-	//TODO other metadata might be: Subject, author, creator ....
-	s.Log("Extracted Keywords: %v \n\t", s.MetaData.Tags)
-}
-
-func (s *Session) SetCoverImage(img image.Image) {
-	m := util.Thumbnail(240, 300, img)
+	m := util.Thumbnail(360, 450, img)
 	buf := *new(bytes.Buffer)
 	if err := jpeg.Encode(&buf, m, nil); err != nil {
-		panic(err)
+		return err
 	}
 	s.MetaData.CoverImageBase64 = base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	return nil
 }
 
 func (s *Session) LoadImage(file string) (image.Image, error) {
