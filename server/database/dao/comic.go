@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/HaBaLeS/gnol/server/database"
@@ -18,7 +19,7 @@ const (
 select  c.*, utc.last_page, utc.finished from comic as c
     join user_to_comic utc on c.id = utc.comic_id
     where utc.user_id = $1 and series_id = $2 
-	order by c.ordernum asc
+	order by c.ordernum, c.name asc
 `
 
 	CREATE_COMIC = "insert into comic (id, name, nsfw, series_id, cover_image_base64, num_pages, file_path, ordernum ) values ($1, $2, $3, $4, $5, $6, $7, $8)"
@@ -89,4 +90,13 @@ func (dao *DAO) SaveComic(c *database.Comic) int {
 	dao.DB.Get(&newID, "select nextval('comic_id_seq')")
 	dao.DB.MustExec(CREATE_COMIC, newID, c.Name, c.Nsfw, c.SeriesId, c.CoverImageBase64, c.NumPages, c.FilePath, c.OrderNum)
 	return newID
+}
+
+func (dao *DAO) ComicCoverById(comicId string) ([]byte, error) {
+	var b64 string
+	err := dao.DB.Get(&b64, "select s.cover_image_base64  from comic s where id = $1", comicId)
+	if err != nil {
+		return nil, err
+	}
+	return base64.StdEncoding.DecodeString(b64)
 }

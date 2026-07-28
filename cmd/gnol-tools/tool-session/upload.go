@@ -16,7 +16,7 @@ func (s *Session) Upload(args []string, options map[string]string) int {
 	if !s.processOptionsAndValidate(args, options) {
 		return -1
 	}
-	return s.uploadInternal()
+	return s.uploadInternal(s.InputFile)
 }
 
 type UplProgessReader struct {
@@ -31,14 +31,14 @@ func (rdr *UplProgessReader) Read(p []byte) (n int, err error) {
 	return n, err
 }
 
-func (s *Session) uploadInternal() int {
+func (s *Session) uploadInternal(fileToUpload string) int {
 
-	if exist, obj := s.checkIfFileExists(); exist {
+	if exist, obj := s.checkIfFileExists(fileToUpload); exist {
 		s.Warn("%s exists on Server in Series: %s (%d)\n", obj.Name, obj.Sname, obj.Series_id)
 		return 0
 	}
 
-	inFile, err := os.Open(s.InputFile)
+	inFile, err := os.Open(fileToUpload)
 
 	pr := &UplProgessReader{
 		Reader: inFile,
@@ -91,8 +91,8 @@ func (s *Session) uploadInternal() int {
 	return 0
 }
 
-func (s *Session) checkIfFileExists() (bool, *dto.ComicDTO) {
-	hash, err := util.HashFile(s.InputFile)
+func (s *Session) checkIfFileExists(filename string) (bool, *dto.ComicDTO) {
+	hash, err := util.HashFile(filename)
 	if err != nil {
 		panic(err) //file must exist at that point
 	}
@@ -101,22 +101,29 @@ func (s *Session) checkIfFileExists() (bool, *dto.ComicDTO) {
 	client := http.DefaultClient
 	rq, err := http.NewRequest("GET", url, nil)
 	rq.Header.Add(router.API_GNOL_TOKEN, s.ApiToken)
+
 	if err != nil {
 		panic(err)
 	}
 	resp, err := client.Do(rq)
-	if err != nil {
-		panic(err)
-	}
 
+	//Fies does not yet exist
 	if resp.StatusCode == http.StatusNotFound {
 		return false, nil
+	}
+
+	//file exists, we need to authenticate
+	if resp.StatusCode != 200 {
+		panic("Response StatusCode: " + resp.Status)
+	}
+	if err != nil {
+		panic(err)
 	}
 
 	dto := &dto.ComicDTO{}
 	dec := json.NewDecoder(resp.Body)
 	if err := dec.Decode(dto); err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to decode response: %v, %v", resp.Body, err))
 	}
 	return true, dto
 }

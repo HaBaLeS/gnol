@@ -1,5 +1,5 @@
 NOW=$(shell date +'%Y-%m-%d_%T')
-VERSION=0.17.4
+VERSION=0.20.1
 LD_FLAG=-X main.VersionNum=$(VERSION) -X main.BuildDate=$(NOW)
 
 
@@ -31,12 +31,12 @@ test:
 
 
 container:
-	docker build . -t reg.habales.de/gnol/gnol:$(VERSION)
-	docker tag reg.habales.de/gnol/gnol:$(VERSION) reg.habales.de/gnol/gnol:latest
+	docker build . -t registry.mutech.de/gnol/gnol:$(VERSION)
+	docker tag registry.mutech.de/gnol/gnol:$(VERSION) registry.mutech.de/gnol/gnol:latest
 
 push: container
-	docker push reg.habales.de/gnol/gnol:$(VERSION)
-	docker push reg.habales.de/gnol/gnol:latest
+	docker push registry.mutech.de/gnol/gnol:$(VERSION)
+	docker push registry.mutech.de/gnol/gnol:latest
 
 clean:
 	go clean

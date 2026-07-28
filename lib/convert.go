@@ -3,7 +3,7 @@ package lib
 import (
 	"fmt"
 	"io"
-	"log"
+	"math"
 	"os"
 	"path"
 	"time"
@@ -20,27 +20,34 @@ type PdfToImages struct {
 	// Be sure to close pools/instances when you're done with them.
 	instance         pdfium.Pdfium
 	infile           string
-	outDir           string
-	maxSize          int
-	parts            int
+	OutDir           string //Output directory Default is os.TempDir()
+	MaxSize          int    //Size in MB
+	Parts            int
 	pagesPerPart     int
-	imageNamePattern string
-	imgWidth         int
-	imgHeight        int
+	CurrentPart      int
+	ImageNamePattern string //Pattern to use
+	ImgWidth         int    // max Width for Images
+	ImgHeight        int    // max Height for Images
 
 	openDoc     *responses.OpenDocument
-	currentPage int
-	numPages    int
+	CurrentPage int
+	NumPages    int
 }
 
-func NewPdfToImages(inFile string, maxSize int) (*PdfToImages, error) {
+func NewPdfToImages(inFile, outdir string) (*PdfToImages, error) {
 	retVal := &PdfToImages{
-		infile:      inFile,
-		maxSize:     maxSize,
-		imgHeight:   2560,
-		imgWidth:    1440,
-		currentPage: 0,
-		outDir:      "/tmp",
+		infile:           inFile,
+		MaxSize:          1500, //Megabyte
+		ImgHeight:        2560,
+		ImgWidth:         1440,
+		CurrentPage:      0,
+		CurrentPart:      1,
+		OutDir:           outdir,
+		ImageNamePattern: "page%03d.jpg",
+	}
+
+	if !isDirectory(outdir) {
+		return nil, fmt.Errorf("%s is not a directory", outdir)
 	}
 
 	retVal.init()
@@ -50,19 +57,26 @@ func NewPdfToImages(inFile string, maxSize int) (*PdfToImages, error) {
 	}
 
 	pdfSize := int(info.Size() / 1024 / 1024)
-	retVal.parts = pdfSize/maxSize + 1 //min is 1
+	retVal.Parts = pdfSize/retVal.MaxSize + 1 //min is 1
 
-	retVal.numPages, err = api.PageCountFile(retVal.infile)
+	retVal.NumPages, err = api.PageCountFile(retVal.infile)
 	if err != nil {
 		return nil, err
 	}
-	retVal.pagesPerPart = retVal.numPages / retVal.parts
-	retVal.instance.Close()
+	retVal.pagesPerPart = retVal.NumPages / retVal.Parts
 
 	return retVal, nil
 }
 
-func (p *PdfToImages) init() {
+func isDirectory(outdir string) bool {
+	info, err := os.Stat(outdir)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
+
+func (p *PdfToImages) init() error {
 	// Init the PDFium library and return the instance to open documents.
 	// You can tweak these configs to your need. Be aware that workers can use quite some memory.
 	pool, err := webassembly.Init(webassembly.Config{
@@ -75,13 +89,11 @@ func (p *PdfToImages) init() {
 	}
 
 	p.instance, err = pool.GetInstance(time.Second * 30)
-	if err != nil {
-		log.Fatal(err)
-	}
+	return err
 }
 
-func (p *PdfToImages) Open() error {
-	// Load the PDF file into a byte array.
+func (p *PdfToImages) open() error {
+	//Load the PDF file into a byte array.
 	pdfBytes, err := os.Open(p.infile)
 	if err != nil {
 		return err
@@ -93,9 +105,10 @@ func (p *PdfToImages) Open() error {
 
 	// Open the PDF using PDFium (and claim a worker)
 	doc, err := p.instance.OpenDocument(&requests.OpenDocument{
-		//File: &pdfBytes,
+		//File:           &pdfBytes,
 		FileReader:     pdfBytes,
 		FileReaderSize: stat.Size(),
+		//FilePath: &p.infile,
 	})
 	if err != nil {
 		return err
@@ -105,30 +118,52 @@ func (p *PdfToImages) Open() error {
 	return nil
 }
 
-func (p *PdfToImages) Close() error {
-	// Always close the document, this will release its resources.
-	_, err := p.instance.FPDF_CloseDocument(&requests.FPDF_CloseDocument{
-		Document: p.openDoc.Document,
-	})
+func (p *PdfToImages) closeDoc() error {
+	if p.openDoc != nil {
+		// Always close the document, this will release its resources.
+		_, err := p.instance.FPDF_CloseDocument(&requests.FPDF_CloseDocument{
+			Document: p.openDoc.Document,
+		})
+		p.openDoc = nil
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *PdfToImages) CloseInstance() error {
+	err := p.instance.Close()
+	if err != nil {
+		return err
+	}
+	p.instance = nil
 	return err
 }
 
 func (p *PdfToImages) NextImage() (string, error) {
-	if p.currentPage == p.numPages {
+	if p.openDoc == nil {
+		err := p.open()
+		if err != nil {
+			return "", err
+		}
+	}
+
+	if p.CurrentPage == p.NumPages {
 		return "", io.EOF
 	}
 
-	outFile := path.Join(p.outDir, (fmt.Sprintf(p.imageNamePattern, p.currentPage)))
+	outFile := path.Join(p.OutDir, (fmt.Sprintf(p.ImageNamePattern, p.CurrentPage)))
 
-	_, err := p.instance.RenderToFile(&requests.RenderToFile{
+	renderedImg, err := p.instance.RenderToFile(&requests.RenderToFile{
 		RenderPageInPixels: &requests.RenderPageInPixels{
-			Height:     p.imgWidth,
-			Width:      p.imgHeight,
+			Height:     p.ImgHeight,
+			Width:      p.ImgWidth,
 			RenderForm: false,
 			Page: requests.Page{
 				ByIndex: &requests.PageByIndex{
 					Document: p.openDoc.Document,
-					Index:    p.currentPage,
+					Index:    p.CurrentPage,
 				},
 			},
 		},
@@ -136,12 +171,26 @@ func (p *PdfToImages) NextImage() (string, error) {
 		OutputTarget:   requests.RenderToFileOutputTargetFile,
 		OutputFormat:   requests.RenderToFileOutputFormatJPG,
 		TargetFilePath: outFile,
+		OutputQuality:  80,
 	})
 
 	if err != nil {
 		return "", err
 	}
 
-	p.currentPage++
+	if math.IsInf(renderedImg.PointToPixelRatio, 0) {
+		return "", fmt.Errorf("Problem rendering image, reported Pixel Ratio is %f. Page %d", renderedImg.PointToPixelRatio, p.CurrentPage)
+	}
+
+	//Close Document"
+	if p.CurrentPage == p.CurrentPart*p.pagesPerPart {
+		p.CurrentPart++
+		err := p.closeDoc()
+		if err != nil {
+			return "", err
+		}
+	}
+
+	p.CurrentPage++
 	return outFile, nil
 }

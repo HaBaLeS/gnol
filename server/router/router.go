@@ -187,6 +187,7 @@ func (ah *AppHandler) Routes() {
 		cm.PATCH("/recreateCover", ah.recreateComicCover)
 		cm.PATCH("/replaceCover", ah.replaceComicCover)
 
+		cm.GET("/cover/:comicId", ah.comicCoverById)
 	}
 
 	//Define Comic
@@ -212,6 +213,8 @@ func (ah *AppHandler) Routes() {
 		srs.GET("/x/:seriesId/:comicId/seriesArcOptions", ah.xSeriesArcOptions)
 		srs.PATCH("/recreateCover", ah.recreateSeriesCover)
 		srs.PATCH("/replaceCover", ah.replaceSeriesCover)
+
+		srs.GET("/cover/:seriesId", ah.seriesCoverById)
 	}
 
 	//Define Series

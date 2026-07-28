@@ -3,12 +3,13 @@ package session
 import (
 	"context"
 	"fmt"
-	"github.com/mholt/archives"
 	"io"
 	"io/fs"
 	"os"
 	"path"
 	"sort"
+
+	"github.com/mholt/archives"
 )
 
 func (s *Session) Repack(args []string, options map[string]string) int {
@@ -93,8 +94,7 @@ func (s *Session) Repack(args []string, options map[string]string) int {
 
 	if s.DirectUpload {
 		fmt.Printf("Directly Uploading %s\n", s.OutputFile)
-		s.InputFile = s.OutputFile
-		s.uploadInternal()
+		s.uploadInternal(s.OutputFile)
 		fmt.Printf("Deleting CBZ %s\n", s.OutputFile)
 		os.Remove(s.OutputFile)
 	}
