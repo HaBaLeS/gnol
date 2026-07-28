@@ -20,9 +20,9 @@ type PdfToImages struct {
 	// Be sure to close pools/instances when you're done with them.
 	instance         pdfium.Pdfium
 	infile           string
-	outDir           string
-	maxSize          int
-	parts            int
+	OutDir           string //Output directory Default is os.TempDir()
+	MaxSize          int    //Size in MB
+	Parts            int
 	OutDir           string //Output directory Default is os.TempDir()
 	MaxSize          int    //Size in MB
 	Parts            int
@@ -30,21 +30,29 @@ type PdfToImages struct {
 	imageNamePattern string
 	imgWidth         int
 	imgHeight        int
-	CurrentPart      int
-	ImageNamePattern string //Pattern to use
-	ImgWidth         int    // max Width for Images
-	ImgHeight        int    // max Height for Images
 
 	openDoc     *responses.OpenDocument
-	currentPage int
-	numPages    int
+	CurrentPage int
+	NumPages    int
 	CurrentPage int
 	NumPages    int
 }
 
-func NewPdfToImages(inFile string, maxSize int) (*PdfToImages, error) {
+func NewPdfToImages(inFile, outdir string) (*PdfToImages, error) {
 func NewPdfToImages(inFile, outdir string) (*PdfToImages, error) {
 	retVal := &PdfToImages{
+		infile:           inFile,
+		MaxSize:          1500, //Megabyte
+		ImgHeight:        2560,
+		ImgWidth:         1440,
+		CurrentPage:      0,
+		CurrentPart:      1,
+		OutDir:           outdir,
+		ImageNamePattern: "page%03d.jpg",
+	}
+
+	if !isDirectory(outdir) {
+		return nil, fmt.Errorf("%s is not a directory", outdir)
 		infile:      inFile,
 		maxSize:     maxSize,
 		imgHeight:   2560,
@@ -72,14 +80,15 @@ func NewPdfToImages(inFile, outdir string) (*PdfToImages, error) {
 	}
 
 	pdfSize := int(info.Size() / 1024 / 1024)
-	retVal.parts = pdfSize/maxSize + 1 //min is 1
+	retVal.Parts = pdfSize/retVal.MaxSize + 1 //min is 1
 	retVal.Parts = pdfSize/retVal.MaxSize + 1 //min is 1
 
-	retVal.numPages, err = api.PageCountFile(retVal.infile)
+	retVal.NumPages, err = api.PageCountFile(retVal.infile)
 	retVal.NumPages, err = api.PageCountFile(retVal.infile)
 	if err != nil {
 		return nil, err
 	}
+	retVal.pagesPerPart = retVal.NumPages / retVal.Parts
 	retVal.pagesPerPart = retVal.numPages / retVal.parts
 	retVal.instance.Close()
 	retVal.pagesPerPart = retVal.NumPages / retVal.Parts
@@ -87,7 +96,15 @@ func NewPdfToImages(inFile, outdir string) (*PdfToImages, error) {
 	return retVal, nil
 }
 
-func (p *PdfToImages) init() {
+func isDirectory(outdir string) bool {
+	info, err := os.Stat(outdir)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
+
+func (p *PdfToImages) init() error {
 func isDirectory(outdir string) bool {
 	info, err := os.Stat(outdir)
 	if err != nil {
@@ -109,14 +126,15 @@ func (p *PdfToImages) init() error {
 	}
 
 	p.instance, err = pool.GetInstance(time.Second * 30)
+	return err
 	if err != nil {
 		log.Fatal(err)
 	}
 	return err
 }
 
-func (p *PdfToImages) Open() error {
-	// Load the PDF file into a byte array.
+func (p *PdfToImages) open() error {
+	//Load the PDF file into a byte array.
 func (p *PdfToImages) open() error {
 	//Load the PDF file into a byte array.
 	pdfBytes, err := os.Open(p.infile)
@@ -143,6 +161,26 @@ func (p *PdfToImages) open() error {
 	return nil
 }
 
+func (p *PdfToImages) closeDoc() error {
+	if p.openDoc != nil {
+		// Always close the document, this will release its resources.
+		_, err := p.instance.FPDF_CloseDocument(&requests.FPDF_CloseDocument{
+			Document: p.openDoc.Document,
+		})
+		p.openDoc = nil
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *PdfToImages) CloseInstance() error {
+	err := p.instance.Close()
+	if err != nil {
+		return err
+	}
+	p.instance = nil
 func (p *PdfToImages) Close() error {
 	// Always close the document, this will release its resources.
 	_, err := p.instance.FPDF_CloseDocument(&requests.FPDF_CloseDocument{
@@ -172,7 +210,14 @@ func (p *PdfToImages) CloseInstance() error {
 }
 
 func (p *PdfToImages) NextImage() (string, error) {
-	if p.currentPage == p.numPages {
+	if p.openDoc == nil {
+		err := p.open()
+		if err != nil {
+			return "", err
+		}
+	}
+
+	if p.CurrentPage == p.NumPages {
 	if p.openDoc == nil {
 		err := p.open()
 		if err != nil {
@@ -184,21 +229,21 @@ func (p *PdfToImages) NextImage() (string, error) {
 		return "", io.EOF
 	}
 
-	outFile := path.Join(p.outDir, (fmt.Sprintf(p.imageNamePattern, p.currentPage)))
+	outFile := path.Join(p.OutDir, (fmt.Sprintf(p.ImageNamePattern, p.CurrentPage)))
 	outFile := path.Join(p.OutDir, (fmt.Sprintf(p.ImageNamePattern, p.CurrentPage)))
 
-	_, err := p.instance.RenderToFile(&requests.RenderToFile{
+	renderedImg, err := p.instance.RenderToFile(&requests.RenderToFile{
 	renderedImg, err := p.instance.RenderToFile(&requests.RenderToFile{
 		RenderPageInPixels: &requests.RenderPageInPixels{
-			Height:     p.imgWidth,
-			Width:      p.imgHeight,
+			Height:     p.ImgHeight,
+			Width:      p.ImgWidth,
 			Height:     p.ImgHeight,
 			Width:      p.ImgWidth,
 			RenderForm: false,
 			Page: requests.Page{
 				ByIndex: &requests.PageByIndex{
 					Document: p.openDoc.Document,
-					Index:    p.currentPage,
+					Index:    p.CurrentPage,
 					Index:    p.CurrentPage,
 				},
 			},
@@ -214,7 +259,20 @@ func (p *PdfToImages) NextImage() (string, error) {
 		return "", err
 	}
 
-	p.currentPage++
+	if math.IsInf(renderedImg.PointToPixelRatio, 0) {
+		return "", fmt.Errorf("Problem rendering image, reported Pixel Ratio is %f. Page %d", renderedImg.PointToPixelRatio, p.CurrentPage)
+	}
+
+	//Close Document"
+	if p.CurrentPage == p.CurrentPart*p.pagesPerPart {
+		p.CurrentPart++
+		err := p.closeDoc()
+		if err != nil {
+			return "", err
+		}
+	}
+
+	p.CurrentPage++
 	if math.IsInf(renderedImg.PointToPixelRatio, 0) {
 		return "", fmt.Errorf("Problem rendering image, reported Pixel Ratio is %f. Page %d", renderedImg.PointToPixelRatio, p.CurrentPage)
 	}
