@@ -4,7 +4,7 @@
 ####
 #### BUILD
 ####
-FROM golang:1.25.1-alpine AS build
+FROM golang:1.26.5-alpine AS build
 RUN apk update
 RUN apk upgrade
 RUN apk add --update gcc g++ make mupdf-dev build-base libc6-compat alpine-sdk
@@ -31,8 +31,8 @@ FROM alpine:latest
 WORKDIR /gnol-app
 
 ENV USER=gnoluser
-ENV UID=12345
-ENV GID=23456
+ENV UID=1000
+ENV GID=1000
 
 RUN addgroup --gid $GID $USER
 RUN adduser \

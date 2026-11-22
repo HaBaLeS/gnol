@@ -3,6 +3,7 @@ package router
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/HaBaLeS/gnol/server/dto"
 	"github.com/gin-gonic/gin"
 )
+
+const CACHE_TIME = 86400
 
 func (ah *AppHandler) comicsInSeriesList(ctx *gin.Context) {
 	gctx := getGnolContext(ctx)
@@ -63,6 +66,32 @@ func (ah *AppHandler) seriesList(ctx *gin.Context) {
 	gctx := getGnolContext(ctx)
 	gctx.SeriesList = ah.dao.SeriesForUser(gctx.Session.UserId)
 	ah.renderTemplate("series.gohtml", ctx, gctx)
+}
+
+func (ah *AppHandler) seriesCoverById(ctx *gin.Context) {
+
+	imgBytes, err := ah.dao.SeriesCoverById(ctx.Param("seriesId"))
+	if err != nil {
+		log.Printf("DAO error %v", err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+
+	ctx.Writer.Header().Set("Content-Type", "image/png")
+	ctx.Writer.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, private", CACHE_TIME))
+	ctx.Writer.Write(imgBytes)
+}
+
+func (ah *AppHandler) comicCoverById(ctx *gin.Context) {
+
+	imgBytes, err := ah.dao.ComicCoverById(ctx.Param("comicId"))
+	if err != nil {
+		log.Printf("DAO error %v", err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+
+	ctx.Writer.Header().Set("Content-Type", "image/png")
+	ctx.Writer.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, private", CACHE_TIME))
+	ctx.Writer.Write(imgBytes)
 }
 
 func (ah *AppHandler) seriesListNSFW(ctx *gin.Context) {

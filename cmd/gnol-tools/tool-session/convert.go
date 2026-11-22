@@ -2,16 +2,18 @@
 
 import (
 	"encoding/json"
-	"github.com/HaBaLeS/gnol/server/util"
-	"github.com/gen2brain/go-fitz"
 	"os"
 	"path"
 	"time"
+
+	"github.com/HaBaLeS/gnol/lib"
+	"github.com/HaBaLeS/gnol/server/util"
 )
 
 func (s *Session) Convert(args []string, options map[string]string) int {
 	s.Log("Loading PDF %s", s.InputFile)
-	doc, err := fitz.New(s.InputFile)
+
+	conv, err := lib.NewPdfToImages(s.InputFile, s.TempDir)
 	if err != nil {
 		panic(err)
 	}

@@ -2,7 +2,6 @@ package session
 
 import (
 	"fmt"
-	"github.com/fsnotify/fsnotify"
 	"io/ioutil"
 	"log"
 	"os"
@@ -10,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
 )
 
 var lockMap map[string]int64 = make(map[string]int64)
@@ -123,7 +124,7 @@ func processList(s *Session) {
 
 	if path.Ext(theTing) == ".pdf" {
 		log.Printf("PDF to process! %s", theTing)
-		s.Convert([]string{theTing}, map[string]string{})
+		s.ConvertNew([]string{theTing}, map[string]string{})
 	} else if path.Ext(theTing) == ".cbz" {
 		log.Printf("CBZ to process! %s", theTing)
 		s.DirectUpload = false
@@ -136,8 +137,7 @@ func processList(s *Session) {
 
 	//upload cbz
 	fmt.Printf("Directly Uploading %s\n", s.OutputFile)
-	s.InputFile = s.OutputFile
-	s.uploadInternal()
+	s.uploadInternal(s.OutputFile)
 	fmt.Printf("Deleting CBZ %s\n", s.OutputFile)
 	os.Remove(s.OutputFile)
 

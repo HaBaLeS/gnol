@@ -3,12 +3,13 @@ package session
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/HaBaLeS/gnol/server/util"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
 	"sort"
+
+	"github.com/HaBaLeS/gnol/server/util"
 )
 
 var allowedTypes = map[string]struct{}{
@@ -25,8 +26,7 @@ func (s *Session) Packfolder(args []string, options map[string]string) int {
 
 	if !s.DryRun && s.DirectUpload {
 		fmt.Printf("Directly Uploading %s\n", s.OutputFile)
-		s.InputFile = s.OutputFile
-		s.uploadInternal()
+		s.uploadInternal(s.OutputFile)
 		fmt.Printf("Deleting CBZ %s\n", s.OutputFile)
 		os.Remove(s.OutputFile)
 	}
@@ -89,7 +89,7 @@ func (s *Session) packInternal() int {
 			continue
 		}
 		if idx+1 == s.MetaData.CoverPage {
-			s.SetCoverImage(img)
+			s.SetCoverImage(path.Join(s.InputFile, v))
 		}
 		s.MetaData.NumPages++
 	}

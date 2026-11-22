@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/HaBaLeS/gnol/server/database"
@@ -9,8 +10,8 @@ import (
 const (
 	CREATE_SERIES = "insert into series (name, cover_image_base64) values ($1,$2)"
 
-	SERIES_FOR_USER      = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 and s.nsfw = false group by s.id order by s.ordernum asc"
-	SERIES_FOR_USER_NSFW = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 and s.nsfw = true group by s.id order by s.ordernum asc"
+	SERIES_FOR_USER      = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 and s.nsfw = false group by s.id order by s.ordernum, s.name asc"
+	SERIES_FOR_USER_NSFW = "select s.*, count(s.id) as comics_in_series from comic join series s on s.id = comic.series_id left join user_to_comic utc on comic.id = utc.comic_id where utc.user_id = $1 and s.nsfw = true group by s.id order by s.ordernum, s.name asc"
 )
 
 func (dao *DAO) AllSeries(includeNSFW bool) []*database.Series {
@@ -77,4 +78,13 @@ func (dao *DAO) ListSeriesArcs(seriesId string) []*database.SeriesArc {
 	}
 
 	return retList
+}
+
+func (dao *DAO) SeriesCoverById(seriesId string) ([]byte, error) {
+	var b64 string
+	err := dao.DB.Get(&b64, "select s.cover_image_base64  from series s where id = $1", seriesId)
+	if err != nil {
+		return nil, err
+	}
+	return base64.StdEncoding.DecodeString(b64)
 }
