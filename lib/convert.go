@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -70,7 +71,7 @@ func NewPdfToImages(inFile, outdir string, jpegQuality int, usepdf bool) (*PdfTo
 	pdfSize := int(info.Size() / 1024 / 1024)
 	retVal.Parts = pdfSize/retVal.MaxSize + 1 //min is 1
 
-	retVal.NumPages, err = api.PageCountFile(retVal.infile)
+	retVal.NumPages, err = api.PageCountFile(context.Background(), retVal.infile)
 	if err != nil {
 		return nil, err
 	}
