@@ -2,14 +2,12 @@
 
 import (
 	"encoding/json"
-	"github.com/HaBaLeS/gnol/server/util"
-	"github.com/gen2brain/go-fitz"
+	"fmt"
 	"os"
 	"path"
 	"time"
 
 	"github.com/HaBaLeS/gnol/lib"
-	"github.com/HaBaLeS/gnol/server/util"
 )
 
 func (s *Session) Convert(args []string, options map[string]string) int {
@@ -18,15 +16,13 @@ func (s *Session) Convert(args []string, options map[string]string) int {
 	}
 	s.Log("Loading PDF %s", s.InputFile)
 
-	conv, err := lib.NewPdfToImages(s.InputFile, s.TempDir)
+	conv, err := lib.NewPdfToImages(s.InputFile, s.TempDir, 85, false)
 	if err != nil {
 		panic(err)
 	}
-	defer doc.Close()
+	defer conv.Close()
 
-	s.fillMetaData(doc)
-
-	if s.MetaData.CoverPage > s.MetaData.NumPages {
+	if s.MetaData.CoverPage > conv.NumPages {
 		s.Error("--coverpage %d is higher than total number of pages (%d) in pdf", s.MetaData.CoverPage, s.MetaData.NumPages)
 		return -1
 	}
@@ -36,26 +32,25 @@ func (s *Session) Convert(args []string, options map[string]string) int {
 	var resizeTime time.Duration
 	var packageTime time.Duration
 
-	for n := 0; n < doc.NumPage(); n++ {
-		s1 := time.Now()
-		img, e1 := doc.Image(n)
+	for n := 0; n < conv.NumPages; n++ {
+		img, e1 := conv.NextImage()
 		if e1 != nil {
-			s.Panic("Could not create extract image", err)
+			s.Log("Image Extraction Failed")
+			panic(e1)
 		}
-		pdfTime += time.Since(s1)
 
 		if n+1 == s.MetaData.CoverPage {
 			s.Log("Coverpage as Page %d", s.MetaData.CoverPage)
 			s.SetCoverImage(img)
 		}
 
-		s2 := time.Now()
+		//s2 := time.Now()
 		//Some thoughts on image for web https://cloudinary.com/blog/top_10_mistakes_in_handling_website_images_and_how_to_solve_them
-		pageImage := util.Thumbnail(2560, 1440, img)
-		s.storeAsJpg(n, pageImage)
-		resizeTime += time.Since(s2)
+		//pageImage := util.Thumbnail(2560, 1440, img)
+		//s.storeAsJpg(n, pageImage)
+		//resizeTime += time.Since(s2)
 		//s.Log("Writing page: %s (%dx%d) -> (%dx%d)", pagename, img.Bounds().Dx(), img.Bounds().Dy(), m.Bounds().Dx(), m.Bounds().Dy())
-		fmt.Print(".")
+		fmt.Printf("%d ", n)
 		if n%10 == 0 {
 			fmt.Print("\n")
 		}

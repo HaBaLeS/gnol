@@ -53,7 +53,7 @@ func main() {
 		WithOption(upload).
 		WithOption(seriesId).
 		WithOption(overwrite).
-		WithAction(s.ConvertNew)
+		WithAction(s.Convert)
 
 	folder2cbz := cli.NewCommand("folder2cbz", "Pack folder of images to CBZ with support for GNOL Metadata. Files will be converted to JPEG and Downsized").
 		WithArg(inDirArg).

@@ -124,7 +124,7 @@ func processList(s *Session) {
 
 	if path.Ext(theTing) == ".pdf" {
 		log.Printf("PDF to process! %s", theTing)
-		s.ConvertNew([]string{theTing}, map[string]string{})
+		s.Convert([]string{theTing}, map[string]string{})
 	} else if path.Ext(theTing) == ".cbz" {
 		log.Printf("CBZ to process! %s", theTing)
 		s.DirectUpload = false

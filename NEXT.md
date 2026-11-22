@@ -1,8 +1,11 @@
 # Big Things
 
 - [ ] HTMX All the things
+- [ ] Recreate all cover images
+  - [ ] Higher Resolution
+  - [ ] Remove from DB!
 
-# Small Thigns
+# Small Things
 
 - [ ] Navigate back to series easy
 - [ ] check why its crashing
