@@ -1,8 +1,10 @@
 package lib
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"os"
 	"path"
@@ -21,20 +23,23 @@ type PdfToImages struct {
 	instance         pdfium.Pdfium
 	infile           string
 	OutDir           string //Output directory Default is os.TempDir()
-	MaxSize          int    //Size in MB
+	ImageNamePattern string
+	MaxSize          int //Size in MB
 	Parts            int
-	pagesPerPart     int
 	CurrentPart      int
-	ImageNamePattern string //Pattern to use
-	ImgWidth         int    // max Width for Images
-	ImgHeight        int    // max Height for Images
+	pagesPerPart     int
+	imageNamePattern string
+	ImgWidth         int
+	ImgHeight        int
 
-	openDoc     *responses.OpenDocument
-	CurrentPage int
-	NumPages    int
+	openDoc      *responses.OpenDocument
+	CurrentPage  int
+	NumPages     int
+	JPEGQuality  int
+	OutputFormat requests.RenderToFileOutputFormat
 }
 
-func NewPdfToImages(inFile, outdir string) (*PdfToImages, error) {
+func NewPdfToImages(inFile, outdir string, jpegQuality int, usepdf bool) (*PdfToImages, error) {
 	retVal := &PdfToImages{
 		infile:           inFile,
 		MaxSize:          1500, //Megabyte
@@ -43,7 +48,14 @@ func NewPdfToImages(inFile, outdir string) (*PdfToImages, error) {
 		CurrentPage:      0,
 		CurrentPart:      1,
 		OutDir:           outdir,
+		JPEGQuality:      jpegQuality,
 		ImageNamePattern: "page%03d.jpg",
+	}
+
+	if usepdf {
+		retVal.OutputFormat = requests.RenderToFileOutputFormatPNG
+	} else {
+		retVal.OutputFormat = requests.RenderToFileOutputFormatJPG
 	}
 
 	if !isDirectory(outdir) {
@@ -59,7 +71,7 @@ func NewPdfToImages(inFile, outdir string) (*PdfToImages, error) {
 	pdfSize := int(info.Size() / 1024 / 1024)
 	retVal.Parts = pdfSize/retVal.MaxSize + 1 //min is 1
 
-	retVal.NumPages, err = api.PageCountFile(retVal.infile)
+	retVal.NumPages, err = api.PageCountFile(context.Background(), retVal.infile)
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +101,10 @@ func (p *PdfToImages) init() error {
 	}
 
 	p.instance, err = pool.GetInstance(time.Second * 30)
+	return err
+	if err != nil {
+		log.Fatal(err)
+	}
 	return err
 }
 
@@ -132,6 +148,23 @@ func (p *PdfToImages) closeDoc() error {
 	return nil
 }
 
+func (p *PdfToImages) Close() error {
+	// Always close the document, this will release its resources.
+	_, err := p.instance.FPDF_CloseDocument(&requests.FPDF_CloseDocument{
+		Document: p.openDoc.Document,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = p.CloseInstance()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (p *PdfToImages) CloseInstance() error {
 	err := p.instance.Close()
 	if err != nil {
@@ -143,13 +176,14 @@ func (p *PdfToImages) CloseInstance() error {
 
 func (p *PdfToImages) NextImage() (string, error) {
 	if p.openDoc == nil {
+		log.Print("Open Document")
 		err := p.open()
 		if err != nil {
 			return "", err
 		}
 	}
 
-	if p.CurrentPage == p.NumPages {
+	if p.CurrentPage >= p.NumPages {
 		return "", io.EOF
 	}
 
@@ -167,11 +201,12 @@ func (p *PdfToImages) NextImage() (string, error) {
 				},
 			},
 		},
-		Progressive:    false,
-		OutputTarget:   requests.RenderToFileOutputTargetFile,
-		OutputFormat:   requests.RenderToFileOutputFormatJPG,
+		Progressive:  false,
+		OutputTarget: requests.RenderToFileOutputTargetFile,
+		OutputFormat: p.OutputFormat,
+		//OutputFormat:   requests.RenderToFileOutputFormatPNG, //PNG produces 3x the filesize, but also very good quality almost Zero artefacts
 		TargetFilePath: outFile,
-		OutputQuality:  80,
+		OutputQuality:  p.JPEGQuality,
 	})
 
 	if err != nil {
@@ -182,15 +217,21 @@ func (p *PdfToImages) NextImage() (string, error) {
 		return "", fmt.Errorf("Problem rendering image, reported Pixel Ratio is %f. Page %d", renderedImg.PointToPixelRatio, p.CurrentPage)
 	}
 
+	if math.IsInf(renderedImg.PointToPixelRatio, 0) {
+		return "", fmt.Errorf("Problem rendering image, reported Pixel Ratio is %f. Page %d", renderedImg.PointToPixelRatio, p.CurrentPage)
+	}
+
 	//Close Document"
 	if p.CurrentPage == p.CurrentPart*p.pagesPerPart {
+		log.Print("Closing Document to Reset Memory on very large file")
 		p.CurrentPart++
 		err := p.closeDoc()
 		if err != nil {
 			return "", err
 		}
+	} else {
+		p.CurrentPage++
 	}
 
-	p.CurrentPage++
 	return outFile, nil
 }

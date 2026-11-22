@@ -2,8 +2,10 @@ package lib
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,19 +13,21 @@ import (
 
 func TestFullWorkflow(t *testing.T) {
 
-	infile := "/home/falko/Downloads/comics/Humble Comic Bundle: Critical Role Comics Collection by Dark Horse/Critical Role: The Mighty Nein Origins-Jester Lavorre.pdf"
-	cv, err := NewPdfToImages(infile, os.TempDir())
+	infile := "/home/falko/Downloads/oglaf_book_3-dl.pdf"
+
+	qual := 95
+	os.Mkdir(path.Join(os.TempDir(), fmt.Sprintf("%d", qual)), os.ModePerm)
+	conv, err := NewPdfToImages(infile, path.Join(os.TempDir(), fmt.Sprintf("%d", qual)), qual, false)
 	assert.NoError(t, err, "NewPdfToImages() error")
 	if err != nil {
 		return
 	}
 
-	defer cv.Close()
+	defer conv.Close()
 
-	cv.Open()
-
+	cnt := 0
 	for true {
-		imagePath, nextError := cv.NextImage()
+		imagePath, nextError := conv.NextImage()
 		if errors.Is(nextError, io.EOF) {
 			break
 		}
@@ -32,6 +36,10 @@ func TestFullWorkflow(t *testing.T) {
 			break
 		}
 		assert.NotEmpty(t, imagePath, "Path should not be empty")
+		cnt++
+		if cnt > 10 {
+			break
+		}
 	}
 }
 
